@@ -24,7 +24,7 @@ SourceFiles=SourceFiles
 InstallPrompt=
 DisplayLicense=
 FinishMessage=
-TargetName=C:\Users\jinda\Desktop\EchoReplay Client installer\Echo Relay Server Browser.exe
+TargetName=C:\Users\jinda\Desktop\Echo Relay Server Browser Client\browser\Echo Relay Server Browser.exe
 FriendlyName=Echo Relay Server Browser
 AppLaunched=powershell -windowstyle hidden -nologo -noprofile -executionpolicy bypass .\serverBrowser.ps1
 PostInstallCmd=<None>
@@ -32,6 +32,6 @@ AdminQuietInstCmd=
 UserQuietInstCmd=
 FILE0="serverBrowser.ps1"
 [SourceFiles]
-SourceFiles0=C:\Users\jinda\Desktop\EchoReplay Client installer\
+SourceFiles0=C:\Users\jinda\Desktop\Echo Relay Server Browser Client\browser\
 [SourceFiles0]
 %FILE0%=

@@ -24,7 +24,7 @@ SourceFiles=SourceFiles
 InstallPrompt=
 DisplayLicense=
 FinishMessage=
-TargetName=C:\Users\jinda\Desktop\EchoReplay Client installer\Echo Relay Installer.exe
+TargetName=C:\Users\jinda\Desktop\Echo Relay Server Browser Client\installer\Echo Relay Installer.exe
 FriendlyName=Echo Replay Client Installer
 AppLaunched=powershell -windowstyle hidden -nologo -noprofile -executionpolicy bypass .\installer.ps1
 PostInstallCmd=<None>
@@ -32,6 +32,6 @@ AdminQuietInstCmd=
 UserQuietInstCmd=
 FILE0="installer.ps1"
 [SourceFiles]
-SourceFiles0=C:\Users\jinda\Desktop\EchoReplay Client installer\
+SourceFiles0=C:\Users\jinda\Desktop\Echo Relay Server Browser Client\installer\
 [SourceFiles0]
 %FILE0%=
