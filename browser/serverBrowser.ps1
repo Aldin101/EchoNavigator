@@ -1,4 +1,4 @@
-start-sleep -s 3
+#start-sleep -s 3
 
 function joinServer {
     if ($global:config.$($database.online[$global:rowIndex].ip) -eq $null) {
@@ -232,8 +232,14 @@ function addOnlineServer {
     $serverButton.Location = New-Object System.Drawing.Point(30, 400)
     $serverButton.Text = "Add Server"
     $serverButton.add_click({
+        if ($psversiontable.psversion.major -eq 7) {
+            [system.windows.forms.messagebox]::Show("PowerShell 7 is not supported", "Echo Relay Server Browser", "OK", "Error")
+            return
+        }
         $serverButton.Enabled = $false
         $serverButton.text = "Adding Server..."
+        Start-Sleep -s 1
+        $serverButton.Refresh()
         $jsonData = @{
             action = "addServer"
             serverName = $serverNameInput.Text
@@ -365,15 +371,234 @@ function combatLoungeNotSelected {
     })
 }
 
+function matchmaking {
+
+    $database.api = "http://localhost:8080/"
+
+    $otherServers.Enabled = $false
+    $global:screenCover = New-Object System.Windows.Forms.Label
+    $screenCover.Size = New-Object System.Drawing.Size(1280, 720)
+    $screenCover.Location = New-Object System.Drawing.Point(0, -80)
+    $screenCover.Text = "Finding Match"
+    $screenCover.TextAlign = 'MiddleCenter'
+    $screenCover.Font = New-Object System.Drawing.Font("Arial", 50)
+    $combatLounge.Controls.Add($screenCover)
+    $screenCover.BringToFront()
+
+    $joinMatchmaker = start-job {
+        param($config, $api)
+        $data = @{
+            action = "joinMatchmaker"
+            userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
+            userName = $config.username
+        } | ConvertTo-Json
+        $response = Invoke-RestMethod -Uri "$api" -Method Post -ContentType "application/json" -Body $data
+        return $response
+    } -ArgumentList $global:config, $database.api
+
+    $progressBar = New-Object System.Windows.Forms.ProgressBar
+    $progressBar.Size = New-Object System.Drawing.Size(400, 20)
+    $progressBar.Location = New-Object System.Drawing.Point(440, 325)
+    $progressBar.Style = 'Marquee'
+    $combatLounge.Controls.Add($progressBar)
+    $progressBar.BringToFront()
+
+    do {
+        $screenCover.Refresh()
+        $progressBar.Refresh()
+        Start-Sleep -Milliseconds 10
+    } while ($joinMatchmaker.State -eq "Running")
+    $screenCover.text = ""
+    $progressBar.Dispose()
+    $global:playerInfo = $joinMatchmaker | receive-job
+    $global:playerInfo = $global:playerInfo.Players
+    $joinMatchmaker | remove-job
+
+    #TEST
+    # $global:playerInfo = [System.Collections.ArrayList]::new()
+    # $playerInfo.Add("player1")
+    # $playerInfo.Add("player2")
+    # $playerInfo.Add("player3")
+    # $playerInfo.Add("player4")
+    # $playerInfo.Add("player5")
+    # $playerInfo.Add("player6")
+    # $playerInfo.Add("player7")
+    # $playerInfo.Add("player8")
+
+
+    $global:searchingLabel = New-Object System.Windows.Forms.Label
+    $searchingLabel.Size = New-Object System.Drawing.Size(300, 100)
+    $searchingLabel.Location = New-Object System.Drawing.Point(10, 10)
+    $searchingLabel.Text = "Searching for players"
+    $searchingLabel.Font = New-Object System.Drawing.Font("Arial", 20)
+    $combatLounge.Controls.Add($searchingLabel)
+    $searchingLabel.BringToFront()
+
+    $global:playerSlotsSearching = New-Object System.Windows.Forms.Label[] 8
+    for ($i=0; $i -lt 8; ++$i) {
+        $playerSlotsSearching[$i] = New-Object System.Windows.Forms.Label
+        $playerSlotsSearching[$i].Size = New-Object System.Drawing.Size(200, 35)
+        $playerSlotsSearching[$i].Location = New-Object System.Drawing.Point(10, (100+$i*40))
+        $playerSlotsSearching[$i].BackColor = [System.Drawing.Color]::FromArgb(100, 0, 0, 0)
+        $playerSlotsSearching[$i].BorderStyle = 'FixedSingle'
+        $playerSlotsSearching[$i].Font = New-Object System.Drawing.Font("Arial", 20)
+        $playerSlotsSearching[$i].Text = "Searching..."
+        $combatLounge.Controls.Add($playerSlotsSearching[$i])
+        $playerSlotsSearching[$i].BringToFront()
+    }
+
+    $global:cancelMatchmaking = New-Object System.Windows.Forms.Button
+    $cancelMatchmaking.Size = New-Object System.Drawing.Size(200, 35)
+    $cancelMatchmaking.Location = New-Object System.Drawing.Point(10, 600)
+    $cancelMatchmaking.Text = "Cancel Matchmaking"
+    $cancelMatchmaking.add_click({
+        $cancelMatchmaking.Dispose()
+        $searchingLabel.Dispose()
+        $playSlots.Dispose()
+        $screenCover.Dispose()
+        $global:playerSlots.Dispose()
+        $global:playerSlotsSearching.Dispose()
+        $otherServers.Enabled = $true
+        $cancelMatchmaking.Dispose()
+        $cancelMatchmaking = $null
+        $data = @{
+            action = "cancelMatchmaking"
+            userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
+            userName = $global:config.username
+        } | ConvertTo-Json
+        Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $data
+    })
+    $combatLounge.Controls.Add($cancelMatchmaking)
+    $cancelMatchmaking.BringToFront()
+
+    $global:playerSlots = New-Object System.Windows.Forms.Label[] 8
+    for ($i = 0; $i -lt $playerSlots.Length; $i++) {
+        $playerSlots[$i] = New-Object System.Windows.Forms.Label
+        $playerSlots[$i].Size = New-Object System.Drawing.Size(200, 35)
+        $playerSlots[$i].Location = New-Object System.Drawing.Point(-300, (100+$i*40))
+        $playerSlots[$i].Text = $playerInfo[$i]
+        $playerSlots[$i].BackColor = [System.Drawing.Color]::FromArgb(100, 0, 0, 0)
+        $playerSlots[$i].BorderStyle = 'FixedSingle'
+        $playerSlots[$i].Font = New-Object System.Drawing.Font("Arial", 20)
+        $combatLounge.Controls.Add($playerSlots[$i])
+        $playerSlots[$i].BringToFront()
+    }
+
+    $i=0
+    foreach ($player in $playerInfo) {
+        $playerSlots[$i].Text = $player
+        if ($config.username -eq $player) {
+            while ($playerSlotsSearching[$i].Location.X -gt -300) {
+                $playerSlotsSearching[$i].Location = New-Object System.Drawing.Point($($playerSlotsSearching[$i].Location.X-10), $playerSlotsSearching[$i].Location.Y)
+                $playerSlotsSearching[$i].Refresh()
+                start-sleep -Milliseconds 1
+            }
+            while ($playerSlots[$i].Location.X -lt 10) {
+                $playerSlots[$i].Location = New-Object System.Drawing.Point($($playerSlots[$i].Location.X+10), $playerSlots[$i].Location.Y)
+                $playerSlots[$i].Refresh()
+                start-sleep -Milliseconds 1
+            }
+        }
+        $playerSlotsSearching[$i].Location = New-Object System.Drawing.Point($(-300), $playerSlotsSearching[$i].Location.Y)
+        $playerSlots[$i].Location = New-Object System.Drawing.Point($(10), $playerSlots[$i].Location.Y)
+        $i++
+    }
+
+    $global:getMatchTimer = New-Object System.Windows.Forms.Timer
+    $getMatchTimer.Interval = 3000
+
+    $getMatchTimer.add_Tick({
+        if ($getMatch.players.count -lt $oldGetMatch.players.count) {
+            write-output "player left"
+            for($i=0; $i -lt 8; $i++) {
+                while ($playerSlots[$i].Location.X -gt -300) {
+                    $playerSlots[$i].Location = New-Object System.Drawing.Point($($playerSlots[$i].Location.X-10), $playerSlots[$i].Location.Y)
+                    $playerSlots[$i].Refresh()
+                    start-sleep -Milliseconds 1
+                }
+                while ($playerSlotsSearching[$i].Location.X -lt 10) {
+                    $playerSlotsSearching[$i].Location = New-Object System.Drawing.Point($($playerSlotsSearching[$i].Location.X+10), $playerSlotsSearching[$i].Location.Y)
+                    $playerSlotsSearching[$i].Refresh()
+                    start-sleep -Milliseconds 1
+                }
+            }
+            $i=0
+            foreach ($player in $getMatch.players) {
+                $playerSlots[$i].Text = $player
+                while ($playerSlotsSearching[$i].Location.X -gt -300) {
+                    $playerSlotsSearching[$i].Location = New-Object System.Drawing.Point($($playerSlotsSearching[$i].Location.X-10), $playerSlotsSearching[$i].Location.Y)
+                    $playerSlotsSearching[$i].Refresh()
+                    start-sleep -Milliseconds 1
+                }
+                while ($playerSlots[$i].Location.X -lt 10) {
+                    $playerSlots[$i].Location = New-Object System.Drawing.Point($($playerSlots[$i].Location.X+10), $playerSlots[$i].Location.Y)
+                    $playerSlots[$i].Refresh()
+                    start-sleep -Milliseconds 1
+                }
+                $i++
+            }
+        }
+        if ($getMatch.players.count -gt $oldGetMatch.players.count) {
+            write-output "new player"
+            for($i=0; $i -lt $getMatch.players.count; $i++) {
+                $playerSlots[$i].Text = $getMatch.players[$i]
+                while ($playerSlotsSearching[$i].Location.X -gt -300) {
+                    $playerSlotsSearching[$i].Location = New-Object System.Drawing.Point($($playerSlotsSearching[$i].Location.X-10), $playerSlotsSearching[$i].Location.Y)
+                    $playerSlotsSearching[$i].Refresh()
+                    start-sleep -Milliseconds 1
+                }
+                while ($playerSlots[$i].Location.X -lt 10) {
+                    $playerSlots[$i].Location = New-Object System.Drawing.Point($($playerSlots[$i].Location.X+10), $playerSlots[$i].Location.Y)
+                    $playerSlots[$i].Refresh()
+                    start-sleep -Milliseconds 1
+                }
+            }
+        }
+        if ($getMatch.startTime -ne $null) {
+            $getMatchTimer.Stop()
+            if ($getMatch.ID -eq $null) {
+                $searchingLabel.text = "No game servers are available to host this match, try again later."
+                $searchingLabel.Refresh()
+                start-sleep -s 5
+                $searchingLabel.Dispose()
+                $global:playerInfo.Dispose()
+                $global:playerSlots.Dispose()
+                $global:getMatchTimer.Dispose()
+                $screenCover.Dispose()
+                return
+            }
+            $searchingLabel.Text = "Match ready, starting..."
+            $searchingLabel.Refresh()
+            while ([int][double](get-date -UFormat %s) -lt $getMatch.startTime) {
+                $searchingLabel.Text = "Match ready, starting in $($getMatch.startTime - [int][double](get-date -UFormat %s)) seconds..."
+                $searchingLabel.Refresh()
+                start-sleep -Milliseconds 100
+            }
+            $searchingLabel.Dispose()
+            $playSlots.Dispose()
+            $global:playerInfo.Dispose()
+            $global:playerSlots.Dispose()
+            $global:getMatchTimer.Dispose()
+            $screenCover.text = "Game running"
+            $screenCover.Refresh()
+            Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-join $($getMatch.ID)"
+        }
+        $global:oldGetMatch = $getMatch
+        $data = @{
+            action = "getMatch"
+            userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
+            userName = $config.username
+        } | ConvertTo-Json
+        $global:getMatch = Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $data
+    })
+
+    $getMatchTimer.Start()
+}
+
 $ProgressPreference = 'SilentlyContinue'
 
 [reflection.assembly]::LoadWithPartialName("System.Windows.Forms") | Out-Null
 [system.windows.forms.application]::enablevisualstyles()
-
-# if ($psversiontable.psversion.major -eq 7) {
-#     [system.windows.forms.messagebox]::Show("PowerShell 7 is not supported", "Echo Relay Server Browser", "OK", "Error")
-#     exit
-# }
 
 $file = Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/servers.json" -UseBasicParsing
 $database = $file.content | ConvertFrom-Json
@@ -522,7 +747,8 @@ $combatLoungeList.Add_CellDoubleClick({
     }
 })
 
-$combatGames = Invoke-WebRequest "http://51.75.140.182:3000/api/listGameServers/" -UseBasicParsing | ConvertFrom-Json
+$combatGames = Invoke-WebRequest "http://51.75.140.182:3000/api/listGameServers/62.68.167.123"
+$combatGames = $combatGames.content | ConvertFrom-Json
 
 
 ForEach-Object -InputObject $combatGames.gameServers {
@@ -530,8 +756,21 @@ ForEach-Object -InputObject $combatGames.gameServers {
     $combatLoungeList.Rows.Add($_.players, $_.gameMode, $_.region, $PingServer)
 }
 
-
 $combatLounge.Controls.Add($combatLoungeList)
+
+$matchmakingLabel = New-Object System.Windows.Forms.Label
+$matchmakingLabel.Size = New-Object System.Drawing.Size(200, 20)
+$matchmakingLabel.Location = New-Object System.Drawing.Point(10, 470)
+$matchmakingLabel.Text = "Matchmaking:"
+$matchmakingLabel.Font = New-Object System.Drawing.Font("Arial", 12)
+$combatLounge.Controls.Add($matchmakingLabel)
+
+$matchmakingButton = New-Object System.Windows.Forms.Button
+$matchmakingButton.Size = New-Object System.Drawing.Size(250, 35)
+$matchmakingButton.Location = New-Object System.Drawing.Point(10, 500)
+$matchmakingButton.Text = "Join Matchmaking"
+$matchmakingButton.add_click({matchmaking})
+$combatLounge.Controls.Add($matchmakingButton)
 
 $combatSideBar = New-Object System.Windows.Forms.Panel
 $combatSideBar.Size = New-Object System.Drawing.Size(385, 721)
@@ -553,6 +792,7 @@ $combatSideBar.Controls.Add($currentGameMode)
 $currentGameModeImage = New-Object System.Windows.Forms.PictureBox
 $currentGameModeImage.Size = New-Object System.Drawing.Size(340, 203)
 $currentGameModeImage.Location = New-Object System.Drawing.Point(12, 50)
+$currentGameModeImage.ImageLocation = "https://media.discordapp.net/attachments/779349591438524457/1172949792419238008/loungebanner.gif"
 $currentGameModeImage.SizeMode = 'Zoom'
 $combatSideBar.Controls.Add($currentGameModeImage)
 
@@ -784,8 +1024,15 @@ $reportServer.add_Click({
     $reportButton.Text = "Report Server"
 
     $reportButton.add_click({
+        if ($psversiontable.psversion.major -eq 7) {
+            [system.windows.forms.messagebox]::Show("PowerShell 7 is not supported", "Echo Relay Server Browser", "OK", "Error")
+            return
+        }
+
         $reportButton.Enabled = $false
         $reportButton.text = "Reporting Server..."
+        Start-Sleep -s 1
+        $reportButton.Refresh()
         $jsonData = @{
             action = "report"
             reason = $reportReasonInput.Text
@@ -1181,3 +1428,11 @@ $addServer.add_Click({
 $otherServers.Controls.Add($addServer)
 
 $menu.showDialog()
+
+$data = @{
+    action = "cancelMatchmaking"
+    userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
+    userName = $global:config.username
+} | ConvertTo-Json
+Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $data
+$getMatchTimer.Stop()
