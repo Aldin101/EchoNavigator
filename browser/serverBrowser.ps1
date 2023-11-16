@@ -371,9 +371,23 @@ function combatLoungeNotSelected {
     })
 }
 
+function stopMatchmaking {
+    $cancelMatchmaking.Dispose()
+    $searchingLabel.Dispose()
+    $screenCover.Dispose()
+    $playerSlots.Dispose()
+    $playerSlotsSearching.Dispose()
+    $cancelMatchmaking.Dispose()
+    $getMatchTimer.Dispose()
+    $voteForEarlyStart.Dispose()
+    $voteCountLabel.Dispose()
+    $otherServers.Enabled = $true
+
+}
 function matchmaking {
 
     $database.api = "http://localhost:8080/"
+    $config.username = random -Minimum 100000 -Maximum 999999
 
     $otherServers.Enabled = $false
     $global:screenCover = New-Object System.Windows.Forms.Label
@@ -410,26 +424,23 @@ function matchmaking {
     } while ($joinMatchmaker.State -eq "Running")
     $screenCover.text = ""
     $progressBar.Dispose()
-    $global:playerInfo = $joinMatchmaker | receive-job
-    $global:playerInfo = $global:playerInfo.Players
+    $global:getMatch = $joinMatchmaker | receive-job
+    $global:playerInfo = $global:getMatch.Players
     $joinMatchmaker | remove-job
 
-    #TEST
-    # $global:playerInfo = [System.Collections.ArrayList]::new()
-    # $playerInfo.Add("player1")
-    # $playerInfo.Add("player2")
-    # $playerInfo.Add("player3")
-    # $playerInfo.Add("player4")
-    # $playerInfo.Add("player5")
-    # $playerInfo.Add("player6")
-    # $playerInfo.Add("player7")
-    # $playerInfo.Add("player8")
-
+    if ($getMatch -eq $null) {
+        $screenCover.ForeColor = [System.Drawing.Color]::FromArgb(255, 255, 0, 0)
+        $screenCover.Text = "Failed to join matchmaking"
+        $screenCover.Refresh()
+        Start-Sleep -Seconds 3
+        stopMatchmaking
+        return
+    }
 
     $global:searchingLabel = New-Object System.Windows.Forms.Label
-    $searchingLabel.Size = New-Object System.Drawing.Size(300, 100)
+    $searchingLabel.Size = New-Object System.Drawing.Size(500, 70)
     $searchingLabel.Location = New-Object System.Drawing.Point(10, 10)
-    $searchingLabel.Text = "Searching for players"
+    $searchingLabel.Text = "Searching for players..."
     $searchingLabel.Font = New-Object System.Drawing.Font("Arial", 20)
     $combatLounge.Controls.Add($searchingLabel)
     $searchingLabel.BringToFront()
@@ -447,26 +458,64 @@ function matchmaking {
         $playerSlotsSearching[$i].BringToFront()
     }
 
+    $global:voteForEarlyStart = New-Object System.Windows.Forms.Button
+    $voteForEarlyStart.Size = New-Object System.Drawing.Size(200, 35)
+    $voteForEarlyStart.Location = New-Object System.Drawing.Point(10, 450)
+    $voteForEarlyStart.Text = "Vote to begin"
+    $voteForEarlyStart.Visible = $false
+    $voteForEarlyStart.add_click({
+        $voteForEarlyStart.Text = "Voting..."
+        $voteForEarlyStart.Enabled = $false
+        $voteForEarlyStart.Refresh()
+        $data=@{
+            action = "voteForEarlyStart"
+            userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
+            userName = $global:config.username
+        } | ConvertTo-Json
+        Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $data
+        $voteForEarlyStart.text = "Voted!"
+        $voteCountLabel.Text = "$($getMatch.voted.count+1)/$($getMatch.neededToStart)"
+        foreach ($playerSlot in $playerSlots) {
+            if ($config.username -eq $playerSlot.Text) {
+                $playerSlot.BackColor = [System.Drawing.Color]::FromArgb(100, 0, 255, 0)
+                $playerSlot.Refresh()
+            }
+        }
+        $voteForEarlyStart.Refresh()
+        $voteCountLabel.Refresh()
+    })
+    $combatLounge.Controls.Add($voteForEarlyStart)
+    $voteForEarlyStart.BringToFront()
+
+    $global:voteCountLabel = New-Object System.Windows.Forms.Label
+    $voteCountLabel.Size = New-Object System.Drawing.Size(200, 35)
+    $voteCountLabel.Location = New-Object System.Drawing.Point(220, 450)
+    $voteCountLabel.Text = "$($getMatch.voted.count)/Loading..."
+    $voteCountLabel.Font = New-Object System.Drawing.Font("Arial", 20)
+    $voteCountLabel.Visible = $false
+    $combatLounge.Controls.Add($voteCountLabel)
+    $voteCountLabel.BringToFront()
+
+    if ($getMatch.players.count -gt 3) {
+        $voteForEarlyStart.Visible = $true
+        $voteCountLabel.Visible = $true
+    } else {
+        $voteForEarlyStart.Visible = $false
+        $voteCountLabel.Visible = $false
+    }
+
     $global:cancelMatchmaking = New-Object System.Windows.Forms.Button
     $cancelMatchmaking.Size = New-Object System.Drawing.Size(200, 35)
     $cancelMatchmaking.Location = New-Object System.Drawing.Point(10, 600)
     $cancelMatchmaking.Text = "Cancel Matchmaking"
     $cancelMatchmaking.add_click({
-        $cancelMatchmaking.Dispose()
-        $searchingLabel.Dispose()
-        $playSlots.Dispose()
-        $screenCover.Dispose()
-        $global:playerSlots.Dispose()
-        $global:playerSlotsSearching.Dispose()
-        $otherServers.Enabled = $true
-        $cancelMatchmaking.Dispose()
-        $cancelMatchmaking = $null
         $data = @{
             action = "cancelMatchmaking"
             userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
             userName = $global:config.username
         } | ConvertTo-Json
         Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $data
+        stopMatchmaking
     })
     $combatLounge.Controls.Add($cancelMatchmaking)
     $cancelMatchmaking.BringToFront()
@@ -477,7 +526,7 @@ function matchmaking {
         $playerSlots[$i].Size = New-Object System.Drawing.Size(200, 35)
         $playerSlots[$i].Location = New-Object System.Drawing.Point(-300, (100+$i*40))
         $playerSlots[$i].Text = $playerInfo[$i]
-        $playerSlots[$i].BackColor = [System.Drawing.Color]::FromArgb(100, 0, 0, 0)
+        $playerSlots[$i].BackColor = [System.Drawing.Color]::FromArgb(100, 0, 0, 255)
         $playerSlots[$i].BorderStyle = 'FixedSingle'
         $playerSlots[$i].Font = New-Object System.Drawing.Font("Arial", 20)
         $combatLounge.Controls.Add($playerSlots[$i])
@@ -510,32 +559,43 @@ function matchmaking {
     $getMatchTimer.add_Tick({
         if ($getMatch.players.count -lt $oldGetMatch.players.count) {
             write-output "player left"
-            for($i=0; $i -lt 8; $i++) {
-                while ($playerSlots[$i].Location.X -gt -300) {
-                    $playerSlots[$i].Location = New-Object System.Drawing.Point($($playerSlots[$i].Location.X-10), $playerSlots[$i].Location.Y)
-                    $playerSlots[$i].Refresh()
-                    start-sleep -Milliseconds 1
+            foreach ($slot in $playerSlotsSearching) {
+                if ($slot.Location.X -lt 10) {
+                    $slot.Location = New-Object System.Drawing.Point(10, $slot.Location.Y)
+                    $slot.Refresh()
                 }
-                while ($playerSlotsSearching[$i].Location.X -lt 10) {
-                    $playerSlotsSearching[$i].Location = New-Object System.Drawing.Point($($playerSlotsSearching[$i].Location.X+10), $playerSlotsSearching[$i].Location.Y)
-                    $playerSlotsSearching[$i].Refresh()
+            }
+            for($i=0; $i -lt 8; $i++) {
+                while ($playerSlots[0].Location.X -gt -300) {
+                    foreach ($slot in $playerSlots) {
+                        if ($slot.Location.X -gt -300) {
+                            $slot.Location = New-Object System.Drawing.Point($($slot.Location.X-10), $slot.Location.Y)
+                            $slot.Refresh()
+                        }
+                    }
                     start-sleep -Milliseconds 1
                 }
             }
+            foreach ($slot in $playerSlots) {
+                $slot.Text = ""
+                $slot.Refresh()
+            }
+            for($i=0; $i -lt $getMatch.players.count; $i++) {
+                $playerSlots[$i].Text = $getMatch.players[$i]
+            }
             $i=0
-            foreach ($player in $getMatch.players) {
-                $playerSlots[$i].Text = $player
-                while ($playerSlotsSearching[$i].Location.X -gt -300) {
-                    $playerSlotsSearching[$i].Location = New-Object System.Drawing.Point($($playerSlotsSearching[$i].Location.X-10), $playerSlotsSearching[$i].Location.Y)
-                    $playerSlotsSearching[$i].Refresh()
-                    start-sleep -Milliseconds 1
+            while ($playerSlots[0].Location.X -lt 10) {
+                foreach ($slot in $playerSlots) {
+                    if ($slot.Location.X -lt 10 -and $getMatch.players -contains $slot.Text) {
+                        $slot.Location = New-Object System.Drawing.Point($($slot.Location.X+10), $slot.Location.Y)
+                        $slot.Refresh()
+                    }
                 }
-                while ($playerSlots[$i].Location.X -lt 10) {
-                    $playerSlots[$i].Location = New-Object System.Drawing.Point($($playerSlots[$i].Location.X+10), $playerSlots[$i].Location.Y)
-                    $playerSlots[$i].Refresh()
-                    start-sleep -Milliseconds 1
-                }
-                $i++
+                start-sleep -Milliseconds 1
+            }
+            for($i=0; $i -lt $getMatch.players.count; $i++) {
+                $playerSlotsSearching[$i].Location = New-Object System.Drawing.Point(-300, $playerSlotsSearching[$i].Location.Y)
+                $playerSlotsSearching[$i].Refresh()
             }
         }
         if ($getMatch.players.count -gt $oldGetMatch.players.count) {
@@ -554,34 +614,61 @@ function matchmaking {
                 }
             }
         }
+        if ($getMatch.players.count -gt 3) {
+            $voteForEarlyStart.Visible = $true
+            $voteCountLabel.Visible = $true
+            $voteCountLabel.Text = "$($getMatch.voted.count)/$($getMatch.neededToStart)"
+            foreach ($playerSlot in $playerSlots) {
+                if ($getMatch.voted -notcontains $playerSlot.Text) {
+                    $playerSlot.BackColor = [System.Drawing.Color]::FromArgb(100, 255, 0, 0)
+                    $playerSlot.Refresh()
+                } else {
+                    $playerSlot.BackColor = [System.Drawing.Color]::FromArgb(100, 0, 255, 0)
+                    $playerSlot.Refresh()
+                }
+            }
+        } else {
+            $voteForEarlyStart.Visible = $false
+            $voteCountLabel.Visible = $false
+        }
         if ($getMatch.startTime -ne $null) {
             $getMatchTimer.Stop()
             if ($getMatch.ID -eq $null) {
                 $searchingLabel.text = "No game servers are available to host this match, try again later."
                 $searchingLabel.Refresh()
                 start-sleep -s 5
-                $searchingLabel.Dispose()
-                $global:playerInfo.Dispose()
-                $global:playerSlots.Dispose()
-                $global:getMatchTimer.Dispose()
-                $screenCover.Dispose()
+                stopMatchmaking
                 return
             }
-            $searchingLabel.Text = "Match ready, starting..."
+            $searchingLabel.Text = "Match ready, preparing..."
             $searchingLabel.Refresh()
-            while ([int][double](get-date -UFormat %s) -lt $getMatch.startTime) {
-                $searchingLabel.Text = "Match ready, starting in $($getMatch.startTime - [int][double](get-date -UFormat %s)) seconds..."
+            while ([int][double]::Parse((Get-Date (get-date).ToUniversalTime() -UFormat %s)) -lt $getMatch.startTime) {
+                $searchingLabel.Text = "Match ready, starting in $([int](($getMatch.startTime - (Get-Date (get-date).ToUniversalTime() -UFormat %s)))) seconds..."
+                if ($searchingLabel.Text -eq "Match ready, starting in 1 seconds...") {
+                    $searchingLabel.Text = "Match ready, starting in 1 second..."
+                }
                 $searchingLabel.Refresh()
                 start-sleep -Milliseconds 100
             }
-            $searchingLabel.Dispose()
-            $playSlots.Dispose()
-            $global:playerInfo.Dispose()
-            $global:playerSlots.Dispose()
-            $global:getMatchTimer.Dispose()
+            $global:getMatchTimer.stop()
             $screenCover.text = "Game running"
+            $screenCover.BringToFront()
             $screenCover.Refresh()
-            Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-join $($getMatch.ID)"
+            $global:job = start-job ({
+                param($getMatch, $config)
+                Start-Process "$($config.gamePath)\bin\win10\EchoVR.exe" -wait #-ArgumentList "-join $($getMatch.ID)"
+                return
+            }) -ArgumentList $getMatch, $global:config
+            $global:gameRunTimer = New-Object System.Windows.Forms.Timer
+            $gameRunTimer.Interval = 1000
+            $gameRunTimer.add_tick({
+                if ($job.state -ne "Running") {
+                    Remove-Job $job
+                    $gameRunTimer.Stop()
+                    stopMatchmaking
+                }
+            })
+            $gameRunTimer.Start()
         }
         $global:oldGetMatch = $getMatch
         $data = @{
@@ -589,7 +676,41 @@ function matchmaking {
             userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
             userName = $config.username
         } | ConvertTo-Json
-        $global:getMatch = Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $data
+        try {
+            $global:getMatch = Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $data
+
+            $searchingLabel.text = "Searching for players..."
+            $searchingLabel.ForeColor = [System.Drawing.Color]::FromArgb(255, 0, 0, 0)
+            $searchingLabel.BackColor = [System.Drawing.Color]::Transparent
+            $searchingLabel.Refresh()
+        }
+        catch {
+            if ($searchingLabel.text -eq "Searching for players...`nThe connection is unstable") {
+                $getMatchTimer.Stop()
+                $screenCover.text = "`nA communication error has occurred."
+                $screenCover.ForeColor = [System.Drawing.Color]::FromArgb(100, 255, 0, 0)
+                $screenCover.bringToFront()
+                $screenCover.Refresh()
+
+                $global:commErrorOK = New-Object System.Windows.Forms.Button
+                $commErrorOK.Size = New-Object System.Drawing.Size(200, 35)
+                $commErrorOK.Location = New-Object System.Drawing.Point(10, 600)
+                $commErrorOK.Text = "OK"
+                $commErrorOK.add_click({
+                    $commErrorOK.Dispose()
+                    stopMatchmaking
+                })
+                $combatLounge.Controls.Add($commErrorOK)
+                $commErrorOK.BringToFront()
+
+                return
+            }
+            $searchingLabel.text = "Searching for players...`nThe connection is unstable"
+            $searchingLabel.ForeColor = [System.Drawing.Color]::FromArgb(100, 255, 255, 0)
+            $searchingLabel.BackColor = [System.Drawing.Color]::FromArgb(100, 0, 0, 0)
+            $searchingLabel.Refresh()
+            $global:getMatch = $oldGetMatch
+        }
     })
 
     $getMatchTimer.Start()
@@ -1436,3 +1557,4 @@ $data = @{
 } | ConvertTo-Json
 Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $data
 $getMatchTimer.Stop()
+$gameRunTimer.Stop()
