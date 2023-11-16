@@ -386,7 +386,6 @@ function stopMatchmaking {
 }
 function matchmaking {
 
-    $database.api = "http://localhost:8080/"
     $config.username = random -Minimum 100000 -Maximum 999999
 
     $otherServers.Enabled = $false
@@ -433,6 +432,24 @@ function matchmaking {
         $screenCover.Text = "Failed to join matchmaking"
         $screenCover.Refresh()
         Start-Sleep -Seconds 3
+        stopMatchmaking
+        return
+    }
+
+    if ($getMatch.players.count -gt 8) {
+        $getMatchTimer.Interval = 99999
+        $getMatchTimer.stop()
+        $screenCover.text = "`nAn error has occurred."
+        $screenCover.ForeColor = [System.Drawing.Color]::FromArgb(100, 255, 0, 0)
+        $screenCover.bringToFront()
+        $screenCover.Refresh()
+        Start-Sleep -Seconds 3
+        $data = @{
+            action = "getMatch"
+            userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
+            userName = "Join error"
+        } | ConvertTo-Json
+        Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $data
         stopMatchmaking
         return
     }
@@ -557,6 +574,28 @@ function matchmaking {
     $getMatchTimer.Interval = 3000
 
     $getMatchTimer.add_Tick({
+        if ($getMatch.players.count -gt 8) {
+            $getMatchTimer.Stop()
+            $getMatchTimer.Interval = 99999
+            $screenCover.text = "`nAn error has occurred."
+            $screenCover.ForeColor = [System.Drawing.Color]::FromArgb(100, 255, 0, 0)
+            $screenCover.bringToFront()
+            $screenCover.Refresh()
+
+            $global:ErrorOK = New-Object System.Windows.Forms.Button
+            $ErrorOK.Size = New-Object System.Drawing.Size(200, 35)
+            $ErrorOK.Location = New-Object System.Drawing.Point(10, 600)
+            $ErrorOK.Text = "OK"
+            $ErrorOK.add_click({
+                stopMatchmaking
+                $ErrorOK.Dispose()
+            })
+            $combatLounge.Controls.Add($ErrorOK)
+            $ErrorOK.BringToFront()
+            $ErrorOK.Refresh()
+
+            return
+        }
         if ($getMatch.players.count -lt $oldGetMatch.players.count) {
             write-output "player left"
             foreach ($slot in $playerSlotsSearching) {
@@ -640,8 +679,6 @@ function matchmaking {
                 stopMatchmaking
                 return
             }
-            $searchingLabel.Text = "Match ready, preparing..."
-            $searchingLabel.Refresh()
             while ([int][double]::Parse((Get-Date (get-date).ToUniversalTime() -UFormat %s)) -lt $getMatch.startTime) {
                 $searchingLabel.Text = "Match ready, starting in $([int](($getMatch.startTime - (Get-Date (get-date).ToUniversalTime() -UFormat %s)))) seconds..."
                 if ($searchingLabel.Text -eq "Match ready, starting in 1 seconds...") {
@@ -683,9 +720,8 @@ function matchmaking {
             $searchingLabel.ForeColor = [System.Drawing.Color]::FromArgb(255, 0, 0, 0)
             $searchingLabel.BackColor = [System.Drawing.Color]::Transparent
             $searchingLabel.Refresh()
-        }
-        catch {
-            if ($searchingLabel.text -eq "Searching for players...`nThe connection is unstable") {
+        } catch {
+            if ($searchingLabel.text -eq "Searching for players...`nThe connection is unstable!") {
                 $getMatchTimer.Stop()
                 $screenCover.text = "`nA communication error has occurred."
                 $screenCover.ForeColor = [System.Drawing.Color]::FromArgb(100, 255, 0, 0)
@@ -705,11 +741,14 @@ function matchmaking {
 
                 return
             }
-            $searchingLabel.text = "Searching for players...`nThe connection is unstable"
+            $searchingLabel.text = "Searching for players...`nThe connection is unstable!"
             $searchingLabel.ForeColor = [System.Drawing.Color]::FromArgb(100, 255, 255, 0)
             $searchingLabel.BackColor = [System.Drawing.Color]::FromArgb(100, 0, 0, 0)
             $searchingLabel.Refresh()
-            $global:getMatch = $oldGetMatch
+        }
+        if ($getMatch.players.count -eq 8 -and $searchingLabel.text -ne "Searching for players...`nThe connection is unstable!" -and $match.startTime -eq $null) {
+            $searchingLabel.text = "Match ready, preparing..."
+            $searchingLabel.Refresh()
         }
     })
 
