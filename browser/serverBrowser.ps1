@@ -569,11 +569,11 @@ function matchmaking {
         $playerSlots[$i].Location = New-Object System.Drawing.Point($(10), $playerSlots[$i].Location.Y)
         $i++
     }
-
     $global:getMatchTimer = New-Object System.Windows.Forms.Timer
     $getMatchTimer.Interval = 3000
 
     $getMatchTimer.add_Tick({
+        $global:oldGetMatch = $getMatch
         $data = @{
             action = "getMatch"
             userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
@@ -750,7 +750,6 @@ function matchmaking {
             })
             $gameRunTimer.Start()
         }
-        $global:oldGetMatch = $getMatch
     })
 
     $getMatchTimer.Start()
