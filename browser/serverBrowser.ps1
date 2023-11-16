@@ -574,6 +574,49 @@ function matchmaking {
     $getMatchTimer.Interval = 3000
 
     $getMatchTimer.add_Tick({
+        $data = @{
+            action = "getMatch"
+            userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
+            userName = $config.username
+        } | ConvertTo-Json
+        try {
+            $global:getMatch = Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $data
+
+            $searchingLabel.text = "Searching for players..."
+            $searchingLabel.ForeColor = [System.Drawing.Color]::FromArgb(255, 0, 0, 0)
+            $searchingLabel.BackColor = [System.Drawing.Color]::Transparent
+            $searchingLabel.Refresh()
+        } catch {
+            if ($searchingLabel.text -eq "Searching for players...`nThe connection is unstable!") {
+                $getMatchTimer.Stop()
+                $screenCover.text = "`nA communication error has occurred."
+                $screenCover.ForeColor = [System.Drawing.Color]::FromArgb(100, 255, 0, 0)
+                $screenCover.bringToFront()
+                $screenCover.Refresh()
+
+                $global:commErrorOK = New-Object System.Windows.Forms.Button
+                $commErrorOK.Size = New-Object System.Drawing.Size(200, 35)
+                $commErrorOK.Location = New-Object System.Drawing.Point(10, 600)
+                $commErrorOK.Text = "OK"
+                $commErrorOK.add_click({
+                    $commErrorOK.Dispose()
+                    stopMatchmaking
+                })
+                $combatLounge.Controls.Add($commErrorOK)
+                $commErrorOK.BringToFront()
+
+                return
+            }
+            $searchingLabel.text = "Searching for players...`nThe connection is unstable!"
+            $searchingLabel.ForeColor = [System.Drawing.Color]::FromArgb(100, 255, 255, 0)
+            $searchingLabel.BackColor = [System.Drawing.Color]::FromArgb(100, 0, 0, 0)
+            $searchingLabel.Refresh()
+        }
+        if ($getMatch.players.count -eq 8 -and $searchingLabel.text -ne "Searching for players...`nThe connection is unstable!" -and $match.startTime -eq $null) {
+            $searchingLabel.text = "Match ready, preparing..."
+            $searchingLabel.Refresh()
+        }
+
         if ($getMatch.players.count -gt 8) {
             $getMatchTimer.Stop()
             $getMatchTimer.Interval = 99999
@@ -708,48 +751,6 @@ function matchmaking {
             $gameRunTimer.Start()
         }
         $global:oldGetMatch = $getMatch
-        $data = @{
-            action = "getMatch"
-            userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
-            userName = $config.username
-        } | ConvertTo-Json
-        try {
-            $global:getMatch = Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $data
-
-            $searchingLabel.text = "Searching for players..."
-            $searchingLabel.ForeColor = [System.Drawing.Color]::FromArgb(255, 0, 0, 0)
-            $searchingLabel.BackColor = [System.Drawing.Color]::Transparent
-            $searchingLabel.Refresh()
-        } catch {
-            if ($searchingLabel.text -eq "Searching for players...`nThe connection is unstable!") {
-                $getMatchTimer.Stop()
-                $screenCover.text = "`nA communication error has occurred."
-                $screenCover.ForeColor = [System.Drawing.Color]::FromArgb(100, 255, 0, 0)
-                $screenCover.bringToFront()
-                $screenCover.Refresh()
-
-                $global:commErrorOK = New-Object System.Windows.Forms.Button
-                $commErrorOK.Size = New-Object System.Drawing.Size(200, 35)
-                $commErrorOK.Location = New-Object System.Drawing.Point(10, 600)
-                $commErrorOK.Text = "OK"
-                $commErrorOK.add_click({
-                    $commErrorOK.Dispose()
-                    stopMatchmaking
-                })
-                $combatLounge.Controls.Add($commErrorOK)
-                $commErrorOK.BringToFront()
-
-                return
-            }
-            $searchingLabel.text = "Searching for players...`nThe connection is unstable!"
-            $searchingLabel.ForeColor = [System.Drawing.Color]::FromArgb(100, 255, 255, 0)
-            $searchingLabel.BackColor = [System.Drawing.Color]::FromArgb(100, 0, 0, 0)
-            $searchingLabel.Refresh()
-        }
-        if ($getMatch.players.count -eq 8 -and $searchingLabel.text -ne "Searching for players...`nThe connection is unstable!" -and $match.startTime -eq $null) {
-            $searchingLabel.text = "Match ready, preparing..."
-            $searchingLabel.Refresh()
-        }
     })
 
     $getMatchTimer.Start()
