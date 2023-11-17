@@ -701,6 +701,13 @@ $infoCheckBox.Location = New-Object System.Drawing.Size(220,240)
 $infoCheckBox.Size = New-Object System.Drawing.Size(2000,20)
 $infoCheckBox.Text = "I have read and understand the above notice"
 $infoCheckBox.Font = "Microsoft Sans Serif,10"
+
+$infoCheckBox.Add_KeyDown({
+    if ($_.KeyCode -eq "Enter") {
+        $infoCheckBox.Checked = !$infoCheckBox.Checked
+    }
+})
+
 $menu.Controls.add($infoCheckBox)
 
 

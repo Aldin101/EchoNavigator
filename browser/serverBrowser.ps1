@@ -513,16 +513,6 @@ function matchmaking {
     $combatLounge.Controls.Add($voteCountLabel)
     $voteCountLabel.BringToFront()
 
-    if ($getMatch.players.count -gt 3) {
-        if ($voteBanner.Visible -eq $false) {
-            $voteForEarlyStart.Visible = $true
-            $voteCountLabel.Visible = $true
-        }
-    } else {
-        $voteForEarlyStart.Visible = $false
-        $voteCountLabel.Visible = $false
-    }
-
     $global:voteBanner = New-Object system.windows.forms.label
     $voteBanner.Size = New-Object System.Drawing.Size(350,600)
     $voteBanner.Location = New-Object System.Drawing.Point(-350, -600)
@@ -1345,6 +1335,85 @@ $serverList.Add_CellDoubleClick({
 })
 
 $otherServers.Controls.Add($serverList)
+
+$refresh = New-Object System.Windows.Forms.Button
+# $refresh.Size = New-Object System.Drawing.Size(165, 50)
+$refresh.Location = New-Object System.Drawing.Point(575, 25)
+$refresh.Text = "Refresh"
+$refresh.TabIndex = 4
+$refresh.Font = New-Object System.Drawing.Font("Arial", 10)
+$refresh.add_click({
+    $refresh.Enabled = $false
+    $refresh.text = "Refreshing..."
+    $refresh.Update()
+    $file = Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/servers.json" -UseBasicParsing
+    $global:database = $file.content | ConvertFrom-Json
+    if ($showOfflineServers.Checked -eq $true) {
+        $i=0
+        $newList = [System.Collections.ArrayList]@($database.online)
+        foreach ($server in $database.offline) {
+            $newList.Add($server)
+        }
+        $database.online = $newList.ToArray()
+        $serverList.RowCount = $database.online.Count
+        foreach ($server in $database.online) {
+            $serverList.Rows[$i].Cells[0].Value = $server.name
+            $serverList.Rows[$i].Cells[1].Value = $server.description
+            ++$i
+        }
+    } else {
+        $serverList.RowCount = $database.online.Count
+        $i=0
+        foreach ($server in $database.online) {
+            $serverList.Rows[$i].Cells[0].Value = $server.name
+            $serverList.Rows[$i].Cells[1].Value = $server.description
+            ++$i
+        }
+    }
+    $refresh.text = "Refresh"
+    $refresh.Enabled = $true
+})
+$otherServers.controls.add($refresh)
+
+$showOfflineServers = New-Object System.Windows.Forms.CheckBox
+$showOfflineServers.Size = New-Object System.Drawing.Size(250, 20)
+$showOfflineServers.Location = New-Object System.Drawing.Point(657, 27)
+$showOfflineServers.Text = "Show Offline Servers"
+$showOfflineServers.Font = New-Object System.Drawing.Font("Arial", 10)
+$showOfflineServers.add_CheckedChanged({
+    if ($showOfflineServers.Checked -eq $true) {
+        $i=0
+        $newList = [System.Collections.ArrayList]@($database.online)
+        foreach ($server in $database.offline) {
+            $newList.Add($server)
+        }
+        $database.online = $newList.ToArray()
+        $serverList.RowCount = $database.online.Count
+        foreach ($server in $database.online) {
+            $serverList.Rows[$i].Cells[0].Value = $server.name
+            $serverList.Rows[$i].Cells[1].Value = $server.description
+            ++$i
+        }
+    } else {
+        $file = Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/servers.json" -UseBasicParsing
+        $global:database = $file.content | ConvertFrom-Json
+        $serverList.RowCount = $database.online.Count
+        $i=0
+        foreach ($server in $database.online) {
+            $serverList.Rows[$i].Cells[0].Value = $server.name
+            $serverList.Rows[$i].Cells[1].Value = $server.description
+            ++$i
+        }
+    }
+})
+
+$showOfflineServers.Add_KeyDown({
+    if ($e.KeyCode -eq 'Enter') {
+        $showOfflineServers.Checked = !$showOfflineServers.Checked
+    }
+})
+
+$otherServers.Controls.Add($showOfflineServers)
 
 $clientServersLabel = New-Object System.Windows.Forms.Label
 $clientServersLabel.Size = New-Object System.Drawing.Size(2500, 20)
