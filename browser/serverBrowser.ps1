@@ -392,7 +392,7 @@ function matchmaking {
     $global:screenCover = New-Object System.Windows.Forms.Label
     $screenCover.Size = New-Object System.Drawing.Size(1280, 720)
     $screenCover.Location = New-Object System.Drawing.Point(0, -80)
-    $screenCover.Text = "Finding Match"
+    $screenCover.Text = "Connecting"
     $screenCover.TextAlign = 'MiddleCenter'
     $screenCover.Font = New-Object System.Drawing.Font("Arial", 50)
     $combatLounge.Controls.Add($screenCover)
@@ -429,7 +429,7 @@ function matchmaking {
 
     if ($getMatch -eq $null) {
         $screenCover.ForeColor = [System.Drawing.Color]::FromArgb(255, 255, 0, 0)
-        $screenCover.Text = "Failed to join matchmaking"
+        $screenCover.Text = "`nCould not connect to the matchmaking server."
         $screenCover.Refresh()
         Start-Sleep -Seconds 3
         stopMatchmaking
@@ -514,12 +514,26 @@ function matchmaking {
     $voteCountLabel.BringToFront()
 
     if ($getMatch.players.count -gt 3) {
-        $voteForEarlyStart.Visible = $true
-        $voteCountLabel.Visible = $true
+        if ($voteBanner.Visible -eq $false) {
+            $voteForEarlyStart.Visible = $true
+            $voteCountLabel.Visible = $true
+        }
     } else {
         $voteForEarlyStart.Visible = $false
         $voteCountLabel.Visible = $false
     }
+
+    $global:voteBanner = New-Object system.windows.forms.label
+    $voteBanner.Size = New-Object System.Drawing.Size(350,600)
+    $voteBanner.Location = New-Object System.Drawing.Point(-350, -600)
+    $voteBanner.Text = "Voting available!"
+    $voteBanner.TextAlign = 'MiddleCenter'
+    $voteBanner.Font = New-Object System.Drawing.Font("Arial", 25)
+    $voteBanner.ForeColor = [System.Drawing.Color]::FromArgb(255,255,255)
+    $voteBanner.BackColor = [System.Drawing.Color]::FromArgb(0,0,139)
+    $voteBanner.Visible = $false
+    $combatLounge.Controls.Add($voteBanner)
+    $voteBanner.BringToFront()
 
     $global:cancelMatchmaking = New-Object System.Windows.Forms.Button
     $cancelMatchmaking.Size = New-Object System.Drawing.Size(200, 35)
@@ -697,19 +711,41 @@ function matchmaking {
             }
         }
         if ($getMatch.players.count -gt 3) {
-            $voteForEarlyStart.Visible = $true
-            $voteCountLabel.Visible = $true
-            $voteCountLabel.Text = "$($getMatch.voted.count)/$($getMatch.neededToStart)"
-            foreach ($playerSlot in $playerSlots) {
-                if ($getMatch.voted -notcontains $playerSlot.Text) {
-                    $playerSlot.BackColor = [System.Drawing.Color]::FromArgb(100, 255, 0, 0)
-                    $playerSlot.Refresh()
-                } else {
-                    $playerSlot.BackColor = [System.Drawing.Color]::FromArgb(100, 0, 255, 0)
-                    $playerSlot.Refresh()
+            if ($voteBanner.Visible -eq $false) {
+                $voteBanner.Visible = $true
+                $voteBanner.BringToFront()
+                while ($voteBanner.Location.X -lt 10) {
+                    $moveX = ($voteBanner.Location.X-10)*($voteBanner.Location.X-10)
+                    $moveY = ($voteBanner.Location.Y-10)*($voteBanner.Location.Y-10)
+                    $moveX = ($moveX/5000)+1
+                    $moveY = ($moveY/5000)+1
+                    $voteBanner.Location = New-Object System.Drawing.Point($($voteBanner.Location.X+$moveX), $($voteBanner.Location.Y+$moveY))
+                    $combatLounge.Refresh()
+                    start-sleep -Milliseconds 1
+                }
+                $voteForEarlyStart.Visible = $true
+                $voteCountLabel.Visible = $true
+                $voteCountLabel.Text = "$($getMatch.voted.count)/$($getMatch.neededToStart)"
+                foreach ($playerSlot in $playerSlots) {
+                    if ($getMatch.voted -notcontains $playerSlot.Text) {
+                        $playerSlot.BackColor = [System.Drawing.Color]::FromArgb(100, 255, 0, 0)
+                        $playerSlot.Refresh()
+                    } else {
+                        $playerSlot.BackColor = [System.Drawing.Color]::FromArgb(100, 0, 255, 0)
+                        $playerSlot.Refresh()
+                    }
+                }
+                while ($voteBanner.Location.X -lt 2000) {
+                    $move = ($voteBanner.Location.X-10)*($voteBanner.Location.X-10)
+                    $move = ($move/1000)+1
+                    $voteBanner.Location = New-Object System.Drawing.Point($($voteBanner.Location.X+$move), $($voteBanner.Location.Y+$move))
+                    $combatLounge.Refresh()
+                    start-sleep -Milliseconds 1
                 }
             }
         } else {
+            $voteBanner.Visible = $false
+            $voteBanner.Location = New-Object System.Drawing.Point(-350, -600)
             $voteForEarlyStart.Visible = $false
             $voteCountLabel.Visible = $false
         }
