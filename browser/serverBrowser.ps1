@@ -138,7 +138,7 @@ function questPatcher {
             $devices = & $adb devices
             $devices = $devices -split "`n"
             if ($devices.count -lt 3) {
-                $noDevice = [System.Windows.Forms.MessageBox]::show("No device detected, make sure your Quest is connected to your PC and developer mode and debug mode are enabled (Google: How to enable developer mode on quest).`n`nIf these things have been done check your headset for a USB debugging message.`n`nIf it still is not working try restarting the headset.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
+                $noDevice = [System.Windows.Forms.MessageBox]::show("No device detected, make sure your Quest is connected to your PC and developer mode and debug mode are enabled (Google: How to enable developer mode on quest).`n`nIf these things have been done check your headset for a USB debugging message.`n`nIf it still is not working try restarting the headset.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Information)
                 if ($noDevice -eq "Cancel") {
                     $patchEchoVR.text = "Try again"
                     $installProgress.Visible = $false
@@ -254,7 +254,7 @@ function joinServer {
     } else {
         $gameConfig | convertto-json | set-content "$($global:config.gamePath)\_local\config.json"
     }
-    if ($selectPlay.enabled -eq $true) {
+    if ($selectPlay.enabled -eq $true -and $config.quest -eq $null) {
         [system.windows.forms.messagebox]::Show("You will now load into $($database.online[$global:rowIndex].name) when you start Echo VR", "Echo Relay Server Browser", "OK", "Information")
     }
 }
@@ -324,13 +324,13 @@ function clientJoinServer {
     $gameConfig | Add-Member -Name 'serverdb_host' -Type NoteProperty -Value "ws://$($global:config.servers[$global:RowIndex].ip):$($global:config.servers[$global:RowIndex].port)/serverdb"
     $gameConfig | Add-Member -Name 'transactionservice_host' -Type NoteProperty -Value "ws://$($global:config.servers[$global:RowIndex].ip):$($global:config.servers[$global:RowIndex].port)/transaction"
     $gameConfig | Add-Member -Name 'publisher_lock' -Type NoteProperty -Value 'rad15_live'
-    if ($quest) {
+    if ($config.quest) {
         $gameConfig | ConvertTo-Json | Set-Content "$($config.quest)\config.json"
         questPatcher
     } else {
         $gameConfig | convertto-json | set-content "$($global:config.gamePath)\_local\config.json"
     }
-    if ($selectPlay.enabled -eq $true) {
+    if ($selectPlay.enabled -eq $true -and $config.quest -eq $null) {
         [system.windows.forms.messagebox]::Show("You will now load into $($config.servers[$global:rowIndex].name) when you start Echo VR", "Echo Relay Server Browser", "OK", "Information")
     }
 }
@@ -1077,7 +1077,7 @@ if ($database -eq $null) {
 
 if ((get-item -path "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe").VersionInfo.FileVersion -ne $database.currentVersion -and (get-item -path $($global:config.quest)).VersionInfo.FileVersion -ne $database.currentVersion) {
     taskkill /f /im "Echo Relay Server Browser.exe"
-    if ($quest) {
+    if ($config.quest) {
         remove-item "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe"
         Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/Echo%20Relay%20Server%20Browser.exe" -OutFile "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe"
         start-process "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe"
