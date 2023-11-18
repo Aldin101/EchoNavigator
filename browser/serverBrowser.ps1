@@ -1,6 +1,7 @@
 start-sleep -s 3
 
 function questPatcher {
+    $global:gamePatched = $false
 
     $global:questPatcherMenu = New-Object System.Windows.Forms.Form
     $questPatcherMenu.Text = "Echo Relay Server Browser"
@@ -138,7 +139,7 @@ function questPatcher {
             $devices = & $adb devices
             $devices = $devices -split "`n"
             if ($devices.count -lt 3) {
-                $noDevice = [System.Windows.Forms.MessageBox]::show("No device detected, make sure your Quest is connected to your PC and developer mode and debug mode are enabled (Google: How to enable developer mode on quest).`n`nIf these things have been done check your headset for a USB debugging message.`n`nIf it still is not working try restarting the headset.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Information)
+                $noDevice = [System.Windows.Forms.MessageBox]::show("No device detected, make sure your Quest is connected to your PC and developer mode and debug mode are enabled (Google: How to enable developer mode on quest).`n`nIf these things have been done check your headset for a USB debugging message.`n`nIf it still is not working try restarting the headset.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
                 if ($noDevice -eq "Cancel") {
                     $patchEchoVR.text = "Try again"
                     $installProgress.Visible = $false
@@ -153,7 +154,7 @@ function questPatcher {
         while (1) {
             $devices = & $adb devices
             if ($devices[1] -like "*unauthorized") {
-                $noDevice = [System.Windows.Forms.MessageBox]::show("Please accept the prompt in your headset", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
+                $noDevice = [System.Windows.Forms.MessageBox]::show("Please accept the prompt in your headset", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Information)
                 if ($noDevice -eq "Cancel") {
                     $patchEchoVR.text = "Try again"
                     $installProgress.Visible = $false
@@ -178,6 +179,7 @@ function questPatcher {
         taskkill /f /im EchoRewind.exe
         & $adb install "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk"
         $questPatcherMenu.Close()
+        $gamePatched = $true
     })
     $questPatcherMenu.Controls.Add($patchEchoVR)
 
@@ -254,7 +256,7 @@ function joinServer {
     } else {
         $gameConfig | convertto-json | set-content "$($global:config.gamePath)\_local\config.json"
     }
-    if ($selectPlay.enabled -eq $true -and $config.quest -eq $null) {
+    if ($selectPlay.enabled -eq $true -or $config.quest -ne $null -and $global:gamePatched -eq $true) {
         [system.windows.forms.messagebox]::Show("You will now load into $($database.online[$global:rowIndex].name) when you start Echo VR", "Echo Relay Server Browser", "OK", "Information")
     }
 }
@@ -330,7 +332,7 @@ function clientJoinServer {
     } else {
         $gameConfig | convertto-json | set-content "$($global:config.gamePath)\_local\config.json"
     }
-    if ($selectPlay.enabled -eq $true -and $config.quest -eq $null) {
+    if ($selectPlay.enabled -eq $true -or $config.quest -ne $null -and $global:gamePatched -eq $true) {
         [system.windows.forms.messagebox]::Show("You will now load into $($config.servers[$global:rowIndex].name) when you start Echo VR", "Echo Relay Server Browser", "OK", "Information")
     }
 }
