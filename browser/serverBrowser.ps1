@@ -1,4 +1,187 @@
-#start-sleep -s 3
+start-sleep -s 3
+
+function questPatcher {
+
+    $global:questPatcherMenu = New-Object System.Windows.Forms.Form
+    $questPatcherMenu.Text = "Echo Relay Server Browser"
+    $questPatcherMenu.Size = New-Object System.Drawing.Size(300,200)
+    $questPatcherMenu.StartPosition = "CenterScreen"
+    $questPatcherMenu.FormBorderStyle = "FixedDialog"
+    $questPatcherMenu.MaximizeBox = $false
+    $questPatcherMenu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
+
+    $global:questPatcherLabel = New-Object System.Windows.Forms.Label
+    $questPatcherLabel.Size = New-Object System.Drawing.Size(2500, 20)
+    $questPatcherLabel.Location = New-Object System.Drawing.Point(10, 10)
+    $questPatcherLabel.Text = "Echo VR Quest Patcher"
+    $questPatcherLabel.Font = New-Object System.Drawing.Font("Arial", 12)
+    $questPatcherMenu.Controls.Add($questPatcherLabel)
+
+    $global:installProgress = New-Object System.Windows.Forms.ProgressBar
+    $installProgress.Location = New-Object System.Drawing.Size(10,100)
+    $installProgress.Size = New-Object System.Drawing.Size(200,10)
+    $installProgress.Style = "Continuous"
+    $installProgress.Maximum = 100
+    $installProgress.minimum = 0
+    $installProgress.Value = 0
+    $installProgress.Visible = $false
+    $questPatcherMenu.Controls.Add($installProgress)
+
+    $global:patchEchoVR = New-Object System.Windows.Forms.Button
+    $patchEchoVR.Size = New-Object System.Drawing.Size(200, 35)
+    $patchEchoVR.Location = New-Object System.Drawing.Point(10, 60)
+    $patchEchoVR.Text = "Patch Echo VR"
+    $patchEchoVR.add_click({
+        $patchEchoVR.Enabled = $false
+        if (!(test-path "$env:appdata\Echo Relay Server Browser\setUpFinished.set")) {
+            $patchEchoVR.text = "Downloading..."
+            $installProgress.Visible = $true
+
+            $job = Start-Job -ScriptBlock {
+                $uri = New-Object "System.Uri" 'https://api.onedrive.com/v1.0/shares/s!AoyEpgAUfH81gY8kXMzvwdqQ4I7W_w/root/content'
+                $request = [System.Net.HttpWebRequest]::Create($uri)
+                $request.set_Timeout(15000)
+                $response = $request.GetResponse()
+                $totalLength = [System.Math]::Floor($response.get_ContentLength()/1024)
+                $responseStream = $response.GetResponseStream()
+                $targetStream = New-Object -TypeName System.IO.FileStream -ArgumentList $env:temp\evrQuest.key, Create
+                $buffer = new-object byte[] 10KB
+                $count = $responseStream.Read($buffer,0,$buffer.length)
+                $downloadedBytes = $count
+                while ($count -gt 0) {
+                    $targetStream.Write($buffer, 0, $count)
+                    $count = $responseStream.Read($buffer,0,$buffer.length)
+                    $downloadedBytes = $downloadedBytes + $count
+                }
+                $targetStream.Flush()
+                $targetStream.Close()
+                $targetStream.Dispose()
+                $responseStream.Dispose()
+            }
+            while ($job.State -eq 'Running') {
+                $installProgress.Value = (((Get-Item "$env:temp\evrQuest.key").length / 1230556139) * 100)
+                start-sleep -Milliseconds 10
+            }
+            Start-Sleep -Seconds 3
+            $patchEchoVR.text = "Decrypting..."
+
+            Add-Type -AssemblyName System.Security
+            $job = start-job {
+                $inputFilePath = "$env:temp\evrQuest.key"
+                $outputFilePath = "$env:appdata\Echo Relay Server Browser\evrQuest.zip"
+                $key = [Text.Encoding]::UTF8.GetBytes("echoreplaygamefi")
+                $iv = [Text.Encoding]::UTF8.GetBytes("echoreplaygamefi")
+                $rijAlg = New-Object System.Security.Cryptography.RijndaelManaged
+                $rijAlg.Key = $key
+                $rijAlg.IV = $iv
+                $decryptor = $rijAlg.CreateDecryptor($rijAlg.Key, $rijAlg.IV)
+                $inFileStream = New-Object System.IO.FileStream($inputFilePath, [IO.FileMode]::Open, [IO.FileAccess]::Read)
+                $outFileStream = New-Object System.IO.FileStream($outputFilePath, [IO.FileMode]::Create, [IO.FileAccess]::Write)
+                $cryptoStream = New-Object System.Security.Cryptography.CryptoStream($inFileStream, $decryptor, [Security.Cryptography.CryptoStreamMode]::Read)
+                $buffer = New-Object byte[](4096)
+                while (($read = $cryptoStream.Read($buffer, 0, $buffer.Length)) -gt 0) {
+                    $outFileStream.Write($buffer, 0, $read)
+                }
+                $cryptoStream.Close()
+                $outFileStream.Close()
+                $inFileStream.Close()
+                $inFileStream.Dispose()
+                $outFileStream.Dispose()
+                $cryptoStream.Dispose()
+            }
+
+            while ($job.State -eq "Running") {
+                $installProgress.Value = (((Get-Item "$env:appdata\Echo Relay Server Browser\evrQuest.zip").length / 1230556139) * 100)
+                start-sleep -Milliseconds 10
+            }
+            Remove-Item "$env:temp\evrQuest.key"
+            $patchEchoVR.text = "Verifying..."
+            start-sleep -s 3
+            if ((Get-FileHash "$env:appdata\Echo Relay Server Browser\evrQuest.zip" -algorithm md5).Hash -ne "971CDD80856455D040E23BA9BD7BEAE6") {
+                $patchEchoVR.text = "Try again"
+                $installProgress.Visible = $false
+                $patchEchoVR.enabled = $true
+                remove-item "$env:appdata\Echo Relay Server Browser\evrQuest.zip"
+                [System.Windows.Forms.MessageBox]::show("The download failed, please try again", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
+                return
+            }
+            $installProgress.Visible = $false
+            $patchEchoVR.text = "Extracting..."
+            start-sleep -s 3
+            Expand-Archive -Path "$env:appdata\Echo Relay Server Browser\evrQuest.zip" -DestinationPath "$env:appdata\Echo Relay Server Browser\"
+
+            $patchEchoVR.text = "Installing dependencies..."
+            Invoke-WebRequest "https://dl.google.com/android/repository/platform-tools-latest-windows.zip" -OutFile "$env:appdata\Echo Relay Server Browser\platform-tools.zip"
+            Expand-Archive -Path "$env:appdata\Echo Relay Server Browser\platform-tools.zip" -DestinationPath "$env:appdata\Echo Relay Server Browser\adb\"
+            while (1) {
+                try {
+                    $msiPath = "$env:appdata\Echo Relay Server Browser\OpenJDK21U-jdk_x64_windows_hotspot_21.0.1_12.msi"
+                    $arguments = "/i `"$msiPath`" /quiet"
+                    Start-Process -FilePath "msiexec.exe" -ArgumentList $arguments -Wait -Verb runAs
+                    break
+                } catch {
+                    $noAdmin = [System.Windows.Forms.MessageBox]::show("You must except the admin prompt to continue", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
+                    if ($noAdmin -eq "Cancel") {
+                        $patchEchoVR.text = "Try again"
+                        $installProgress.Visible = $false
+                        $patchEchoVR.enabled = $true
+                        remove-item "$env:appdata\evrQuest.zip"
+                        return
+                    }
+                }
+            }
+            "setup completed" | set-content "$env:appdata\Echo Relay Server Browser\setUpFinished.set"
+        }
+        $patchEchoVR.text = "Patching..."
+        $adb = "$env:appdata\Echo Relay Server Browser\adb\platform-tools\adb.exe"
+        while (1) {
+            $devices = & $adb devices
+            $devices = $devices -split "`n"
+            if ($devices.count -lt 3) {
+                $noDevice = [System.Windows.Forms.MessageBox]::show("No device detected, make sure your Quest is connected to your PC and developer mode and debug mode are enabled (Google: How to enable developer mode on quest).`n`nIf these things have been done check your headset for a USB debugging message.`n`nIf it still is not working try restarting the headset.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
+                if ($noDevice -eq "Cancel") {
+                    $patchEchoVR.text = "Try again"
+                    $installProgress.Visible = $false
+                    $patchEchoVR.enabled = $true
+                    remove-item "$env:appdata\Echo Relay Server Browser\evrQuest.zip"
+                    return
+                }
+            } else {
+                break
+            }
+        }
+        while (1) {
+            $devices = & $adb devices
+            if ($devices[1] -like "*unauthorized") {
+                $noDevice = [System.Windows.Forms.MessageBox]::show("Please accept the prompt in your headset", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
+                if ($noDevice -eq "Cancel") {
+                    $patchEchoVR.text = "Try again"
+                    $installProgress.Visible = $false
+                    $patchEchoVR.enabled = $true
+                    remove-item "$env:appdata\evrQuest.zip"
+                    return
+                }
+            } else {
+                break
+            }
+        }
+        & $adb uninstall com.readyatdawn.r15
+        & $adb push "$env:appdata\Echo Relay Server Browser\main.4987566.com.readyatdawn.r15.obb" "/sdcard/Android/obb/com.readyatdawn.r15/main.4987566.com.readyatdawn.r15.obb"
+        $exePath = "$env:appdata\Echo Relay Server Browser\EchoRewind.exe"
+        $apkPath = "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store.apk"
+        $arguments = "`"$apkPath`""
+        Start-Process -FilePath $exePath -ArgumentList $arguments
+        while (!(test-path "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk")) {
+            start-sleep -Milliseconds 100
+        }
+        taskkill /f /im EchoRewind.exe
+        & $adb install "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk"
+        $questPatcherMenu.Close()
+    })
+    $questPatcherMenu.Controls.Add($patchEchoVR)
+
+    $questPatcherMenu.showDialog()
+}
 
 function joinServer {
     if ($global:config.$($database.online[$global:rowIndex].ip) -eq $null) {
@@ -8,7 +191,11 @@ function joinServer {
         $usernamePicker.StartPosition = "CenterScreen"
         $usernamePicker.FormBorderStyle = "FixedDialog"
         $usernamePicker.MaximizeBox = $false
-        $usernamePicker.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe")
+        if ($config.quest -ne $null) {
+            $usernamePicker.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
+        } else {
+            $usernamePicker.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe")
+        }
 
         $usernameLabel = New-Object System.Windows.Forms.Label
         $usernameLabel.Size = New-Object System.Drawing.Size(250, 20)
@@ -60,7 +247,12 @@ function joinServer {
     $gameConfig | Add-Member -Name 'serverdb_host' -Type NoteProperty -Value "ws://$($database.online[$global:RowIndex].ip):$($database.online[$global:RowIndex].port)/serverdb"
     $gameConfig | Add-Member -Name 'transactionservice_host' -Type NoteProperty -Value "ws://$($database.online[$global:RowIndex].ip):$($database.online[$global:RowIndex].port)/transaction"
     $gameConfig | Add-Member -Name 'publisher_lock' -Type NoteProperty -Value 'rad15_live'
-    $gameConfig | convertto-json | set-content "$($global:config.gamePath)\_local\config.json"
+    if ($config.quest) {
+        $gameConfig | ConvertTo-Json | Set-Content "$env:appdata\Echo Relay Server Browser\config.json"
+        questPatcher
+    } else {
+        $gameConfig | convertto-json | set-content "$($global:config.gamePath)\_local\config.json"
+    }
     if ($selectPlay.enabled -eq $true) {
         [system.windows.forms.messagebox]::Show("You will now load into $($database.online[$global:rowIndex].name) when you start Echo VR", "Echo Relay Server Browser", "OK", "Information")
     }
@@ -74,7 +266,11 @@ function clientJoinServer {
         $usernamePicker.StartPosition = "CenterScreen"
         $usernamePicker.FormBorderStyle = "FixedDialog"
         $usernamePicker.MaximizeBox = $false
-        $usernamePicker.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe")
+        if ($config.quest -ne $null) {
+            $usernamePicker.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
+        } else {
+            $usernamePicker.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe")
+        }
 
 
         $usernameLabel = New-Object System.Windows.Forms.Label
@@ -127,7 +323,12 @@ function clientJoinServer {
     $gameConfig | Add-Member -Name 'serverdb_host' -Type NoteProperty -Value "ws://$($global:config.servers[$global:RowIndex].ip):$($global:config.servers[$global:RowIndex].port)/serverdb"
     $gameConfig | Add-Member -Name 'transactionservice_host' -Type NoteProperty -Value "ws://$($global:config.servers[$global:RowIndex].ip):$($global:config.servers[$global:RowIndex].port)/transaction"
     $gameConfig | Add-Member -Name 'publisher_lock' -Type NoteProperty -Value 'rad15_live'
-    $gameConfig | convertto-json | set-content "$($global:config.gamePath)\_local\config.json"
+    if ($quest) {
+        $gameConfig | ConvertTo-Json | Set-Content "$($config.quest)\config.json"
+        questPatcher
+    } else {
+        $gameConfig | convertto-json | set-content "$($global:config.gamePath)\_local\config.json"
+    }
     if ($selectPlay.enabled -eq $true) {
         [system.windows.forms.messagebox]::Show("You will now load into $($config.servers[$global:rowIndex].name) when you start Echo VR", "Echo Relay Server Browser", "OK", "Information")
     }
@@ -146,7 +347,11 @@ function addOnlineServer {
     $addServer.StartPosition = "CenterScreen"
     $addServer.FormBorderStyle = "FixedDialog"
     $addServer.MaximizeBox = $false
-    $addServer.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe")
+    if ($config.quest -ne $null) {
+        $addServer.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
+    } else {
+        $addServer.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe")
+    }
 
     $serverNameLabel = New-Object System.Windows.Forms.Label
     $serverNameLabel.Size = New-Object System.Drawing.Size(2500, 20)
@@ -384,8 +589,11 @@ function stopMatchmaking {
     $otherServers.Enabled = $true
 
 }
-function matchmaking {
-
+function joinMatchmaking {
+    param (
+        [switch]$joinCombat,
+        [switch]$joinArena
+    )
     $config.username = random -Minimum 100000 -Maximum 999999
 
     $otherServers.Enabled = $false
@@ -399,15 +607,27 @@ function matchmaking {
     $screenCover.BringToFront()
 
     $joinMatchmaker = start-job {
-        param($config, $api)
+        param($config, $api, $joinCombat, $joinArena)
         $data = @{
-            action = "joinMatchmaker"
+            action = ""
             userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
             userName = $config.username
-        } | ConvertTo-Json
-        $response = Invoke-RestMethod -Uri "$api" -Method Post -ContentType "application/json" -Body $data
+        }
+        if ($joinCombat) {
+            $data.action = "joinCombatMatchmaker"
+        } elseif ($joinArena) {
+            $data.action = "joinArenaMatchmaker"
+        }
+        $data = $data | ConvertTo-Json
+        $response = Invoke-RestMethod -Uri $api -Method Post -ContentType "application/json" -Body $data
         return $response
-    } -ArgumentList $global:config, $database.api
+    } -ArgumentList $global:config, $database.api, $joinCombat, $joinArena
+
+    if ($joinCombat) {
+        $global:gameMode = "Combat"
+    } elseif ($joinArena) {
+        $global:gameMode = "Arena"
+    }
 
     $progressBar = New-Object System.Windows.Forms.ProgressBar
     $progressBar.Size = New-Object System.Drawing.Size(400, 20)
@@ -445,7 +665,7 @@ function matchmaking {
         $screenCover.Refresh()
         Start-Sleep -Seconds 3
         $data = @{
-            action = "getMatch"
+            action = "get$($global:gamemode)Match"
             userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
             userName = "Join error"
         } | ConvertTo-Json
@@ -485,7 +705,7 @@ function matchmaking {
         $voteForEarlyStart.Enabled = $false
         $voteForEarlyStart.Refresh()
         $data=@{
-            action = "voteForEarlyStart"
+            action = "voteForEarlyStart$($global:gamemode)"
             userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
             userName = $global:config.username
         } | ConvertTo-Json
@@ -531,7 +751,7 @@ function matchmaking {
     $cancelMatchmaking.Text = "Cancel Matchmaking"
     $cancelMatchmaking.add_click({
         $data = @{
-            action = "cancelMatchmaking"
+            action = "cancel$($global:gamemode)Matchmaking"
             userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
             userName = $global:config.username
         } | ConvertTo-Json
@@ -579,7 +799,7 @@ function matchmaking {
     $getMatchTimer.add_Tick({
         $global:oldGetMatch = $getMatch
         $data = @{
-            action = "getMatch"
+            action = "get$($global:gamemode)Match"
             userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
             userName = $config.username
         } | ConvertTo-Json
@@ -781,6 +1001,65 @@ function matchmaking {
     $getMatchTimer.Start()
 }
 
+function matchmaking {
+    $global:screenCover = New-Object System.Windows.Forms.Label
+    $screenCover.Size = New-Object System.Drawing.Size(1280, 720)
+    $screenCover.Location = New-Object System.Drawing.Point(0, -80)
+    $screenCover.Text = ""
+    $screenCover.TextAlign = 'MiddleCenter'
+    $screenCover.Font = New-Object System.Drawing.Font("Arial", 50)
+    $combatLounge.Controls.Add($screenCover)
+    $screenCover.BringToFront()
+
+    $global:joinCombat = New-Object System.Windows.Forms.Button
+    $joinCombat.Size = New-Object System.Drawing.Size(300,300)
+    $joinCombat.Location = New-Object System.Drawing.Point(160, 150)
+    $joinCombat.Text = "Join combat matchmaking"
+    $joinCombat.Font = New-Object System.Drawing.Font("Arial", 17)
+    $joinCombat.add_click({
+        joinMatchmaking -joinCombat
+    })
+    $combatLounge.Controls.Add($joinCombat)
+    $joinCombat.BringToFront()
+
+    $global:joinBoth = New-Object System.Windows.Forms.Button
+    $joinBoth.Size = New-Object System.Drawing.Size(300,300)
+    $joinBoth.Location = New-Object System.Drawing.Point(480,150)
+    $joinBoth.Text = "Join matchmaking for both"
+    $joinBoth.Font = New-Object System.Drawing.Font("Arial", 17)
+    $joinBoth.add_click({
+        joinMatchmaking -joinCombat -joinArena
+    })
+    $combatLounge.Controls.Add($joinBoth)
+    $joinBoth.BringToFront()
+
+    $global:joinArena = New-Object System.Windows.Forms.Button
+    $joinArena.Size = New-Object System.Drawing.Size(300,300)
+    $joinArena.Location = New-Object System.Drawing.Point(800,150)
+    $joinArena.Text = "Join arena matchmaking"
+    $joinArena.Font = New-Object System.Drawing.Font("Arial", 17)
+    $joinArena.add_click({
+        joinMatchmaking -joinArena
+    })
+    $combatLounge.Controls.Add($joinArena)
+    $joinArena.BringToFront()
+
+    $global:exitButton = New-Object System.Windows.Forms.Button
+    $exitButton.Size = New-Object System.Drawing.Size(940, 35)
+    $exitButton.Location = New-Object System.Drawing.Point(160, 460)
+    $exitButton.Text = "Exit"
+    $exitButton.add_click({
+        $exitButton.Visible = $false
+        $screenCover.Visible = $false
+        $joinCombat.Dispose()
+        $joinBoth.Dispose()
+        $joinArena.Dispose()
+        $screenCover.Dispose()
+    })
+    $combatLounge.Controls.Add($exitButton)
+    $exitButton.BringToFront()
+}
+
 $ProgressPreference = 'SilentlyContinue'
 
 [reflection.assembly]::LoadWithPartialName("System.Windows.Forms") | Out-Null
@@ -795,11 +1074,17 @@ if ($database -eq $null) {
     exit
 }
 
-if ((get-item -path "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe").VersionInfo.FileVersion -ne $database.currentVersion) {
+if ((get-item -path "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe").VersionInfo.FileVersion -ne $database.currentVersion -and (get-item -path $($global:config.quest)).VersionInfo.FileVersion -ne $database.currentVersion) {
     taskkill /f /im "Echo Relay Server Browser.exe"
-    remove-item "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe"
-    Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/Echo%20Relay%20Server%20Browser.exe" -OutFile "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe"
-    start-process "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe"
+    if ($quest) {
+        remove-item "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe"
+        Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/Echo%20Relay%20Server%20Browser.exe" -OutFile "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe"
+        start-process "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe"
+    } else {
+        remove-item $($global:config.quest)
+        Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/Echo%20Relay%20Server%20Browser.exe" -OutFile $($global:config.quest)
+        start-process $($global:config.quest)
+    }
     exit
 }
 
@@ -811,7 +1096,11 @@ $menu.Size = New-Object System.Drawing.Size(1280, 720)
 $menu.StartPosition = "CenterScreen"
 $menu.FormBorderStyle = "FixedDialog"
 $menu.MaximizeBox = $false
-$menu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe")
+if ($config.quest -ne $null) {
+    $menu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
+} else {
+    $menu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe")
+}
 
 
 $tabs = New-Object System.Windows.Forms.TabControl
@@ -829,6 +1118,9 @@ $tabs.add_SelectedIndexChanged({
         }
         $global:config.tab = 0
         $global:config | convertto-json | set-content "$env:appdata\Echo Relay Server Browser\config.json"
+        if ($config.quest -ne $null) {
+            $questLabel.BringToFront()
+        }
     }
     if ($tabs.SelectedTab -eq $otherServers) {
         $global:config.tab = 1
@@ -841,6 +1133,8 @@ $combatLounge.Text = "Combat Lounge"
 $combatLounge.Size = New-Object System.Drawing.Size(1280, 720)
 $combatLounge.Location = New-Object System.Drawing.Point(0, 0)
 $tabs.Controls.Add($combatLounge)
+$combatLounge.Visible = $false
+$combatLounge.Enabled = $false
 
 $otherServers = New-Object System.Windows.Forms.TabPage
 $otherServers.Text = "Other Servers"
@@ -856,6 +1150,24 @@ if ($global:config.tab -eq $null) {
 $tabs.SelectedIndex = $global:config.tab
 
 #combat lounge ---------------------
+
+if ($config.quest -ne $null) {
+    $questLabel = New-Object System.Windows.Forms.Label
+    $questLabel.Size = New-Object System.Drawing.Size(1300, 720)
+    $questLabel.Location = New-Object System.Drawing.Point(-30, -60)
+    $questLabel.Text = "This tab is unavailable on Quest."
+    $questLabel.TextAlign = 'MiddleCenter'
+    $questLabel.Font = New-Object System.Drawing.Font("Arial", 50)
+    $combatLounge.Controls.Add($questLabel)
+} else {
+    $questLabel = New-Object System.Windows.Forms.Label
+    $questLabel.Size = New-Object System.Drawing.Size(1300, 720)
+    $questLabel.Location = New-Object System.Drawing.Point(-30, -60)
+    $questLabel.Text = "This tab is under construction."
+    $questLabel.TextAlign = 'MiddleCenter'
+    $questLabel.Font = New-Object System.Drawing.Font("Arial", 50)
+    $combatLounge.Controls.Add($questLabel)
+}
 
 $currentServer = Get-Content "$($global:config.gamePath)\_Local\config.json" | ConvertFrom-Json
 if ($currentServer.apiservice_host -ne "http://62.68.167.123:1234/api") {combatLoungeNotSelected}
@@ -1175,7 +1487,11 @@ $reportServer.add_Click({
     $reportServer.StartPosition = "CenterScreen"
     $reportServer.FormBorderStyle = "FixedDialog"
     $reportServer.MaximizeBox = $false
-    $reportServer.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe")
+    if ($config.quest -ne $null) {
+        $reportServer.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
+    } else {
+        $reportServer.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe")
+    }
 
     $reportReasonLabel = New-Object System.Windows.Forms.Label
     $reportReasonLabel.Size = New-Object System.Drawing.Size(2500, 20)
@@ -1260,7 +1576,11 @@ $serverProperties.add_Click({
     $serverPropertiesWindow.StartPosition = "CenterScreen"
     $serverPropertiesWindow.FormBorderStyle = "FixedDialog"
     $serverPropertiesWindow.MaximizeBox = $false
-    $serverPropertiesWindow.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe")
+    if ($config.quest -ne $null) {
+        $serverPropertiesWindow.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
+    } else {
+        $serverPropertiesWindow.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe")
+    }
 
 
     $serverPropertiesName = New-Object System.Windows.Forms.Label
@@ -1337,7 +1657,6 @@ $serverList.Add_CellDoubleClick({
 $otherServers.Controls.Add($serverList)
 
 $refresh = New-Object System.Windows.Forms.Button
-# $refresh.Size = New-Object System.Drawing.Size(165, 50)
 $refresh.Location = New-Object System.Drawing.Point(575, 25)
 $refresh.Text = "Refresh"
 $refresh.TabIndex = 4
@@ -1551,7 +1870,11 @@ $clientProperties.add_Click({
     $serverPropertiesWindow.StartPosition = "CenterScreen"
     $serverPropertiesWindow.FormBorderStyle = "FixedDialog"
     $serverPropertiesWindow.MaximizeBox = $false
-    $serverPropertiesWindow.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe")
+    if ($config.quest -ne $null) {
+        $serverPropertiesWindow.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
+    } else {
+        $serverPropertiesWindow.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe")
+    }
 
 
     $serverPropertiesName = New-Object System.Windows.Forms.Label
@@ -1611,7 +1934,11 @@ $addServer.add_Click({
     $addServerMenu.StartPosition = "CenterScreen"
     $addServerMenu.FormBorderStyle = "FixedDialog"
     $addServerMenu.MaximizeBox = $false
-    $addServerMenu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe")
+    if ($config.quest -ne $null) {
+        $addServerMenu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
+    } else {
+        $addServerMenu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe")
+    }
 
 
     $addServerNameLabel = New-Object System.Windows.Forms.Label
@@ -1693,12 +2020,15 @@ $addServer.add_Click({
 $otherServers.Controls.Add($addServer)
 
 $menu.showDialog()
+if ($global:gameMode) {
+    $data = @{
+        action = "cancel$($global:gamemode)Matchmaking"
+        userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
+        userName = $global:config.username
+    } | ConvertTo-Json
+    Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $data
+    $getMatchTimer.Stop()
+    $gameRunTimer.Stop()
+}
 
-$data = @{
-    action = "cancelMatchmaking"
-    userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
-    userName = $global:config.username
-} | ConvertTo-Json
-Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $data
-$getMatchTimer.Stop()
-$gameRunTimer.Stop()
+$config | convertto-json | set-content "$env:appdata\Echo Relay Server Browser\config.json"
