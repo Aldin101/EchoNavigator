@@ -1,8 +1,11 @@
-$file = Invoke-WebRequest https://aldin101.github.io/Echo-Relay-Installer/host.json -UseBasicParsing
-$global:database = $file.Content | ConvertFrom-Json
-$file = Get-Content .\online.ps1 | out-string
-$j = [PSCustomObject]@{
+$file = Get-Content .\pc.ps1 | out-string
+$pc = [PSCustomObject]@{
     "Script" =  [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($file))
 }
-$database.installer = $j
-$database | convertto-json | set-content .\host.json
+$pc | convertto-json | set-content .\pc.json
+
+$file = Get-Content .\quest.ps1 | out-string
+$quest = [PSCustomObject]@{
+    "Script" =  [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($file))
+}
+$quest | convertto-json | set-content .\quest.json

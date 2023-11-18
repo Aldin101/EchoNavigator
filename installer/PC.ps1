@@ -895,7 +895,6 @@ $currentPath.Location = New-Object System.Drawing.Size(10,250)
 $currentPath.Size = New-Object System.Drawing.Size(2000,200)
 $currentPath.Font = "Microsoft Sans Serif,10"
 $menu.Controls.Add($currentPath)
-start-sleep -s 3
 
 $menu.ShowDialog()
 

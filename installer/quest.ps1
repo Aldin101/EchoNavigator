@@ -186,7 +186,6 @@ $credits.Size = New-Object System.Drawing.Size(2000,200)
 $credits.Text = "Echo Relay Created by: Xenomega`nInstaller Created by:Aldin101"
 $credits.Font = "Microsoft Sans Serif,10"
 $menu.Controls.Add($credits)
-start-sleep -s 3
 
 $menu.ShowDialog()
 
