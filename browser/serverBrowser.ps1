@@ -116,7 +116,7 @@ function questPatcher {
             while (1) {
                 try {
                     $msiPath = "$env:appdata\Echo Relay Server Browser\OpenJDK21U-jdk_x64_windows_hotspot_21.0.1_12.msi"
-                    $arguments = "/i `"$msiPath`" /quiet"
+                    $arguments = "/i `"$msiPath`" /passive"
                     Start-Process -FilePath "msiexec.exe" -ArgumentList $arguments -Wait -Verb runAs
                     break
                 } catch {
