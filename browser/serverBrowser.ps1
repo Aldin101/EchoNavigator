@@ -165,6 +165,7 @@ function questPatcher {
                 break
             }
         }
+        remove-item "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk"
         & $adb uninstall com.readyatdawn.r15
         & $adb push "$env:appdata\Echo Relay Server Browser\main.4987566.com.readyatdawn.r15.obb" "/sdcard/Android/obb/com.readyatdawn.r15/main.4987566.com.readyatdawn.r15.obb"
         $exePath = "$env:appdata\Echo Relay Server Browser\EchoRewind.exe"
@@ -1420,6 +1421,9 @@ $selectPlay.add_click({
     $select.Enabled = $true
 })
 $selectPlay.Font = New-Object System.Drawing.Font("Arial", 12)
+if ($config.quest) {
+    $selectPlay.Enabled = $false
+}
 $sideBar.Controls.Add($selectPlay)
 
 $serverList.Add_CellMouseDown({
@@ -1467,7 +1471,9 @@ $selectPlayRightClick.add_Click({
     $selectPlay.Enabled = $true
     $select.Enabled = $true
 })
-$serverRightClick.Items.Add($selectPlayRightClick)
+if (!$config.quest) {
+    $serverRightClick.Items.Add($selectPlayRightClick)
+}
 
 $separator1 = New-Object System.Windows.Forms.ToolStripSeparator
 $serverRightClick.Items.Add($separator1)
@@ -1856,7 +1862,9 @@ $clientPlayRightClick.add_Click({
     $selectPlay.Enabled = $true
     $select.Enabled = $true
 })
-$clientRightClick.Items.Add($clientPlayRightClick)
+if (!$config.quest) {
+    $clientRightClick.Items.Add($clientPlayRightClick)
+}
 
 $clientSeparator1 = New-Object System.Windows.Forms.ToolStripSeparator
 $clientRightClick.Items.Add($clientSeparator1)
