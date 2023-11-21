@@ -205,6 +205,8 @@ function questPatcher {
             $installProgress.Visible = $false
             $patchEchoVR.enabled = $true
             remove-item "$env:appdata\Echo Relay Server Browser\evrQuest.zip"
+            Remove-Item "$env:appdata\Echo Relay Server Browser\config.json"
+            Rename-Item "$env:appdata\Echo Relay Server Browser\config.json.bak" "$env:appdata\Echo Relay Server Browser\config.json"
             return
         }
         taskkill /f /im EchoRewind.exe
