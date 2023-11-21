@@ -273,7 +273,7 @@ function joinServer {
         return
     }
 
-    $gameConfig = @{}
+    $global:gameConfig = @{}
     $gameConfig | Add-Member -Name 'apiservice_host' -Type NoteProperty -Value "http://$($database.online[$global:RowIndex].ip):$($database.online[$global:RowIndex].port)/api"
     $gameConfig | Add-Member -Name 'configservice_host' -Type NoteProperty -Value "ws://$($database.online[$global:RowIndex].ip):$($database.online[$global:RowIndex].port)/config"
     $gameConfig | Add-Member -Name 'loginservice_host' -Type NoteProperty -Value "ws://$($database.online[$global:RowIndex].ip):$($database.online[$global:RowIndex].port)/login?auth=$($global:config.password)&displayname=$($global:config.$($database.online[$global:rowIndex].ip))"
@@ -283,10 +283,13 @@ function joinServer {
     $gameConfig | Add-Member -Name 'publisher_lock' -Type NoteProperty -Value 'rad15_live'
     if ($config.quest) {
         questPatcher
+        if ($global:gamePatched) {
+            [system.windows.forms.messagebox]::Show("You will now load into $($database.online[$global:rowIndex].name) when you start Echo VR", "Echo Relay Server Browser", "OK", "Information")
+        }
     } else {
         $gameConfig | convertto-json | set-content "$($global:config.gamePath)\_local\config.json"
     }
-    if ($selectPlay.enabled -eq $true -or $config.quest -ne $null -and $global:gamePatched -eq $true) {
+    if ($selectPlay.enabled -eq $true) {
         [system.windows.forms.messagebox]::Show("You will now load into $($database.online[$global:rowIndex].name) when you start Echo VR", "Echo Relay Server Browser", "OK", "Information")
     }
 }
@@ -358,10 +361,13 @@ function clientJoinServer {
     $gameConfig | Add-Member -Name 'publisher_lock' -Type NoteProperty -Value 'rad15_live'
     if ($config.quest) {
         questPatcher
+        if ($global:gamePatched) {
+            [system.windows.forms.messagebox]::Show("You will now load into $($config.servers[$global:rowIndex].name) when you start Echo VR", "Echo Relay Server Browser", "OK", "Information")
+        }
     } else {
         $gameConfig | convertto-json | set-content "$($global:config.gamePath)\_local\config.json"
     }
-    if ($selectPlay.enabled -eq $true -or $config.quest -ne $null -and $global:gamePatched -eq $true) {
+    if ($selectPlay.enabled -eq $true) {
         [system.windows.forms.messagebox]::Show("You will now load into $($config.servers[$global:rowIndex].name) when you start Echo VR", "Echo Relay Server Browser", "OK", "Information")
     }
 }
@@ -1660,6 +1666,11 @@ $global:config = Get-Content "$env:appdata\Echo Relay Server Browser\config.json
 
 if ($database -eq $null) {
     [System.Windows.Forms.MessageBox]::Show("Failed to download online resources. Check your internet connection and try again.", "Echo Relay Server Browser", "OK", "Error")
+    exit
+}
+
+if ($config.username -eq "" -or $config.username -eq $null) {
+    [System.Windows.Forms.MessageBox]::Show("Configuration files are corrupt, please reinstall.", "Echo Relay Server Browser", "OK", "Error")
     exit
 }
 
