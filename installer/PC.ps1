@@ -355,6 +355,7 @@ function entitlement {
 
         $downgradeButton.enabled = $false
         $downgradeButton.text = "Downloading..."
+        $downgradeButton.Refresh()
         $installProgress.Visible = $true
 
         if (test-path "$global:gamePath\bin") {
@@ -365,7 +366,7 @@ function entitlement {
         }
 
         $job = Start-Job -ScriptBlock {
-            $uri = New-Object "System.Uri" 'https://onedrive.live.com/download?resid=357F7C1400A6848C%2117825&authkey=!AKUWYYZNia0l9Ig'
+            $uri = New-Object "System.Uri" 'https://api.onedrive.com/v1.0/shares/s!AoyEpgAUfH81gYshKvth5AC5WcK02w/root/content'
             $request = [System.Net.HttpWebRequest]::Create($uri)
             $request.set_Timeout(15000)
             $response = $request.GetResponse()
@@ -374,13 +375,10 @@ function entitlement {
             $targetStream = New-Object -TypeName System.IO.FileStream -ArgumentList $env:temp\evr.key, Create
             $buffer = new-object byte[] 10KB
             $count = $responseStream.Read($buffer,0,$buffer.length)
-            $downloadedBytes = $count
-            while ($count -gt 0)    {
-                [System.Console]::CursorLeft = 0
-                [System.Console]::Write("Downloaded {0}K of {1}K", [System.Math]::Floor($downloadedBytes/1024), $totalLength)
+            while ($count -gt 0) {
                 $targetStream.Write($buffer, 0, $count)
+                $targetStream.Flush()
                 $count = $responseStream.Read($buffer,0,$buffer.length)
-                $downloadedBytes = $downloadedBytes + $count
             }
             $targetStream.Flush()
             $targetStream.Close()
@@ -390,13 +388,14 @@ function entitlement {
 
         while ($job.State -eq 'Running') {
             $installProgress.Value = (((Get-Item "$env:temp\evr.key").length / 5026903423) * 100)
-            start-sleep -Milliseconds 10
+            start-sleep -Milliseconds 100
         }
 
         Remove-Job -Job $job
 
         Start-Sleep -Seconds 3
         $downgradeButton.text = "Decrypting..."
+        $downgradeButton.Refresh()
 
         Add-Type -AssemblyName System.Security
         $job = start-job {
@@ -425,12 +424,13 @@ function entitlement {
 
         while ($job.State -eq "Running") {
             $installProgress.Value = (((Get-Item "$env:temp\evr.zip").length / 5026903423) * 100)
-            start-sleep -Milliseconds 10
+            start-sleep -Milliseconds 100
         }
 
         remove-job -job $job
 
         $downgradeButton.text = "Verifying..."
+        $downgradeButton.Refresh()
         start-sleep -s 3
         if ((Get-FileHash $env:temp\evr.zip -algorithm md5).Hash -ne "AE45FCE4C45D38B0B03EFE46B5E7EC84") {
             $downgradeButton.text = "Try again"
@@ -440,7 +440,9 @@ function entitlement {
             return
         }
         $downgradeButton.text = "Extracting..."
+        $downgradeButton.Refresh()
         $installProgress.visible = $false
+        $installProgress.Refresh()
         start-sleep -s 3
         $job = start-job {
             param($global:gamePath)
@@ -454,11 +456,13 @@ function entitlement {
         remove-job -job $job
 
         $downgradeButton.text = "Patching..."
+        $downgradeButton.Refresh()
         Invoke-WebRequest https://echo-foundation.pages.dev/files/offline_echo/pnsovr.dll -outFile $global:gamePath\ready-at-dawn-echo-arena\bin\win10\pnsovr.dll
         del $env:temp\evr.zip
         del $env:temp\evr.key
         $global:gamePath = "$global:gamePath\ready-at-dawn-echo-arena"
         $downgradeButton.text = "Finished!"
+        $downgradeButton.Refresh()
         start-sleep -s 3
         $downgradeMenu.Close()
     })
