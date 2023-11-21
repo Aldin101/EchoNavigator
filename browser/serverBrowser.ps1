@@ -1689,9 +1689,9 @@ if ((get-item -path "$($global:config.gamePath)\bin\win10\Echo Relay Server Brow
         Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/Echo%20Relay%20Server%20Browser.exe" -OutFile "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe"
         start-process "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe"
     } else {
-        remove-item $($global:config.quest)
-        Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/Echo%20Relay%20Server%20Browser.exe" -OutFile $($global:config.quest)
-        start-process $($global:config.quest)
+        remove-item "$env:appdata\Echo Relay Server Browser\EchoRelayServerBrowser.exe"
+        Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/Echo%20Relay%20Server%20Browser.exe" -OutFile "$env:appdata\Echo Relay Server Browser\EchoRelayServerBrowser.exe"
+        start-process "$env:appdata\Echo Relay Server Browser\EchoRelayServerBrowser.exe"
     }
     exit
 }
