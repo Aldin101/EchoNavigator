@@ -189,12 +189,11 @@ function questPatcher {
         remove-item "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk"
         & $adb uninstall com.readyatdawn.r15
         & $adb push "$env:appdata\Echo Relay Server Browser\main.4987566.com.readyatdawn.r15.obb" "/sdcard/Android/obb/com.readyatdawn.r15/main.4987566.com.readyatdawn.r15.obb"
-        $gameConfig | ConvertTo-Json | Set-Content "$env:appdata\Echo Relay Server Browser\config.json"
         $exePath = "$env:appdata\Echo Relay Server Browser\EchoRewind.exe"
         $apkPath = "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store.apk"
         $arguments = "`"$apkPath`""
         Start-Process -FilePath $exePath -ArgumentList $arguments
-        while (!(test-path "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk" -or (Get-Process EchoRewind -ErrorAction SilentlyContinue))) {
+        while (!(test-path "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk" -or (Get-Process EchoRewind -ErrorAction SilentlyContinue) -eq $null)) {
             start-sleep -Milliseconds 100
         }
         start-sleep -s 1
