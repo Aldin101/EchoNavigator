@@ -198,7 +198,8 @@ function questPatcher {
             start-sleep -Milliseconds 100
         }
         start-sleep -s 1
-        $global:config | set-content "$env:appdata\Echo Relay Server Browser\config.json"
+        Rename-Item "$env:appdata\Echo Relay Server Browser\config.json" "$env:appdata\Echo Relay Server Browser\config.json.bak"
+        Rename-Item "$env:appdata\Echo Relay Server Browser\gameConfig.json" "$env:appdata\Echo Relay Server Browser\config.json"
         if (!(Test-Path "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk")) {
             [System.Windows.Forms.MessageBox]::show("Echo Rewind exited but no patched APK could be found. Please try again.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Error)
             $patchEchoVR.text = "Try again"
@@ -208,6 +209,8 @@ function questPatcher {
             return
         }
         taskkill /f /im EchoRewind.exe
+        Remove-Item "$env:appdata\Echo Relay Server Browser\config.json"
+        Rename-Item "$env:appdata\Echo Relay Server Browser\config.json.bak" "$env:appdata\Echo Relay Server Browser\config.json"
         & $adb install "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk"
         $questPatcherMenu.Close()
         $global:gamePatched = $true
@@ -215,6 +218,9 @@ function questPatcher {
     $questPatcherMenu.Controls.Add($patchEchoVR)
 
     $questPatcherMenu.showDialog()
+
+    remove-item "$env:appdata\Echo Relay Server Browser\gameConfig.json"
+    $global:config | convertto-json | set-content "$env:appdata\Echo Relay Server Browser\config.json"
 }
 
 function joinServer {
@@ -273,7 +279,7 @@ function joinServer {
         return
     }
 
-    $global:gameConfig = @{}
+    $gameConfig = @{}
     $gameConfig | Add-Member -Name 'apiservice_host' -Type NoteProperty -Value "http://$($database.online[$global:RowIndex].ip):$($database.online[$global:RowIndex].port)/api"
     $gameConfig | Add-Member -Name 'configservice_host' -Type NoteProperty -Value "ws://$($database.online[$global:RowIndex].ip):$($database.online[$global:RowIndex].port)/config"
     $gameConfig | Add-Member -Name 'loginservice_host' -Type NoteProperty -Value "ws://$($database.online[$global:RowIndex].ip):$($database.online[$global:RowIndex].port)/login?auth=$($global:config.password)&displayname=$($global:config.$($database.online[$global:rowIndex].ip))"
@@ -282,6 +288,7 @@ function joinServer {
     $gameConfig | Add-Member -Name 'transactionservice_host' -Type NoteProperty -Value "ws://$($database.online[$global:RowIndex].ip):$($database.online[$global:RowIndex].port)/transaction"
     $gameConfig | Add-Member -Name 'publisher_lock' -Type NoteProperty -Value 'rad15_live'
     if ($config.quest) {
+        $gameConfig | ConvertTo-Json | set-content "$env:appdata\Echo Relay Server Browser\gameConfig.json"
         questPatcher
         if ($global:gamePatched) {
             [system.windows.forms.messagebox]::Show("You will now load into $($database.online[$global:rowIndex].name) when you start Echo VR", "Echo Relay Server Browser", "OK", "Information")
@@ -351,7 +358,7 @@ function clientJoinServer {
         return
     }
 
-    $global:gameConfig = @{}
+    $gameConfig = @{}
     $gameConfig | Add-Member -Name 'apiservice_host' -Type NoteProperty -Value "https://$($global:config.servers[$global:RowIndex].ip):$($global:config.servers[$global:RowIndex].port)/api"
     $gameConfig | Add-Member -Name 'configservice_host' -Type NoteProperty -Value "ws://$($global:config.servers[$global:RowIndex].ip):$($global:config.servers[$global:RowIndex].port)/config"
     $gameConfig | Add-Member -Name 'loginservice_host' -Type NoteProperty -Value "ws://$($global:config.servers[$global:RowIndex].ip):$($global:config.servers[$global:RowIndex].port)/login?auth=$($global:config.password)&displayname=$($global:config.$($config.servers[$global:rowIndex].ip))"
@@ -360,6 +367,7 @@ function clientJoinServer {
     $gameConfig | Add-Member -Name 'transactionservice_host' -Type NoteProperty -Value "ws://$($global:config.servers[$global:RowIndex].ip):$($global:config.servers[$global:RowIndex].port)/transaction"
     $gameConfig | Add-Member -Name 'publisher_lock' -Type NoteProperty -Value 'rad15_live'
     if ($config.quest) {
+        $gameConfig | ConvertTo-Json | set-content "$env:appdata\Echo Relay Server Browser\gameConfig.json"
         questPatcher
         if ($global:gamePatched) {
             [system.windows.forms.messagebox]::Show("You will now load into $($config.servers[$global:rowIndex].name) when you start Echo VR", "Echo Relay Server Browser", "OK", "Information")
