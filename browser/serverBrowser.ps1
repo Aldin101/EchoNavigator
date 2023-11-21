@@ -36,6 +36,7 @@ function questPatcher {
         $patchEchoVR.Enabled = $false
         if (!(test-path "$env:appdata\Echo Relay Server Browser\setUpFinished.set")) {
             $patchEchoVR.text = "Downloading..."
+            $patchEchoVR.Refresh()
             $installProgress.Visible = $true
 
             $job = Start-Job -ScriptBlock {
@@ -65,7 +66,7 @@ function questPatcher {
             }
             Start-Sleep -Seconds 3
             $patchEchoVR.text = "Decrypting..."
-
+            $patchEchoVR.Refresh()
             Add-Type -AssemblyName System.Security
             $job = start-job {
                 $inputFilePath = "$env:temp\evrQuest.key"
@@ -97,6 +98,7 @@ function questPatcher {
             }
             Remove-Item "$env:temp\evrQuest.key"
             $patchEchoVR.text = "Verifying..."
+            $patchEchoVR.Refresh()
             start-sleep -s 3
             if ((Get-FileHash "$env:appdata\Echo Relay Server Browser\evrQuest.zip" -algorithm md5).Hash -ne "971CDD80856455D040E23BA9BD7BEAE6") {
                 $patchEchoVR.text = "Try again"
@@ -108,6 +110,7 @@ function questPatcher {
             }
             $installProgress.Visible = $false
             $patchEchoVR.text = "Extracting..."
+            $patchEchoVR.Refresh()
             start-sleep -s 3
             Expand-Archive -Path "$env:appdata\Echo Relay Server Browser\evrQuest.zip" -DestinationPath "$env:appdata\Echo Relay Server Browser\"
 
@@ -134,7 +137,24 @@ function questPatcher {
             "setup completed" | set-content "$env:appdata\Echo Relay Server Browser\setUpFinished.set"
         }
         $patchEchoVR.text = "Patching..."
+        $patchEchoVR.Refresh()
         $adb = "$env:appdata\Echo Relay Server Browser\adb\platform-tools\adb.exe"
+        while (1) {
+            $devices = & $adb devices
+            $devices = $devices -split "`n"
+            if ($devices.count -gt 3) {
+                $noDevice = [System.Windows.Forms.MessageBox]::show("More than one device detected, make sure only your Quest is connected to your PC. If you have any other Android devices connected is it a possibility that the game will be installed onto the wrong device. Please unplug any devices that you do not need before pressing retry.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
+                if ($noDevice -eq "Cancel") {
+                    $patchEchoVR.text = "Try again"
+                    $installProgress.Visible = $false
+                    $patchEchoVR.enabled = $true
+                    remove-item "$env:appdata\Echo Relay Server Browser\evrQuest.zip"
+                    return
+                }
+            } else {
+                break
+            }
+        }
         while (1) {
             $devices = & $adb devices
             $devices = $devices -split "`n"
@@ -154,7 +174,7 @@ function questPatcher {
         while (1) {
             $devices = & $adb devices
             if ($devices[1] -like "*unauthorized") {
-                $noDevice = [System.Windows.Forms.MessageBox]::show("Please accept the prompt in your headset", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Information)
+                $noDevice = [System.Windows.Forms.MessageBox]::show("This computer is unauthorized. Please accept the prompt in your headset then press retry.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Warning)
                 if ($noDevice -eq "Cancel") {
                     $patchEchoVR.text = "Try again"
                     $installProgress.Visible = $false
@@ -169,17 +189,29 @@ function questPatcher {
         remove-item "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk"
         & $adb uninstall com.readyatdawn.r15
         & $adb push "$env:appdata\Echo Relay Server Browser\main.4987566.com.readyatdawn.r15.obb" "/sdcard/Android/obb/com.readyatdawn.r15/main.4987566.com.readyatdawn.r15.obb"
+        $gameConfig | ConvertTo-Json | Set-Content "$env:appdata\Echo Relay Server Browser\config.json"
         $exePath = "$env:appdata\Echo Relay Server Browser\EchoRewind.exe"
         $apkPath = "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store.apk"
         $arguments = "`"$apkPath`""
         Start-Process -FilePath $exePath -ArgumentList $arguments
-        while (!(test-path "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk")) {
+        while (!(test-path "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk" -or (Get-Process EchoRewind -ErrorAction SilentlyContinue))) {
             start-sleep -Milliseconds 100
+        }
+        start-sleep -s 1
+        $global:config | set-content "$env:appdata\Echo Relay Server Browser\config.json"
+        if (!(Test-Path "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk")) {
+            [System.Windows.Forms.MessageBox]::show("Echo Rewind exited but no patched APK could be found. Please try again.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Error)
+            $patchEchoVR.text = "Try again"
+            $installProgress.Visible = $false
+            $patchEchoVR.enabled = $true
+            remove-item "$env:appdata\Echo Relay Server Browser\evrQuest.zip"
+            return
+
         }
         taskkill /f /im EchoRewind.exe
         & $adb install "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk"
         $questPatcherMenu.Close()
-        $gamePatched = $true
+        $global:gamePatched = $true
     })
     $questPatcherMenu.Controls.Add($patchEchoVR)
 
@@ -251,7 +283,6 @@ function joinServer {
     $gameConfig | Add-Member -Name 'transactionservice_host' -Type NoteProperty -Value "ws://$($database.online[$global:RowIndex].ip):$($database.online[$global:RowIndex].port)/transaction"
     $gameConfig | Add-Member -Name 'publisher_lock' -Type NoteProperty -Value 'rad15_live'
     if ($config.quest) {
-        $gameConfig | ConvertTo-Json | Set-Content "$env:appdata\Echo Relay Server Browser\config.json"
         questPatcher
     } else {
         $gameConfig | convertto-json | set-content "$($global:config.gamePath)\_local\config.json"
@@ -318,7 +349,7 @@ function clientJoinServer {
         return
     }
 
-    $gameConfig = @{}
+    $global:gameConfig = @{}
     $gameConfig | Add-Member -Name 'apiservice_host' -Type NoteProperty -Value "https://$($global:config.servers[$global:RowIndex].ip):$($global:config.servers[$global:RowIndex].port)/api"
     $gameConfig | Add-Member -Name 'configservice_host' -Type NoteProperty -Value "ws://$($global:config.servers[$global:RowIndex].ip):$($global:config.servers[$global:RowIndex].port)/config"
     $gameConfig | Add-Member -Name 'loginservice_host' -Type NoteProperty -Value "ws://$($global:config.servers[$global:RowIndex].ip):$($global:config.servers[$global:RowIndex].port)/login?auth=$($global:config.password)&displayname=$($global:config.$($config.servers[$global:rowIndex].ip))"
@@ -327,7 +358,6 @@ function clientJoinServer {
     $gameConfig | Add-Member -Name 'transactionservice_host' -Type NoteProperty -Value "ws://$($global:config.servers[$global:RowIndex].ip):$($global:config.servers[$global:RowIndex].port)/transaction"
     $gameConfig | Add-Member -Name 'publisher_lock' -Type NoteProperty -Value 'rad15_live'
     if ($config.quest) {
-        $gameConfig | ConvertTo-Json | Set-Content "$($config.quest)\config.json"
         questPatcher
     } else {
         $gameConfig | convertto-json | set-content "$($global:config.gamePath)\_local\config.json"
@@ -1642,6 +1672,10 @@ $serverList.Add_KeyDown({
 
     if ($e.KeyCode -eq 'Enter') {
         $global:rowIndex = $serverList.CurrentCell.RowIndex
+        $sideBar.Visible = $true
+        $serverName.Text = $database.online[$rowIndex].name
+        $serverDescription.Text = $database.online[$rowIndex].longDescription
+        $serverImage.ImageLocation = $database.online[$rowIndex].image
         $global:clientselected = $false
         $clientServerList.ClearSelection()
         $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to select $($database.online[$global:rowIndex].name)?", "Echo Relay Server Browser", "YesNo", "Question")
@@ -1650,6 +1684,7 @@ $serverList.Add_KeyDown({
         }
     }
 })
+
 
 $serverList.Add_CellDoubleClick({
     param($sender, $e)
@@ -1674,7 +1709,9 @@ $refresh.add_click({
     $refresh.text = "Refreshing..."
     $refresh.Update()
     $file = Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/servers.json" -UseBasicParsing
-    $global:database = $file.content | ConvertFrom-Json
+    $newList = $file.content | ConvertFrom-Json
+    $database.online = $newList.online
+    $database.offline = $newList.offline
     if ($showOfflineServers.Checked -eq $true) {
         $i=0
         $newList = [System.Collections.ArrayList]@($database.online)
@@ -1723,7 +1760,8 @@ $showOfflineServers.add_CheckedChanged({
         }
     } else {
         $file = Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/servers.json" -UseBasicParsing
-        $global:database = $file.content | ConvertFrom-Json
+        $online = $file.content | ConvertFrom-Json
+        $database.online = $online.online
         $serverList.RowCount = $database.online.Count
         $i=0
         foreach ($server in $database.online) {
@@ -1735,6 +1773,7 @@ $showOfflineServers.add_CheckedChanged({
 })
 
 $showOfflineServers.Add_KeyDown({
+    param($sender, $e)
     if ($e.KeyCode -eq 'Enter') {
         $showOfflineServers.Checked = !$showOfflineServers.Checked
     }
@@ -1803,6 +1842,10 @@ $clientServerList.Add_KeyDown({
 
     if ($e.KeyCode -eq 'Enter') {
         $global:rowIndex = $clientServerList.CurrentCell.RowIndex
+        $sideBar.Visible = $true
+        $serverName.Text = $global:config.servers[$e.RowIndex].name
+        $serverDescription.Text = $null
+        $serverImage.ImageLocation = $null
         $global:clientselected = $true
         $serverList.ClearSelection()
         $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to select $($global:config.servers[$global:rowIndex].name)?", "Echo Relay Server Browser", "YesNo", "Question")
