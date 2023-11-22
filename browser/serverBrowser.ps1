@@ -192,13 +192,13 @@ function questPatcher {
         $exePath = "$env:appdata\Echo Relay Server Browser\EchoRewind.exe"
         $apkPath = "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store.apk"
         $arguments = "`"$apkPath`""
+        Rename-Item "$env:appdata\Echo Relay Server Browser\config.json" "$env:appdata\Echo Relay Server Browser\config.json.bak"
+        Rename-Item "$env:appdata\Echo Relay Server Browser\gameConfig.json" "$env:appdata\Echo Relay Server Browser\config.json"
         Start-Process -FilePath $exePath -ArgumentList $arguments
-        while (!(test-path "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk" -or (Get-Process EchoRewind -ErrorAction SilentlyContinue) -eq $null)) {
+        while (!(test-path "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk" -or (Get-Process EchoRewind -ErrorAction SilentlyContinue))) {
             start-sleep -Milliseconds 100
         }
         start-sleep -s 1
-        Rename-Item "$env:appdata\Echo Relay Server Browser\config.json" "$env:appdata\Echo Relay Server Browser\config.json.bak"
-        Rename-Item "$env:appdata\Echo Relay Server Browser\gameConfig.json" "$env:appdata\Echo Relay Server Browser\config.json"
         if (!(Test-Path "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk")) {
             [System.Windows.Forms.MessageBox]::show("Echo Rewind exited but no patched APK could be found. Please try again.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Error)
             $patchEchoVR.text = "Try again"
