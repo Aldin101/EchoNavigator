@@ -40,7 +40,8 @@ function questPatcher {
             $installProgress.Visible = $true
 
             $job = Start-Job -ScriptBlock {
-                $uri = New-Object "System.Uri" 'https://api.onedrive.com/v1.0/shares/s!AoyEpgAUfH81gY8kXMzvwdqQ4I7W_w/root/content'
+                param($database)
+                $uri = New-Object "System.Uri" $database.evrQuest
                 $request = [System.Net.HttpWebRequest]::Create($uri)
                 $request.set_Timeout(15000)
                 $response = $request.GetResponse()
@@ -58,7 +59,7 @@ function questPatcher {
                 $targetStream.Close()
                 $targetStream.Dispose()
                 $responseStream.Dispose()
-            }
+            } -ArgumentList $database
             while ($job.State -eq 'Running') {
                 $installProgress.Value = (((Get-Item "$env:temp\evrQuest.key").length / 1230556139) * 100)
                 start-sleep -Milliseconds 100
@@ -127,7 +128,7 @@ function questPatcher {
                 }
             }
             while ($installed -eq $false) {
-                winget install -e --id Oracle.JavaRuntimeEnvironment
+                "y" | winget install -e --id Oracle.JavaRuntimeEnvironment
                 start-sleep -s 5
                 $installedApps = winget list
                 $installedApps = $installedApps -split [Environment]::NewLine
@@ -1703,13 +1704,13 @@ if ($config.username -eq "" -or $config.username -eq $null) {
 if ((get-item -path "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe").VersionInfo.FileVersion -ne $database.currentVersion -and (get-item -path $($global:config.quest)).VersionInfo.FileVersion -ne $database.currentVersion) {
     taskkill /f /im "Echo Relay Server Browser.exe"
     if ($config.quest) {
-        remove-item "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe"
-        Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/Echo%20Relay%20Server%20Browser.exe" -OutFile "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe"
-        start-process "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe"
-    } else {
         remove-item "$env:appdata\Echo Relay Server Browser\EchoRelayServerBrowser.exe"
         Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/Echo%20Relay%20Server%20Browser.exe" -OutFile "$env:appdata\Echo Relay Server Browser\EchoRelayServerBrowser.exe"
         start-process "$env:appdata\Echo Relay Server Browser\EchoRelayServerBrowser.exe"
+    } else {
+        remove-item "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe"
+        Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/Echo%20Relay%20Server%20Browser.exe" -OutFile "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe"
+        start-process "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe"
     }
     exit
 }
