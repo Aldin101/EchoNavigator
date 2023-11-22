@@ -117,19 +117,36 @@ function questPatcher {
             $patchEchoVR.text = "Installing dependencies..."
             Invoke-WebRequest "https://dl.google.com/android/repository/platform-tools-latest-windows.zip" -OutFile "$env:appdata\Echo Relay Server Browser\platform-tools.zip"
             Expand-Archive -Path "$env:appdata\Echo Relay Server Browser\platform-tools.zip" -DestinationPath "$env:appdata\Echo Relay Server Browser\adb\"
-            while (1) {
-                try {
-                    $msiPath = "$env:appdata\Echo Relay Server Browser\OpenJDK21U-jdk_x64_windows_hotspot_21.0.1_12.msi"
-                    $arguments = "/i `"$msiPath`" /passive"
-                    Start-Process -FilePath "msiexec.exe" -ArgumentList $arguments -Wait -Verb runAs
+            $installedApps = winget list
+            $installedApps = $installedApps -split [Environment]::NewLine
+            $installed = $false
+            foreach ($app in $installedApps) {
+                if ($app -like "*Oracle.JavaRuntimeEnvironment*") {
+                    $installed = $true
                     break
-                } catch {
-                    $noAdmin = [System.Windows.Forms.MessageBox]::show("You must except the admin prompt to continue", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
-                    if ($noAdmin -eq "Cancel") {
+                }
+            }
+            while ($installed -eq $false) {
+                winget install -e --id Oracle.JavaRuntimeEnvironment
+                start-sleep -s 5
+                $installedApps = winget list
+                $installedApps = $installedApps -split [Environment]::NewLine
+                $installed = $false
+                foreach ($app in $installedApps) {
+                    if ($app -like "*Oracle.JavaRuntimeEnvironment*") {
+                        $installed = $true
+                        break
+                    }
+                }
+                if ($installed -eq $true) {
+                    break
+                } else {
+                    $noJava = [System.Windows.Forms.MessageBox]::show("Java is required to patch Echo VR. Please accept the admin prompt after pressing retry.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
+                    if ($noJava -eq "Cancel") {
                         $patchEchoVR.text = "Try again"
                         $installProgress.Visible = $false
                         $patchEchoVR.enabled = $true
-                        remove-item "$env:appdata\evrQuest.zip"
+                        remove-item "$env:appdata\Echo Relay Server Browser\evrQuest.zip"
                         return
                     }
                 }
@@ -195,7 +212,7 @@ function questPatcher {
         Rename-Item "$env:appdata\Echo Relay Server Browser\config.json" "$env:appdata\Echo Relay Server Browser\config.json.bak"
         Rename-Item "$env:appdata\Echo Relay Server Browser\gameConfig.json" "$env:appdata\Echo Relay Server Browser\config.json"
         Start-Process -FilePath $exePath -ArgumentList $arguments
-        while (!(test-path "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk" -or (Get-Process EchoRewind -ErrorAction SilentlyContinue))) {
+        while (!(test-path "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk") -and (Get-Process EchoRewind -ErrorAction SilentlyContinue)) {
             start-sleep -Milliseconds 100
         }
         start-sleep -s 1
