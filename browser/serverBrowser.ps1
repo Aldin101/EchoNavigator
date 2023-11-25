@@ -118,7 +118,7 @@ function questPatcher {
             $patchEchoVR.text = "Installing dependencies..."
             Invoke-WebRequest "https://dl.google.com/android/repository/platform-tools-latest-windows.zip" -OutFile "$env:appdata\Echo Relay Server Browser\platform-tools.zip"
             Expand-Archive -Path "$env:appdata\Echo Relay Server Browser\platform-tools.zip" -DestinationPath "$env:appdata\Echo Relay Server Browser\adb\"
-            $installedApps = winget list
+            $installedApps = winget list --disable-interactivity
             $installedApps = $installedApps -split [Environment]::NewLine
             $installed = $false
             foreach ($app in $installedApps) {
@@ -128,9 +128,9 @@ function questPatcher {
                 }
             }
             while ($installed -eq $false) {
-                "y" | winget install -e --id Oracle.JavaRuntimeEnvironment
+                winget install -e --id Oracle.JavaRuntimeEnvironment --disable-interactivity
                 start-sleep -s 5
-                $installedApps = winget list
+                $installedApps = winget list --disable-interactivity
                 $installedApps = $installedApps -split [Environment]::NewLine
                 $installed = $false
                 foreach ($app in $installedApps) {
