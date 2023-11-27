@@ -128,7 +128,7 @@ function questPatcher {
                 }
             }
             while ($installed -eq $false) {
-                winget install -e --id Oracle.JavaRuntimeEnvironment --disable-interactivity
+                winget install -e --id Oracle.JavaRuntimeEnvironment --source winget --disable-interactivity
                 start-sleep -s 5
                 $installedApps = winget list --disable-interactivity
                 $installedApps = $installedApps -split [Environment]::NewLine
