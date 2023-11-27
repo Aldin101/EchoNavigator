@@ -1704,9 +1704,9 @@ if ($config.username -eq "" -or $config.username -eq $null) {
 if ((get-item -path "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe").VersionInfo.FileVersion -ne $database.currentVersion -and (get-item -path $($global:config.quest)).VersionInfo.FileVersion -ne $database.currentVersion) {
     taskkill /f /im "Echo Relay Server Browser.exe"
     if ($config.quest) {
-        remove-item "$env:appdata\Echo Relay Server Browser\EchoRelayServerBrowser.exe"
-        Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/Echo%20Relay%20Server%20Browser.exe" -OutFile "$env:appdata\Echo Relay Server Browser\EchoRelayServerBrowser.exe"
-        start-process "$env:appdata\Echo Relay Server Browser\EchoRelayServerBrowser.exe"
+        remove-item "$env:appdata\Echo Relay Server Browser\Echo Relay Server Browser.exe"
+        Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/Echo%20Relay%20Server%20Browser.exe" -OutFile "$env:appdata\Echo Relay Server Browser\Echo Relay Server Browser.exe"
+        start-process "$env:appdata\Echo Relay Server Browser\Echo Relay Server Browser.exe"
     } else {
         remove-item "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe"
         Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/Echo%20Relay%20Server%20Browser.exe" -OutFile "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe"
