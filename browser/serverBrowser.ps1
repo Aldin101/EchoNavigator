@@ -35,89 +35,88 @@ function questPatcher {
     $patchEchoVR.add_click({
         $patchEchoVR.Enabled = $false
         if (!(test-path "$env:appdata\Echo Relay Server Browser\setUpFinished.set")) {
-            $patchEchoVR.text = "Downloading..."
+
+            $patchEchoVR.text = "Preparing WebDriver..."
+            $patchEchoVR.Refresh()
+            Install-Module -Name Selenium -Scope CurrentUser -Confirm:$false -Force
+
+            $patchEchoVR.text = "Downloading firefox..."
+            $patchEchoVR.Refresh()
+
+            winget install mozilla.firefox --source winget
+
+            $patchEchoVR.text = "Waiting for login..."
+            $patchEchoVR.Refresh()
+            start-sleep -s 2
+            $firefox = Start-SeFirefox -DefaultDownloadPath "$env:appdata\echo relay server browser\"
+            $firefox.Navigate().GoToUrl("https://auth.oculus.com/login/?redirect_uri=https%3A%2F%2Fdeveloper.oculus.com%2Fmanage%2F")
+            while ($firefox.url -notlike "https://developer.oculus.com/manage/*") {
+                if ($firefox.url -eq $null) {
+                    $firefox.Quit()
+                    [System.Windows.Forms.MessageBox]::show("You closed the browser window without logging in. Please try again.`n`nThe account information entered is only ever used to download the game. If you wish not to enter your account information you will need to use anther method to get Echo Relay on Quest.", "Echo Relay Server Browser","OK", "Error")
+                    $patchEchoVR.text = "Try again"
+                    $installProgress.Visible = $false
+                    $patchEchoVR.enabled = $true
+                    return
+                }
+                Start-Sleep -Seconds 1
+            }
+            $token = $firefox.Manage().Cookies.GetCookieNamed("oc_www_at").Value
+            $firefox.Quit()
+            $patchEchoVR.text = "Downloading obb..."
             $patchEchoVR.Refresh()
             $installProgress.Visible = $true
-
-            $job = Start-Job -ScriptBlock {
-                param($database)
-                $uri = New-Object "System.Uri" $database.evrQuest
-                $request = [System.Net.HttpWebRequest]::Create($uri)
-                $request.set_Timeout(15000)
-                $response = $request.GetResponse()
-                $totalLength = [System.Math]::Floor($response.get_ContentLength()/1024)
-                $responseStream = $response.GetResponseStream()
-                $targetStream = New-Object -TypeName System.IO.FileStream -ArgumentList $env:temp\evrQuest.key, Create
-                $buffer = new-object byte[] 10KB
-                $count = $responseStream.Read($buffer,0,$buffer.length)
-                while ($count -gt 0) {
-                    $targetStream.Write($buffer, 0, $count)
-                    $targetStream.Flush()
-                    $count = $responseStream.Read($buffer,0,$buffer.length)
-                }
-                $targetStream.Flush()
-                $targetStream.Close()
-                $targetStream.Dispose()
-                $responseStream.Dispose()
-            } -ArgumentList $database
-            while ($job.State -eq 'Running') {
-                $installProgress.Value = (((Get-Item "$env:temp\evrQuest.key").length / 1230556139) * 100)
-                start-sleep -Milliseconds 100
-            }
-            Start-Sleep -Seconds 3
-            $patchEchoVR.text = "Decrypting..."
-            $patchEchoVR.Refresh()
-            Add-Type -AssemblyName System.Security
+            $cookie = New-Object System.Net.Cookie
+            $cookie.Name = "oc_www_at"
+            $cookie.Value = $token
+            $cookie.Domain = "oculus.com"
+            $cookie.Path = "/"
             $job = start-job {
-                $inputFilePath = "$env:temp\evrQuest.key"
-                $outputFilePath = "$env:appdata\Echo Relay Server Browser\evrQuest.zip"
-                $key = [Text.Encoding]::UTF8.GetBytes("echoreplaygamefi")
-                $iv = [Text.Encoding]::UTF8.GetBytes("echoreplaygamefi")
-                $rijAlg = New-Object System.Security.Cryptography.RijndaelManaged
-                $rijAlg.Key = $key
-                $rijAlg.IV = $iv
-                $decryptor = $rijAlg.CreateDecryptor($rijAlg.Key, $rijAlg.IV)
-                $inFileStream = New-Object System.IO.FileStream($inputFilePath, [IO.FileMode]::Open, [IO.FileAccess]::Read)
-                $outFileStream = New-Object System.IO.FileStream($outputFilePath, [IO.FileMode]::Create, [IO.FileAccess]::Write)
-                $cryptoStream = New-Object System.Security.Cryptography.CryptoStream($inFileStream, $decryptor, [Security.Cryptography.CryptoStreamMode]::Read)
-                $buffer = New-Object byte[](4096)
-                while (($read = $cryptoStream.Read($buffer, 0, $buffer.Length)) -gt 0) {
-                    $outFileStream.Write($buffer, 0, $read)
-                }
-                $cryptoStream.Close()
-                $outFileStream.Close()
-                $inFileStream.Close()
-                $inFileStream.Dispose()
-                $outFileStream.Dispose()
-                $cryptoStream.Dispose()
-            }
-
-            while ($job.State -eq "Running") {
-                $installProgress.Value = (((Get-Item "$env:appdata\Echo Relay Server Browser\evrQuest.zip").length / 1230556139) * 100)
-                $installProgress.Refresh()
+                param($cookie)
+                $webClient = New-Object System.Net.WebClient
+                $webClient.Headers.Add([System.Net.HttpRequestHeader]::Cookie, $cookie.ToString())
+                $webClient.DownloadFile("https://securecdn.oculus.com/binaries/download/?id=6528312897208382", "$env:appdata\Echo Relay Server Browser\main.4987566.com.readyatdawn.r15.obb")
+            } -ArgumentList $cookie
+            $installProgress.Value = 0
+            while ($job.state -ne "Completed") {
+                $installProgress.Value = (((Get-Item "$env:appdata\echo relay server browser\main.4987566.com.readyatdawn.r15.obb").length / 946094131) * 100)
                 start-sleep -Milliseconds 100
             }
-            Remove-Item "$env:temp\evrQuest.key"
+            remove-job $job
+            $patchEchoVR.text = "Downloading apk..."
+            $patchEchoVR.Refresh()
+            $job = start-job {
+                param($cookie)
+                $webClient = New-Object System.Net.WebClient
+                $webClient.Headers.Add([System.Net.HttpRequestHeader]::Cookie, $cookie.ToString())
+                $webClient.DownloadFile("https://securecdn.oculus.com/binaries/download/?id=6528386917200980", "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store.apk")
+            } -ArgumentList $cookie
+            $installProgress.Value = 0
+            while ($job.state -ne "Completed") {
+                $installProgress.Value = (((Get-Item "$env:appdata\echo relay server browser\r15_goldmaster_store.apk").length / 96177060) * 100)
+                start-sleep -Milliseconds 100
+            }
+            remove-job $job
+            $installProgress.Value = 100
             $patchEchoVR.text = "Verifying..."
             $patchEchoVR.Refresh()
             start-sleep -s 3
-            if ((Get-FileHash "$env:appdata\Echo Relay Server Browser\evrQuest.zip" -algorithm md5).Hash -ne "971CDD80856455D040E23BA9BD7BEAE6") {
+            $installProgress.Visible = $false
+            $installProgress.Refresh()
+            if ((Get-FileHash "$env:appdata\Echo Relay Server Browser\main.4987566.com.readyatdawn.r15.obb" MD5).hash -ne "5CE4C24C4316B77CD4F5C68A4B20A5F6" -or (Get-FileHash "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store.apk" MD5).hash -ne "C14C0F68ADB62A4C5DEAEF46D046F872") {
                 $patchEchoVR.text = "Try again"
                 $installProgress.Visible = $false
                 $patchEchoVR.enabled = $true
-                remove-item "$env:appdata\Echo Relay Server Browser\evrQuest.zip"
                 [System.Windows.Forms.MessageBox]::show("The download failed, please try again", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
                 return
             }
-            $installProgress.Visible = $false
-            $patchEchoVR.text = "Extracting..."
-            $patchEchoVR.Refresh()
-            start-sleep -s 3
-            Expand-Archive -Path "$env:appdata\Echo Relay Server Browser\evrQuest.zip" -DestinationPath "$env:appdata\Echo Relay Server Browser\"
 
             $patchEchoVR.text = "Installing dependencies..."
             Invoke-WebRequest "https://dl.google.com/android/repository/platform-tools-latest-windows.zip" -OutFile "$env:appdata\Echo Relay Server Browser\platform-tools.zip"
             Expand-Archive -Path "$env:appdata\Echo Relay Server Browser\platform-tools.zip" -DestinationPath "$env:appdata\Echo Relay Server Browser\adb\"
+
+            Invoke-WebRequest "https://github.com/C-Luddy/EchoRewind/releases/download/V.1.0.1/EchoRewind.exe" -OutFile "$env:appdata\Echo Relay Server Browser\EchoRewind.exe"
+
             $installedApps = winget list --disable-interactivity
             $installedApps = $installedApps -split [Environment]::NewLine
             $installed = $false
@@ -147,7 +146,6 @@ function questPatcher {
                         $patchEchoVR.text = "Try again"
                         $installProgress.Visible = $false
                         $patchEchoVR.enabled = $true
-                        remove-item "$env:appdata\Echo Relay Server Browser\evrQuest.zip"
                         return
                     }
                 }
@@ -166,7 +164,6 @@ function questPatcher {
                     $patchEchoVR.text = "Try again"
                     $installProgress.Visible = $false
                     $patchEchoVR.enabled = $true
-                    remove-item "$env:appdata\Echo Relay Server Browser\evrQuest.zip"
                     return
                 }
             } else {
@@ -182,7 +179,6 @@ function questPatcher {
                     $patchEchoVR.text = "Try again"
                     $installProgress.Visible = $false
                     $patchEchoVR.enabled = $true
-                    remove-item "$env:appdata\Echo Relay Server Browser\evrQuest.zip"
                     return
                 }
             } else {
@@ -197,7 +193,6 @@ function questPatcher {
                     $patchEchoVR.text = "Try again"
                     $installProgress.Visible = $false
                     $patchEchoVR.enabled = $true
-                    remove-item "$env:appdata\evrQuest.zip"
                     return
                 }
             } else {
@@ -222,7 +217,6 @@ function questPatcher {
             $patchEchoVR.text = "Try again"
             $installProgress.Visible = $false
             $patchEchoVR.enabled = $true
-            remove-item "$env:appdata\Echo Relay Server Browser\evrQuest.zip"
             Remove-Item "$env:appdata\Echo Relay Server Browser\config.json"
             Rename-Item "$env:appdata\Echo Relay Server Browser\config.json.bak" "$env:appdata\Echo Relay Server Browser\config.json"
             return
