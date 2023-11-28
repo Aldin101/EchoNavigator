@@ -6,129 +6,8 @@ function Read-FolderBrowserDialog([string]$Message, [string]$InitialDirectory) {
     $folder = $app.BrowseForFolder(0, $Message, 0, $InitialDirectory)
     if ($folder) { return $folder.Self.Path } else { return 'C:\Program Files\Oculus\Software\Software' }
 }
-function downgradeInstructionsPage3 {
-    $next.text = "Finish!"
-    $troubleshootingButton.Visible = $false
-    $startUpPage.Text = "After the game has finished downloading press Y and hit enter for the first`nprompt to backup the game files and launch.`nSimply press enter again to select the backup location.`nPress Y and then enter to launch the game to make sure it works`nOnce you are done press the finish key once you are done to attempt`ninstallation for Echo Relay."
-}
-
-function troubleshooting {
-    $next.visible = $false
-    $troubleshootingButton.Visible = $false
-    $previous.visible = $false
-    $backButton.Visible = $true
-    $startUpPage.text = "One or more of the files failed to validate:`nOn the main menu press 7 then enter, type `"D`" and hit enter`nType echo vr and hit enter,`nType 34.4.631547.1 and hit enter, press Y and hit enter`nWait for the download to finish.`nPress the 3 key to open the launch menu and continue with the next step."
-}
-
-function downgradeInstructionsPage2 {
-    $next.text = "Next" 
-    $troubleshootingButton.Visible = $true
-    $startUpPage.Text = "Then press the 2 key and hit enter.`nSearch for `"echo vr`".`nThen paste `"34.4.631547.1`" into the field using crtl+v (copied to clipboard) and`nhit enter.`nThen press Y and hit enter and wait for the download to finish`nIf the download gives errors click the troubleshooting button."
-    Set-Clipboard "34.4.631547.1"
-}
-
-function downgradeInstructionsPage1 {
-    $troubleshootingButton.Visible = $false
-    $previous.visible = $true
-    $startUpPage.Text = "After the Oculus Downgrader has launched press Y and hit enter`nThen press any key and log into your Meta account.`nThen enter a password to secure your Meta account token"
-}
-
-function downgradeInstructionsPage0 {
-    $startUpPage.Text = "These are instructions on how to downgrade your EchoVR client to the correct`nversion for Echo Relay.`nSimply move this window open next to the downgrader.`nPress next to go to the next step."
-}
-
-function downgradeInstructions {
-    $menu.Hide()
-    $downgradeMenu.Hide()
-
-    $downgradeInstructions = new-object System.Windows.Forms.Form
-    $downgradeInstructions.text = "Echo Relay Downgrader"
-    $downgradeInstructions.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($fileLocation1)
-    $downgradeInstructions.Size = New-Object Drawing.Size @(500, 300)
-    $downgradeInstructions.Location = New-Object System.Drawing.Size(1200, 400)
-    $downgradeInstructions.StartPosition = "Manual"
-    $downgradeInstructions.FormBorderStyle = "FixedDialog"
-    $downgradeInstructions.MaximizeBox = $false
-
-    $downgradeInstructionsLabel = New-Object System.Windows.Forms.Label
-    $downgradeInstructionsLabel.Location = New-Object System.Drawing.Size(10,10)
-    $downgradeInstructionsLabel.Size = New-Object System.Drawing.Size(2000,20)
-    $downgradeInstructionsLabel.Text = "EchoVR Downgrade Instructions"
-    $downgradeInstructionsLabel.Font = "Microsoft Sans Serif,10"
-    $downgradeInstructions.Controls.Add($downgradeInstructionsLabel)
-
-    $next = New-Object System.Windows.Forms.Button
-    $next.Location = New-Object System.Drawing.Size(400,225)
-    $next.Text = "Next"
-    $next.Font = "Microsoft Sans Serif,10"
-    $downgradeInstructions.Controls.Add($next)
-
-    $previous = New-Object System.Windows.Forms.Button
-    $previous.Location = New-Object System.Drawing.Size(320,225)
-    $previous.Text = "Previous"
-    $previous.Font = "Microsoft Sans Serif,10"
-    $previous.Visible = $false
-    $downgradeInstructions.Controls.Add($previous)
-
-    $troubleshootingButton = New-Object System.Windows.Forms.Button
-    $troubleshootingButton.Location = New-Object System.Drawing.Size(10,225)
-    $troubleshootingButton.Size = New-Object System.Drawing.Size(200,30)
-    $troubleshootingButton.Text = "Troubleshooting"
-    $troubleshootingButton.Font = "Microsoft Sans Serif,10"
-    $troubleshootingButton.Visible = $false
-    $troubleshootingButton.Add_Click({
-        $troubleshootingButton.Visible = $false
-        troubleshooting
-    })
-    $downgradeInstructions.Controls.Add($troubleshootingButton)
-
-    $backButton = New-Object System.Windows.Forms.Button
-    $backButton.Location =  New-Object System.Drawing.Size(400,225)
-    $backButton.Text = "Back"
-    $backButton.Font = "Microsoft Sans Serif,10"
-    $backButton.Visible = $false
-    $backButton.Add_Click({
-        $backButton.Visible = $false
-        $next.Visible = $true
-        $previous.Visible = $true
-        $troubleshootingButton.Visible = $true
-        $startUpPage.Text = "Then press the 2 key and hit enter.`nSearch for `"echo vr`".`nThen paste `"34.4.631547.1`" into the field using crtl+v (copied to clipboard) and`nhit enter.`nThen press Y and hit enter and wait for the download to finish`nIf the download gives errors click the troubleshooting button."
-    })
-    $downgradeInstructions.Controls.Add($backButton)
-
-    $startUpPage = New-Object System.Windows.Forms.Label
-    $startUpPage.Location = New-Object System.Drawing.Size(10,40)
-    $startUpPage.Size = New-Object System.Drawing.Size(2000,150)
-    $startUpPage.Text = "These are instructions on how to downgrade your EchoVR client to the correct`nversion for Echo Relay.`nSimply move this window open next to the downgrader.`nPress next to go to the next step."
-    $startUpPage.Font = "Microsoft Sans Serif,10"
-    $downgradeInstructions.Controls.Add($startUpPage)
-
-    $global:currentPage = 0
-
-    $next.Add_Click({
-        switch ($global:currentPage) {
-            0 { downgradeInstructionsPage1; $global:currentPage = 1 }
-            1 { downgradeInstructionsPage2; $global:currentPage = 2 }
-            2 { downgradeInstructionsPage3; $global:currentPage = 3 }
-            3 { $downgradeInstructions.Close(); $global:currentPage = 4 }
-        }
-    })
-
-    $previous.Add_Click({
-        switch ($global:currentPage) {
-            1 { downgradeInstructionsPage0; $global:currentPage = 0; $previous.visible = $false }
-            2 { downgradeInstructionsPage1; $global:currentPage = 1 }
-            3 { downgradeInstructionsPage2; $global:currentPage = 2 }
-            4 { downgradeInstructionsPage3; $global:currentPage = 3 }
-        }
-    })
-
-    $downgradeInstructions.ShowDialog()
-    $menu.Show()
-}
 
 function downgrade {
-    $downgradeOptions.Hide()
     $menu.Hide()
 
     $downgradeMenu = new-object System.Windows.Forms.Form
@@ -152,106 +31,70 @@ function downgrade {
     $downgradeButton.Text = "Downgrade"
     $downgradeButton.Font = "Microsoft Sans Serif,10"
     $downgradeButton.Add_Click({
-        $downgradeButton.text = "Downloading..."
-        $downgradeInstaller = "https://github.com/ComputerElite/Oculus-downgrader/releases/download/1.11.36/net6.0.1.zip"
+        $downgradeButton.text = "Preparing WebDriver..."
+        $downgradeButton.Refresh()
+        Install-Module -Name Selenium -Scope CurrentUser -Confirm:$false -Force
+
+        $downgradeButton.text = "Downloading firefox..."
+        $downgradeButton.Refresh()
+
+        winget install mozilla.firefox --source winget
+
+        $downgradeButton.text = "Waiting for login..."
+        $downgradeButton.Refresh()
+        start-sleep -s 2
+        $firefox = Start-SeFirefox -DefaultDownloadPath "$env:appdata\echo relay server browser\"
+        $firefox.Navigate().GoToUrl("https://auth.oculus.com/login/?redirect_uri=https%3A%2F%2Fdeveloper.oculus.com%2Fmanage%2F")
+        while ($firefox.url -notlike "https://developer.oculus.com/manage/*") {
+            if ($firefox.url -eq $null) {
+                $firefox.Quit()
+                [System.Windows.Forms.MessageBox]::show("You closed the browser window without logging in. Please try again.`n`nThe account information entered is only ever used to download the game. If you wish not to enter your account information you will need to use anther method to get Echo Relay on Quest.", "Echo Relay Server Browser","OK", "Error")
+                $downgradeButton.text = "Try again"
+                $downgradeButton.enabled = $true
+                return
+            }
+            Start-Sleep -Seconds 1
+        }
+        $token = $firefox.Manage().Cookies.GetCookieNamed("oc_www_at").Value
+        $firefox.Quit()
+        $downgradeButton.text = "Downloading Oculus Downgrader..."
+        $downgradeInstaller = "https://github.com/ComputerElite/Oculus-downgrader/releases/download/1.11.36/Oculus.Downgrader.zip"
         $downgradePath = "$env:temp\downgrader.zip"
         Invoke-WebRequest -Uri $downgradeInstaller -OutFile $downgradePath
         Expand-Archive -Path $downgradePath -DestinationPath $env:USERPROFILE\downgrader -force
-        Invoke-WebRequest -Uri "https://msedgedriver.azureedge.net/118.0.2088.76/edgedriver_win64.zip" -OutFile "$env:temp\edgedriver.zip"
-        Expand-Archive -Path "$env:temp\edgedriver.zip" -DestinationPath "$env:USERPROFILE\downgrader" -force
-        Start-Process "$env:USERPROFILE\downgrader\Oculus Downgrader"
+        Start-Process "$env:USERPROFILE\downgrader\Oculus Downgrader" -ArgumentList "d -nU --token $token --destination `"$targetPath`" --noquit --appid 1369078409873402 --versionid 6323983201049540 --headset rift"
         start-sleep -s 1
         if ((get-process "Oculus Downgrader") -eq $null) {
-            $downgradeButton.text = "Downgrade"
-            $noDotNET.Visible = $true
+            $dotNETInstaller = "https://download.visualstudio.microsoft.com/download/pr/1ac0b57e-cf64-487f-aecf-d7df0111fd56/2484cbe1ffacceacaa41eab92a6de998/dotnet-runtime-6.0.3-win-x64.exe"
+            $dotNETInstallerPath = "$env:temp\dotNETInstaller.exe"
+            Invoke-WebRequest -Uri $dotNETInstaller -OutFile $dotNETInstallerPath
+            while (1) {
+                try {
+                    Start-Process $dotNETInstallerPath -verb runAs -ArgumentList "/install /quiet /norestart"
+                    break
+                } catch {
+                    $noDotNET = [System.Windows.Forms.MessageBox]::show(".NET is required to downgrade Echo VR. Please accept the admin prompt after pressing retry.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
+                    if ($noDotNET -eq "Cancel") {
+                        $downgradeButton.text = "Try again"
+                        $downgradeButton.enabled = $true
+                        return
+                    }
+                    return
+                }
+            }
         } else {
-            downgradeInstructions
+            $downgradeButton.text = "Downgrading..."
+            $downgradeButton.Refresh()
             while ((get-process "Oculus Downgrader") -ne $null) {
-                [System.Windows.Forms.MessageBox]::show("Oculus Downgrader is still running, please close it before continuing", "Echo Relay Installer", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
+                start-sleep -s 1
             }
         }
         del $env:USERPROFILE\downgrader -recurse -force
     })
     $downgradeMenu.Controls.Add($downgradeButton)
 
-    $installdotNET = New-Object System.Windows.Forms.Button
-    $installdotNET.Location = New-Object System.Drawing.Size(10,70)
-    $installdotNET.Size = New-Object System.Drawing.Size(200,30)
-    $installdotNET.Text = "Install .NET 6.0"
-    $installdotNET.Font = "Microsoft Sans Serif,10"
-    $installdotNET.Add_Click({
-        $dotNETInstaller = "https://download.visualstudio.microsoft.com/download/pr/1ac0b57e-cf64-487f-aecf-d7df0111fd56/2484cbe1ffacceacaa41eab92a6de998/dotnet-runtime-6.0.3-win-x64.exe"
-        $dotNETInstallerPath = "$env:temp\dotNETInstaller.exe"
-        $installdotNET.text = "Downloading..."
-        Invoke-WebRequest -Uri $dotNETInstaller -OutFile $dotNETInstallerPath
-        $installDotNET.text = "Accept Prompt"
-        try {
-            Start-Process $dotNETInstallerPath -verb runAs -ArgumentList "/install /quiet /norestart"
-        } catch {
-            $noDotNET.Visible = $true
-            $installdotNET.text = "Install .NET 6.0"
-            return
-        }
-        $installDotNET.text = "Installing..."
-        start-sleep -s 3
-        $noDotNET.Visible = $false
-        $installdotNET.text = "Install .NET 6.0"
-    })
-    $downgradeMenu.Controls.Add($installdotNET)
-
-    $noDotNET = New-Object System.Windows.Forms.Label
-    $noDotNET.Location = New-Object System.Drawing.Size(10,100)
-    $noDotNET.Size = New-Object System.Drawing.Size(2000,20)
-    $noDotNET.Text = "You did not install .NET 6.0"
-    $noDotNET.ForeColor = "Red"
-    $noDotNET.Font = "Microsoft Sans Serif,10"
-    $noDotNET.Visible = $false
-    $downgradeMenu.Controls.Add($noDotNET)
-
-    $downgradeToolGithub = New-Object System.Windows.Forms.LinkLabel
-    $downgradeToolGithub.Location = New-Object System.Drawing.Size(10,120)
-    $downgradeToolGithub.Size = New-Object System.Drawing.Size(200,40)
-    $downgradeToolGithub.Text = "Oculus Downgrader`nMade By: ComputerElite"
-    $downgradeToolGithub.Font = "Microsoft Sans Serif,10"
-    $downgradeToolGithub.Add_Click({explorer https://github.com/ComputerElite/Oculus-downgrader})
-    $downgradeMenu.Controls.Add($downgradeToolGithub)
-
-    $downgradeMenu.ShowDialog()
-    $menu.Show()
-}
-
-function entitlement {
-    $downgradeOptions.Hide()
-    $menu.Hide()
-
-    $downgradeMenu = new-object System.Windows.Forms.Form
-    $downgradeMenu.text = "Echo Relay Downgrader"
-    $downgradeMenu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($fileLocation1)
-    $downgradeMenu.Size = New-Object Drawing.Size @(300, 200)
-    $downgradeMenu.StartPosition = "CenterScreen"
-    $downgradeMenu.FormBorderStyle = "FixedDialog"
-    $downgradeMenu.MaximizeBox = $false
-
-    $downgradeLabel = New-Object System.Windows.Forms.Label
-    $downgradeLabel.Location = New-Object System.Drawing.Size(10,10)
-    $downgradeLabel.Size = New-Object System.Drawing.Size(200,20)
-    $downgradeLabel.Text = "Echo Relay Downgrader"
-    $downgradeLabel.Font = "Microsoft Sans Serif,10"
-    $downgradeMenu.Controls.Add($downgradeLabel)
-
-
-    $installProgress = New-Object System.Windows.Forms.ProgressBar
-    $installProgress.Location = New-Object System.Drawing.Size(10,100)
-    $installProgress.Size = New-Object System.Drawing.Size(200,10)
-    $installProgress.Style = "Continuous"
-    $installProgress.Maximum = 100
-    $installProgress.minimum = 0
-    $installProgress.Value = 0
-    $installProgress.Visible = $false
-    $downgradeMenu.Controls.Add($installProgress)
-
     $folderPicker = New-Object System.Windows.Forms.Button
-    $folderPicker.Location = New-Object System.Drawing.Size(10,30)
+    $folderPicker.Location = New-Object System.Drawing.Size(10,70)
     $folderPicker.Size = New-Object System.Drawing.Size(200,30)
     $folderPicker.Text = "Target folder"
     $folderPicker.Font = "Microsoft Sans Serif,10"
@@ -329,192 +172,27 @@ function entitlement {
     })
     $downgradeMenu.Controls.Add($folderPicker)
 
-    $downgradeButton = New-Object System.Windows.Forms.Button
-    $downgradeButton.Location = New-Object System.Drawing.Size(10,70)
-    $downgradeButton.Size = New-Object System.Drawing.Size(200,30)
-    $downgradeButton.Text = "Install"
-    $downgradeButton.Font = "Microsoft Sans Serif,10"
-    $downgradeButton.Add_Click({
+    $noDotNET = New-Object System.Windows.Forms.Label
+    $noDotNET.Location = New-Object System.Drawing.Size(10,100)
+    $noDotNET.Size = New-Object System.Drawing.Size(2000,20)
+    $noDotNET.Text = "You did not install .NET 6.0"
+    $noDotNET.ForeColor = "Red"
+    $noDotNET.Font = "Microsoft Sans Serif,10"
+    $noDotNET.Visible = $false
+    $downgradeMenu.Controls.Add($noDotNET)
 
-        if ($global:gamePath -eq $null) {
-            [System.Windows.Forms.MessageBox]::show("Please select a valid game folder", "Echo Relay Downgrader", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
-            return
-        }
-
-        if ((Get-PSDrive -name "C").free/1GB -lt 15) {
-            [System.Windows.Forms.MessageBox]::show("You do not have enough space on your C drive to install the game, you need 15 gigs of total free space (although only 5 gigs are used after installation finishes).`n`nThe Oculus Downgrader requires less total storage space although it is harder to do. If you can not free up 15 gigs of space use that instead.", "Echo Relay Downgrader", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Error)
-            return
-        }
-
-        $doNotExitLabel = New-Object System.Windows.Forms.Label
-        $doNotExitLabel.Location = New-Object System.Drawing.Size(10,115)
-        $doNotExitLabel.Size = New-Object System.Drawing.Size(2000,200)
-        $doNotExitLabel.Text = "Do not exit the installer until it is finished`neven if it is `"not responding`""
-        $doNotExitLabel.Font = "Microsoft Sans Serif,10"
-        $downgradeMenu.Controls.Add($doNotExitLabel)
-
-        $downgradeButton.enabled = $false
-        $downgradeButton.text = "Downloading..."
-        $downgradeButton.Refresh()
-        $installProgress.Visible = $true
-
-        if (test-path "$global:gamePath\bin") {
-            cd $global:gamePath
-            cd..
-            $global:gamePath = (get-location).Path
-            cd $script:psscriptroot
-        }
-
-        $job = Start-Job -ScriptBlock {
-            $uri = New-Object "System.Uri" 'https://api.onedrive.com/v1.0/shares/s!AoyEpgAUfH81gYshKvth5AC5WcK02w/root/content'
-            $request = [System.Net.HttpWebRequest]::Create($uri)
-            $request.set_Timeout(15000)
-            $response = $request.GetResponse()
-            $totalLength = [System.Math]::Floor($response.get_ContentLength()/1024)
-            $responseStream = $response.GetResponseStream()
-            $targetStream = New-Object -TypeName System.IO.FileStream -ArgumentList $env:temp\evr.key, Create
-            $buffer = new-object byte[] 10KB
-            $count = $responseStream.Read($buffer,0,$buffer.length)
-            while ($count -gt 0) {
-                $targetStream.Write($buffer, 0, $count)
-                $targetStream.Flush()
-                $count = $responseStream.Read($buffer,0,$buffer.length)
-            }
-            $targetStream.Flush()
-            $targetStream.Close()
-            $targetStream.Dispose()
-            $responseStream.Dispose()
-        }
-
-        while ($job.State -eq 'Running') {
-            $installProgress.Value = (((Get-Item "$env:temp\evr.key").length / 5026903423) * 100)
-            start-sleep -Milliseconds 100
-        }
-
-        Remove-Job -Job $job
-
-        Start-Sleep -Seconds 3
-        $downgradeButton.text = "Decrypting..."
-        $downgradeButton.Refresh()
-
-        Add-Type -AssemblyName System.Security
-        $job = start-job {
-            $inputFilePath = "$env:temp\evr.key"
-            $outputFilePath = "$env:temp\evr.zip"
-            $key = [Text.Encoding]::UTF8.GetBytes("echoreplaygamefi")
-            $iv = [Text.Encoding]::UTF8.GetBytes("echoreplaygamefi")
-            $rijAlg = New-Object System.Security.Cryptography.RijndaelManaged
-            $rijAlg.Key = $key
-            $rijAlg.IV = $iv
-            $decryptor = $rijAlg.CreateDecryptor($rijAlg.Key, $rijAlg.IV)
-            $inFileStream = New-Object System.IO.FileStream($inputFilePath, [IO.FileMode]::Open, [IO.FileAccess]::Read)
-            $outFileStream = New-Object System.IO.FileStream($outputFilePath, [IO.FileMode]::Create, [IO.FileAccess]::Write)
-            $cryptoStream = New-Object System.Security.Cryptography.CryptoStream($inFileStream, $decryptor, [Security.Cryptography.CryptoStreamMode]::Read)
-            $buffer = New-Object byte[](4096)
-            while (($read = $cryptoStream.Read($buffer, 0, $buffer.Length)) -gt 0) {
-                $outFileStream.Write($buffer, 0, $read)
-            }
-            $cryptoStream.Close()
-            $outFileStream.Close()
-            $inFileStream.Close()
-            $inFileStream.Dispose()
-            $outFileStream.Dispose()
-            $cryptoStream.Dispose()
-        }
-
-        while ($job.State -eq "Running") {
-            $installProgress.Value = (((Get-Item "$env:temp\evr.zip").length / 5026903423) * 100)
-            start-sleep -Milliseconds 100
-        }
-
-        remove-job -job $job
-
-        $downgradeButton.text = "Verifying..."
-        $downgradeButton.Refresh()
-        start-sleep -s 3
-        if ((Get-FileHash $env:temp\evr.zip -algorithm md5).Hash -ne "AE45FCE4C45D38B0B03EFE46B5E7EC84") {
-            $downgradeButton.text = "Try again"
-            $installProgress.Visible = $false
-            $downgradeButton.enabled = $true
-            [System.Windows.Forms.MessageBox]::show("The download failed, please try again", "Echo Relay Downgrader", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
-            return
-        }
-        $downgradeButton.text = "Extracting..."
-        $downgradeButton.Refresh()
-        $installProgress.visible = $false
-        $installProgress.Refresh()
-        start-sleep -s 3
-        $job = start-job {
-            param($global:gamePath)
-            Expand-Archive -Path $env:temp\evr.zip -DestinationPath $global:gamePath -force
-        } -ArgumentList $global:gamePath
-
-        while ($job.State -eq "Running") {
-            start-sleep -seconds 1
-        }
-
-        remove-job -job $job
-
-        $downgradeButton.text = "Patching..."
-        $downgradeButton.Refresh()
-        Invoke-WebRequest https://echo-foundation.pages.dev/files/offline_echo/pnsovr.dll -outFile $global:gamePath\ready-at-dawn-echo-arena\bin\win10\pnsovr.dll
-        del $env:temp\evr.zip
-        del $env:temp\evr.key
-        $global:gamePath = "$global:gamePath\ready-at-dawn-echo-arena"
-        $downgradeButton.text = "Finished!"
-        $downgradeButton.Refresh()
-        start-sleep -s 3
-        $downgradeMenu.Close()
-    })
-    $downgradeMenu.Controls.Add($downgradeButton)
+    $downgradeToolGithub = New-Object System.Windows.Forms.LinkLabel
+    $downgradeToolGithub.Location = New-Object System.Drawing.Size(10,120)
+    $downgradeToolGithub.Size = New-Object System.Drawing.Size(200,40)
+    $downgradeToolGithub.Text = "Oculus Downgrader`nMade By: ComputerElite"
+    $downgradeToolGithub.Font = "Microsoft Sans Serif,10"
+    $downgradeToolGithub.Add_Click({explorer https://github.com/ComputerElite/Oculus-downgrader})
+    $downgradeMenu.Controls.Add($downgradeToolGithub)
 
     $downgradeMenu.ShowDialog()
     $menu.Show()
-    return
 }
-function downgradeOptions {
-    $downgradeOptions = new-object System.Windows.Forms.Form
-    $downgradeOptions.text = "Echo Relay Downgrader"
-    $downgradeOptions.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($fileLocation1)
-    $downgradeOptions.Size = New-Object Drawing.Size @(460, 120)
-    $downgradeOptions.StartPosition = "CenterScreen"
-    $downgradeOptions.FormBorderStyle = "FixedDialog"
-    $downgradeOptions.MaximizeBox = $false
-    $downgradeOptions.ShowInTaskbar = $false
 
-    $downgradeLabel = New-Object System.Windows.Forms.Label
-    $downgradeLabel.Location = New-Object System.Drawing.Size(80,10)
-    $downgradeLabel.Size = New-Object System.Drawing.Size(2000,20)
-    $downgradeLabel.Text = "What downgrade method would you like to use?"
-    $downgradeLabel.Font = "Microsoft Sans Serif,10"
-    $downgradeOptions.Controls.Add($downgradeLabel)
-
-    $Oculus = New-Object System.Windows.Forms.Button
-    $Oculus.Location = New-Object System.Drawing.Size(10,30)
-    $Oculus.Size = New-Object System.Drawing.Size(200,30)
-    $Oculus.Text = "Oculus Downgrader"
-    $Oculus.Font = "Microsoft Sans Serif,10"
-    $Oculus.Add_Click({downgrade})
-    $downgradeOptions.Controls.Add($Oculus)
-
-    $entitlement = new-object System.Windows.Forms.Button
-    $entitlement.Location = New-Object System.Drawing.Size(230,30)
-    $entitlement.Size = New-Object System.Drawing.Size(200,30)
-    $entitlement.Text = "Entitlement Bypass"
-    $entitlement.Font = "Microsoft Sans Serif,10"
-    $entitlement.Add_Click({entitlement})
-    $downgradeOptions.Controls.Add($entitlement)
-
-    $recommended = New-Object System.Windows.Forms.Label
-    $recommended.Location = New-Object System.Drawing.Size(285,60)
-    $recommended.Size = New-Object System.Drawing.Size(2000,20)
-    $recommended.Text = "(recommended)"
-    $recommended.Font = "Microsoft Sans Serif,10"
-    $downgradeOptions.Controls.Add($recommended)
-
-
-    $downgradeOptions.ShowDialog()
-}
 
 function install {
     $noUsernameOrPassword.Visible = $false
@@ -546,7 +224,7 @@ function install {
     if (!(test-path $global:gamePath\bin\win10\echovr.exe)) {
         $choice = [System.Windows.Forms.MessageBox]::show("Please select a valid game folder or install the game.`n`nDon't have the game installed? Click Yes to install it.", "Echo Relay Installer", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Warning)
         if ($choice -eq "Yes") {
-            downgradeOptions
+            downgrade
         } else {
             return
         }
@@ -576,7 +254,7 @@ function install {
         $noUsernameOrPassword.Visible = $true
         $choice = [System.windows.forms.messagebox]::show("You are on the wrong version of EchoVR, would you like to downgrade?" , "Echo Relay Installer", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Warning)
         if ($choice -eq "Yes") {
-            downgradeOptions
+            downgrade
         } else {
             return
         }
