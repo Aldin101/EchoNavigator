@@ -53,6 +53,15 @@ function downgrade {
     $downgradeLabel.Font = "Microsoft Sans Serif,10"
     $downgradeMenu.Controls.Add($downgradeLabel)
 
+    $installProgress = New-Object System.Windows.Forms.ProgressBar
+    $installProgress.Location = New-Object System.Drawing.Size(10,50)
+    $installProgress.Size = New-Object System.Drawing.Size(200,20)
+    $installProgress.Style = "Continuous"
+    $installProgress.Maximum = 100
+    $installProgress.Value = 0
+    $installProgress.Visible = $false
+    $downgradeMenu.Controls.Add($installProgress)
+
     $downgradeButton = New-Object System.Windows.Forms.Button
     $downgradeButton.Location = New-Object System.Drawing.Size(10,30)
     $downgradeButton.Size = New-Object System.Drawing.Size(200,30)
@@ -87,9 +96,16 @@ function downgrade {
         $firefox.Quit()
         $downgradeButton.text = "Downloading..."
         $downgradeButton.Refresh()
+        $installProgress.Visible = $true
+        $installProgress.Value = 0
+        $installProgress.Refresh()
         $file = Invoke-WebRequest -uri "https://securecdn.oculus.com/binaries/download/?id=6323983201049540&access_token=$token&get_manifest=1" -OutFile "$env:temp\manifest.zip"
         Expand-Archive -Path "$env:temp\manifest.zip" -DestinationPath "$env:temp\manifest" -force
         $manifest = get-content "$env:temp\manifest\manifest.json" | convertfrom-json
+        $segmentCount = 0
+        for ($i=0; $i -lt $($manifest.files | get-member).name.count; $i++) {
+            $segmentCount = $segmentCount + $manifest.files.$($($manifest.files | get-member).name[$i]).segments.count
+        }
         for ($i=0; $i -lt $($manifest.files | get-member).name.count; $i++) {
             $folderName = $($($manifest.files | get-member).name[$i])
             $folderName = $folderName -split "\\"
@@ -114,6 +130,9 @@ function downgrade {
                 $deflateStream.Close()
                 $targetStream.Close()
                 $responseStream.Close()
+                
+                $installProgress.value = [math]::round(($installProgress.value + 1) / $segmentCount * 100)
+                $installProgress.Refresh()
             }
             $fileStream.Close()
         }
@@ -121,6 +140,12 @@ function downgrade {
         rmdir "$env:temp\evr\GetHashCode" -recurse -force
         rmdir "$env:temp\evr\GetType" -recurse -force
         rmdir "$env:temp\evr\ToString" -recurse -force
+
+        $downgradeGamePath = $global:gamePath
+        $downgradeGamePath = $downgradeGamePath -split "\\"
+        $downgradeGamePath = $downgradeGamePath[0..($downgradeGamePath.Length - 2)]
+        $downgradeGamePath = $downgradeGamePath -join "\"
+        move-item "$env:temp\evr\" "$downgradeGamePath\" -force
     })
     $downgradeMenu.Controls.Add($downgradeButton)
 
