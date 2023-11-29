@@ -85,10 +85,8 @@ function downgrade {
         }
         $token = $firefox.Manage().Cookies.GetCookieNamed("oc_www_at").Value
         $firefox.Quit()
-        "https://securecdn.oculus.com/binaries/download/?id=6323983201049540&access_token=$token&get_manifest=1"
         $downgradeButton.text = "Downloading..."
         $downgradeButton.Refresh()
-        Add-Type -Path '.\Ionic.Zlib.dll'
         $file = Invoke-WebRequest -uri "https://securecdn.oculus.com/binaries/download/?id=6323983201049540&access_token=$token&get_manifest=1" -OutFile "$env:temp\manifest.zip"
         Expand-Archive -Path "$env:temp\manifest.zip" -DestinationPath "$env:temp\manifest" -force
         $manifest = get-content "$env:temp\manifest\manifest.json" | convertfrom-json
@@ -99,72 +97,30 @@ function downgrade {
             $folderName = $folderName -join "\"
             mkdir "$env:temp\evr\$folderName\" -ErrorAction SilentlyContinue
             $fileStream = New-Object System.IO.FileStream("$env:temp\evr\$($($manifest.files | get-member).name[$i])", [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write)
+            $bufferSize = 10KB
             foreach ($segment in $manifest.files.$($($manifest.files | get-member).name[$i]).segments) {
                 $targetStream = New-Object -TypeName System.IO.MemoryStream
                 $uri = New-Object "System.Uri" "https://securecdn.oculus.com/binaries/segment/?access_token=$token&binary_id=6323983201049540&segment_sha256=$($segment[1])"
                 $request = [System.Net.HttpWebRequest]::Create($uri)
                 $request.set_Timeout(15000)
                 $response = $request.GetResponse()
-                $totalLength = [System.Math]::Floor($response.get_ContentLength()/1024)
                 $responseStream = $response.GetResponseStream()
-                $buffer = new-object byte[] 10KB
-                $count = $responseStream.Read($buffer,0,$buffer.length)
-                while ($count -gt 0) {
-                    $targetStream.Write($buffer, 0, $count)
-                    $count = $responseStream.Read($buffer,0,$buffer.length)
-                }
+                $responseStream.CopyTo($targetStream, $bufferSize)
                 $targetStream.Position = 0
-                $zlibStream = New-Object Ionic.Zlib.ZlibStream($targetStream, [Ionic.Zlib.CompressionMode]::Decompress)
-                $buffer = New-Object byte[] 10KB
-                $read = $zlibStream.Read($buffer, 0, $buffer.Length)
-                while (1) {
-                    $fileStream.Write($buffer, 0, $read)
-                    $buffer = New-Object byte[] 10KB
-                    try {
-                        $read = $zlibStream.Read($buffer, 0, $buffer.Length)
-                    } catch {
-                        break
-                    }
-                }
-                $zlibStream.Close()
+                $targetStream.SetLength($targetStream.Length - 4)
+                $targetStream.Position = 2
+                $deflateStream = New-Object System.IO.Compression.DeflateStream($targetStream, [System.IO.Compression.CompressionMode]::Decompress)
+                $deflateStream.CopyTo($fileStream, $bufferSize)
+                $deflateStream.Close()
                 $targetStream.Close()
+                $responseStream.Close()
             }
             $fileStream.Close()
         }
-
-        $downgradeButton.text = "Downloading Oculus Downgrader..."
-        $downgradeInstaller = "https://github.com/ComputerElite/Oculus-downgrader/releases/download/1.11.36/Oculus.Downgrader.zip"
-        $downgradePath = "$env:temp\downgrader.zip"
-        Invoke-WebRequest -Uri $downgradeInstaller -OutFile $downgradePath
-        Expand-Archive -Path $downgradePath -DestinationPath $env:USERPROFILE\downgrader -force
-        Start-Process "$env:USERPROFILE\downgrader\Oculus Downgrader" -ArgumentList "d -nU --token $token --destination `"$targetPath`" --noquit --appid 1369078409873402 --versionid 6323983201049540 --headset rift"
-        start-sleep -s 1
-        if ((get-process "Oculus Downgrader") -eq $null) {
-            $dotNETInstaller = "https://download.visualstudio.microsoft.com/download/pr/1ac0b57e-cf64-487f-aecf-d7df0111fd56/2484cbe1ffacceacaa41eab92a6de998/dotnet-runtime-6.0.3-win-x64.exe"
-            $dotNETInstallerPath = "$env:temp\dotNETInstaller.exe"
-            Invoke-WebRequest -Uri $dotNETInstaller -OutFile $dotNETInstallerPath
-            while (1) {
-                try {
-                    Start-Process $dotNETInstallerPath -verb runAs -ArgumentList "/install /quiet /norestart"
-                    break
-                } catch {
-                    $noDotNET = [System.Windows.Forms.MessageBox]::show(".NET is required to downgrade Echo VR. Please accept the admin prompt after pressing retry.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
-                    if ($noDotNET -eq "Cancel") {
-                        $downgradeButton.text = "Try again"
-                        $downgradeButton.enabled = $true
-                        return
-                    }
-                    return
-                }
-            }
-        } else {
-            $downgradeButton.text = "Downgrading..."
-            $downgradeButton.Refresh()
-            while ((get-process "Oculus Downgrader") -ne $null) {
-                start-sleep -s 1
-            }
-        }
-        del $env:USERPROFILE\downgrader -recurse -force
+        rmdir "$env:temp\evr\Equals" -recurse -force
+        rmdir "$env:temp\evr\GetHashCode" -recurse -force
+        rmdir "$env:temp\evr\GetType" -recurse -force
+        rmdir "$env:temp\evr\ToString" -recurse -force
     })
     $downgradeMenu.Controls.Add($downgradeButton)
 
