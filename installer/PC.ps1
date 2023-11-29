@@ -53,14 +53,40 @@ function downgrade {
     $downgradeLabel.Font = "Microsoft Sans Serif,10"
     $downgradeMenu.Controls.Add($downgradeLabel)
 
-    $installProgress = New-Object System.Windows.Forms.ProgressBar
-    $installProgress.Location = New-Object System.Drawing.Size(10,50)
-    $installProgress.Size = New-Object System.Drawing.Size(200,20)
-    $installProgress.Style = "Continuous"
-    $installProgress.Maximum = 100
-    $installProgress.Value = 0
-    $installProgress.Visible = $false
-    $downgradeMenu.Controls.Add($installProgress)
+    $segmentLabel = New-Object System.Windows.Forms.Label
+    $segmentLabel.Location = New-Object System.Drawing.Size(10,60)
+    $segmentLabel.Size = New-Object System.Drawing.Size(200,20)
+    $segmentLabel.Text = "Downloaded Segments"
+    $segmentLabel.Font = "Microsoft Sans Serif,10"
+    $segmentLabel.Visible = $false
+    $downgradeMenu.Controls.Add($segmentLabel)
+
+    $segmentProgress = New-Object System.Windows.Forms.ProgressBar
+    $segmentProgress.Location = New-Object System.Drawing.Size(10,80)
+    $segmentProgress.Size = New-Object System.Drawing.Size(200,15)
+    $segmentProgress.Style = "Continuous"
+    $segmentProgress.Maximum = 100
+    $segmentProgress.Value = 0
+    $segmentProgress.Visible = $false
+    $downgradeMenu.Controls.Add($segmentProgress)
+
+    $sizeLabel = New-Object System.Windows.Forms.Label
+    $sizeLabel.Location = New-Object System.Drawing.Size(10,100)
+    $sizeLabel.Size = New-Object System.Drawing.Size(200,20)
+    $sizeLabel.Text = "Downloaded Size"
+    $sizeLabel.Font = "Microsoft Sans Serif,10"
+    $sizeLabel.Visible = $false
+    $downgradeMenu.Controls.Add($sizeLabel)
+
+    $sizeProgress = New-Object System.Windows.Forms.ProgressBar
+    $sizeProgress.Location = New-Object System.Drawing.Size(10,120)
+    $sizeProgress.Size = New-Object System.Drawing.Size(200,15)
+    $sizeProgress.Style = "Continuous"
+    $sizeProgress.Maximum = 100
+    $sizeProgress.Value = 0
+    $sizeProgress.Visible = $false
+    $downgradeMenu.Controls.Add($sizeProgress)
+
 
     $downgradeButton = New-Object System.Windows.Forms.Button
     $downgradeButton.Location = New-Object System.Drawing.Size(10,30)
@@ -68,6 +94,8 @@ function downgrade {
     $downgradeButton.Text = "Downgrade"
     $downgradeButton.Font = "Microsoft Sans Serif,10"
     $downgradeButton.Add_Click({
+        $downgradeButton.enabled = $false
+        $folderPicker.enabled = $false
         $downgradeButton.text = "Preparing WebDriver..."
         $downgradeButton.Refresh()
         Install-Module -Name Selenium -Scope CurrentUser -Confirm:$false -Force
@@ -96,16 +124,29 @@ function downgrade {
         $firefox.Quit()
         $downgradeButton.text = "Downloading..."
         $downgradeButton.Refresh()
-        $installProgress.Visible = $true
-        $installProgress.Value = 0
-        $installProgress.Refresh()
-        $file = Invoke-WebRequest -uri "https://securecdn.oculus.com/binaries/download/?id=6323983201049540&access_token=$token&get_manifest=1" -OutFile "$env:temp\manifest.zip"
+        $folderPicker.Visible = $false
+        $segmentLabel.Visible = $true
+        $segmentProgress.Visible = $true
+        $sizeLabel.Visible = $true
+        $sizeProgress.Visible = $true
+        $segmentProgress.Value = 0
+        $segmentProgress.Refresh()
+        try {
+            Invoke-WebRequest -uri "https://securecdn.oculus.com/binaries/download/?id=6323983201049540&access_token=$token&get_manifest=1" -OutFile "$env:temp\manifest.zip"
+        } catch {
+            [System.Windows.Forms.MessageBox]::show("Failed to start download. This is usually caused by you not owning Echo VR on the account to logged in with, or having no internet.", "Echo Relay Server Browser","OK", "Error")
+            $downgradeButton.text = "Try again"
+            $downgradeButton.enabled = $true
+            return
+        }
         Expand-Archive -Path "$env:temp\manifest.zip" -DestinationPath "$env:temp\manifest" -force
         $manifest = get-content "$env:temp\manifest\manifest.json" | convertfrom-json
         $segmentCount = 0
         for ($i=0; $i -lt $($manifest.files | get-member).name.count; $i++) {
             $segmentCount = $segmentCount + $manifest.files.$($($manifest.files | get-member).name[$i]).segments.count
+            $totalSize = $totalSize + $manifest.files.$($($manifest.files | get-member).name[$i]).size
         }
+        $segmentsDownloaded = 0
         for ($i=0; $i -lt $($manifest.files | get-member).name.count; $i++) {
             $folderName = $($($manifest.files | get-member).name[$i])
             $folderName = $folderName -split "\\"
@@ -130,22 +171,81 @@ function downgrade {
                 $deflateStream.Close()
                 $targetStream.Close()
                 $responseStream.Close()
-                
-                $installProgress.value = [math]::round(($installProgress.value + 1) / $segmentCount * 100)
-                $installProgress.Refresh()
+                $segmentsDownloaded++
+                $segmentProgress.value = ($segmentsDownloaded / $segmentCount) * 100
+                $segmentProgress.Refresh()
+                $sizeProgress.value = (((Get-ChildItem "$env:temp\evr" -Recurse | Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum + $fileStream.Length)/ $totalSize) * 100
+                $sizeProgress.Refresh()
             }
             $fileStream.Close()
         }
+        $segmentLabel.Visible = $false
+        $sizeLabel.Visible = $false
+        $sizeProgress.Visible = $false
+        $downgradeButton.text = "Verifying..."
+        $downgradeButton.Refresh()
+
+        for ($i=0; $i -lt $($manifest.files | get-member).name.count; $i++) {
+            $hash = (Get-FileHash -Path "$env:temp\evr\$($($manifest.files | get-member).name[$i])" -Algorithm SHA256).hash
+            if ($hash -ne $manifest.files.$($($manifest.files | get-member).name[$i]).sha256) {
+                $downgradeButton.text = "Downloading..."
+                $fileStream = New-Object System.IO.FileStream("$env:temp\evr\$($($manifest.files | get-member).name[$i])", [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write)
+                $bufferSize = 10KB
+                $segmentsDownloaded = 0
+                foreach ($segment in $manifest.files.$($($manifest.files | get-member).name[$i]).segments) {
+                    $targetStream = New-Object -TypeName System.IO.MemoryStream
+                    $uri = New-Object "System.Uri" "https://securecdn.oculus.com/binaries/segment/?access_token=$token&binary_id=6323983201049540&segment_sha256=$($segment[1])"
+                    $request = [System.Net.HttpWebRequest]::Create($uri)
+                    $request.set_Timeout(15000)
+                    $response = $request.GetResponse()
+                    $responseStream = $response.GetResponseStream()
+                    $responseStream.CopyTo($targetStream, $bufferSize)
+                    $targetStream.Position = 0
+                    $targetStream.SetLength($targetStream.Length - 4)
+                    $targetStream.Position = 2
+                    $deflateStream = New-Object System.IO.Compression.DeflateStream($targetStream, [System.IO.Compression.CompressionMode]::Decompress)
+                    $deflateStream.CopyTo($fileStream, $bufferSize)
+                    $deflateStream.Close()
+                    $targetStream.Close()
+                    $responseStream.Close()
+                    $segmentsDownloaded++
+                    $segmentProgress.value = ($segmentsDownloaded / $manifest.files.$($($manifest.files | get-member).name[$i]).segments.count) * 100
+                    $segmentProgress.Refresh()
+                }
+                $fileStream.Close()
+                $hash = (Get-FileHash -Path "$env:temp\evr\$($($manifest.files | get-member).name[$i])" -Algorithm SHA256).hash
+                if ($hash -ne $manifest.files.$($($manifest.files | get-member).name[$i]).sha256) {
+                    [System.Windows.Forms.MessageBox]::show("The download was corrupt even after a second download attempt. Please try again.", "Echo Relay Server Browser","OK", "Error")
+                    $downgradeButton.text = "Try again"
+                    $downgradeButton.enabled = $true
+                    return
+                } else {
+                    $downgradeButton.text = "Verifying..."
+                    $downgradeButton.Refresh()
+                }
+            }
+            $segmentProgress.value = ($i / $($manifest.files | get-member).name.count) * 100
+            $segmentProgress.Refresh()
+        }
+        $segmentProgress.Visible = $false
+        $folderPicker.Visible = $true
+        $downgradeButton.text = "Installing..."
+        $downgradeButton.Refresh()
+        $token = $null
+
         rmdir "$env:temp\evr\Equals" -recurse -force
         rmdir "$env:temp\evr\GetHashCode" -recurse -force
         rmdir "$env:temp\evr\GetType" -recurse -force
         rmdir "$env:temp\evr\ToString" -recurse -force
 
-        $downgradeGamePath = $global:gamePath
-        $downgradeGamePath = $downgradeGamePath -split "\\"
-        $downgradeGamePath = $downgradeGamePath[0..($downgradeGamePath.Length - 2)]
-        $downgradeGamePath = $downgradeGamePath -join "\"
-        move-item "$env:temp\evr\" "$downgradeGamePath\" -force
+        remove-item $global:gamePath -recurse -force
+        move-item "$env:temp\evr\*" $global:gamePath -force
+
+        $downgradeButton.text = "Finished!"
+        $downgradeButton.Refresh()
+        start-sleep -s 2
+        $menu.show()
+        $downgradeMenu.Close()
     })
     $downgradeMenu.Controls.Add($downgradeButton)
 
@@ -227,23 +327,6 @@ function downgrade {
         $pickMenu.ShowDialog()
     })
     $downgradeMenu.Controls.Add($folderPicker)
-
-    $noDotNET = New-Object System.Windows.Forms.Label
-    $noDotNET.Location = New-Object System.Drawing.Size(10,100)
-    $noDotNET.Size = New-Object System.Drawing.Size(2000,20)
-    $noDotNET.Text = "You did not install .NET 6.0"
-    $noDotNET.ForeColor = "Red"
-    $noDotNET.Font = "Microsoft Sans Serif,10"
-    $noDotNET.Visible = $false
-    $downgradeMenu.Controls.Add($noDotNET)
-
-    $downgradeToolGithub = New-Object System.Windows.Forms.LinkLabel
-    $downgradeToolGithub.Location = New-Object System.Drawing.Size(10,120)
-    $downgradeToolGithub.Size = New-Object System.Drawing.Size(200,40)
-    $downgradeToolGithub.Text = "Oculus Downgrader`nMade By: ComputerElite"
-    $downgradeToolGithub.Font = "Microsoft Sans Serif,10"
-    $downgradeToolGithub.Add_Click({explorer https://github.com/ComputerElite/Oculus-downgrader})
-    $downgradeMenu.Controls.Add($downgradeToolGithub)
 
     $downgradeMenu.ShowDialog()
     $menu.Show()

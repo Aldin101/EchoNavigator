@@ -117,15 +117,7 @@ function questPatcher {
 
             Invoke-WebRequest "https://github.com/C-Luddy/EchoRewind/releases/download/V.1.0.1/EchoRewind.exe" -OutFile "$env:appdata\Echo Relay Server Browser\EchoRewind.exe"
 
-            $installedApps = winget list --disable-interactivity
-            $installedApps = $installedApps -split [Environment]::NewLine
             $installed = $false
-            foreach ($app in $installedApps) {
-                if ($app -like "*Oracle.JavaRuntimeEnvironment*") {
-                    $installed = $true
-                    break
-                }
-            }
             while ($installed -eq $false) {
                 winget install -e --id Oracle.JavaRuntimeEnvironment --source winget --disable-interactivity
                 start-sleep -s 5
