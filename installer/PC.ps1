@@ -1,6 +1,34 @@
 $ProgressPreference = 'SilentlyContinue'
 $file = Invoke-WebRequest https://aldin101.github.io/Echo-Relay-Installer/host.json -UseBasicParsing
 $global:database = $file.Content | ConvertFrom-Json
+function Decompress-ZlibFile {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$InputPath,
+        [Parameter(Mandatory=$true)]
+        [string]$OutputPath
+    )
+
+    Add-Type -AssemblyName System.IO.Compression
+
+    $input = New-Object System.IO.FileStream($InputPath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read)
+    $output = New-Object System.IO.FileStream($OutputPath, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write)
+
+    $input.ReadByte() | Out-Null
+    $input.ReadByte() | Out-Null
+
+    $deflateStream = New-Object System.IO.Compression.DeflateStream($input, [System.IO.Compression.CompressionMode]::Decompress)
+
+    $buffer = New-Object byte[](1024)
+    while (($read = $deflateStream.Read($buffer, 0, $buffer.Length)) -gt 0) {
+        $output.Write($buffer, 0, $read)
+    }
+
+    $deflateStream.Close()
+    $output.Close()
+    $input.Close()
+}
+
 function Read-FolderBrowserDialog([string]$Message, [string]$InitialDirectory) {
     $app = New-Object -ComObject Shell.Application
     $folder = $app.BrowseForFolder(0, $Message, 0, $InitialDirectory)
@@ -57,6 +85,53 @@ function downgrade {
         }
         $token = $firefox.Manage().Cookies.GetCookieNamed("oc_www_at").Value
         $firefox.Quit()
+        "https://securecdn.oculus.com/binaries/download/?id=6323983201049540&access_token=$token&get_manifest=1"
+        $downgradeButton.text = "Downloading..."
+        $downgradeButton.Refresh()
+        Add-Type -Path '.\Ionic.Zlib.dll'
+        $file = Invoke-WebRequest -uri "https://securecdn.oculus.com/binaries/download/?id=6323983201049540&access_token=$token&get_manifest=1" -OutFile "$env:temp\manifest.zip"
+        Expand-Archive -Path "$env:temp\manifest.zip" -DestinationPath "$env:temp\manifest" -force
+        $manifest = get-content "$env:temp\manifest\manifest.json" | convertfrom-json
+        for ($i=0; $i -lt $($manifest.files | get-member).name.count; $i++) {
+            $folderName = $($($manifest.files | get-member).name[$i])
+            $folderName = $folderName -split "\\"
+            $folderName = $folderName[0..($folderName.Length - 2)]
+            $folderName = $folderName -join "\"
+            mkdir "$env:temp\evr\$folderName\" -ErrorAction SilentlyContinue
+            $fileStream = New-Object System.IO.FileStream("$env:temp\evr\$($($manifest.files | get-member).name[$i])", [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write)
+            foreach ($segment in $manifest.files.$($($manifest.files | get-member).name[$i]).segments) {
+                $targetStream = New-Object -TypeName System.IO.MemoryStream
+                $uri = New-Object "System.Uri" "https://securecdn.oculus.com/binaries/segment/?access_token=$token&binary_id=6323983201049540&segment_sha256=$($segment[1])"
+                $request = [System.Net.HttpWebRequest]::Create($uri)
+                $request.set_Timeout(15000)
+                $response = $request.GetResponse()
+                $totalLength = [System.Math]::Floor($response.get_ContentLength()/1024)
+                $responseStream = $response.GetResponseStream()
+                $buffer = new-object byte[] 10KB
+                $count = $responseStream.Read($buffer,0,$buffer.length)
+                while ($count -gt 0) {
+                    $targetStream.Write($buffer, 0, $count)
+                    $count = $responseStream.Read($buffer,0,$buffer.length)
+                }
+                $targetStream.Position = 0
+                $zlibStream = New-Object Ionic.Zlib.ZlibStream($targetStream, [Ionic.Zlib.CompressionMode]::Decompress)
+                $buffer = New-Object byte[] 10KB
+                $read = $zlibStream.Read($buffer, 0, $buffer.Length)
+                while (1) {
+                    $fileStream.Write($buffer, 0, $read)
+                    $buffer = New-Object byte[] 10KB
+                    try {
+                        $read = $zlibStream.Read($buffer, 0, $buffer.Length)
+                    } catch {
+                        break
+                    }
+                }
+                $zlibStream.Close()
+                $targetStream.Close()
+            }
+            $fileStream.Close()
+        }
+
         $downgradeButton.text = "Downloading Oculus Downgrader..."
         $downgradeInstaller = "https://github.com/ComputerElite/Oculus-downgrader/releases/download/1.11.36/Oculus.Downgrader.zip"
         $downgradePath = "$env:temp\downgrader.zip"
