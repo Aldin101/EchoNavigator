@@ -56,7 +56,7 @@ function install {
     $Shortcut = $WshShell.CreateShortcut("$env:USERPROFILE\Desktop\Echo Relay Server Browser.lnk")
     $Shortcut.TargetPath = "$env:appdata\Echo Relay Server Browser\Echo Relay Server Browser.exe"
     $Shortcut.Save()
-    [system.windows.forms.messagebox]::Show("Echo Relay Successfully Installed", "Echo Relay Installer", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Information)
+    [system.windows.forms.messagebox]::Show("Echo Relay Server Browser installed!`n`nSelect a server in the server browser to get started!", "Echo Relay Installer", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Information)
     start-process "$env:appdata\Echo Relay Server Browser\Echo Relay Server Browser.exe"
     $menu.Close()
 }
@@ -78,10 +78,11 @@ $menu.FormBorderStyle = "FixedDialog"
 $menu.MaximizeBox = $false
 
 $label = New-Object System.Windows.Forms.Label
-$label.Location = New-Object System.Drawing.Size(10,10)
-$label.Size = New-Object System.Drawing.Size(200,20)
+$label = New-Object System.Windows.Forms.Label
+$label.Location = New-Object System.Drawing.Size(10,8)
+$label.Size = New-Object System.Drawing.Size(200,25)
 $label.Text = "Echo Relay Installer"
-$label.Font = "Microsoft Sans Serif,10"
+$label.Font = "Microsoft Sans Serif,15"
 $menu.Controls.Add($label)
 
 $username = New-Object System.Windows.Forms.Label

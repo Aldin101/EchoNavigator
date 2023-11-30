@@ -9,6 +9,7 @@ function questPatcher {
     $questPatcherMenu.StartPosition = "CenterScreen"
     $questPatcherMenu.FormBorderStyle = "FixedDialog"
     $questPatcherMenu.MaximizeBox = $false
+    $questPatcherMenu.showInTaskbar = $false
     $questPatcherMenu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
 
     $global:questPatcherLabel = New-Object System.Windows.Forms.Label
@@ -235,6 +236,7 @@ function joinServer {
         $usernamePicker.Size = New-Object System.Drawing.Size(280, 150)
         $usernamePicker.StartPosition = "CenterScreen"
         $usernamePicker.FormBorderStyle = "FixedDialog"
+        $usernamePicker.showInTaskbar = $false
         $usernamePicker.MaximizeBox = $false
         if ($config.quest -ne $null) {
             $usernamePicker.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
@@ -313,6 +315,7 @@ function clientJoinServer {
         $usernamePicker.Size = New-Object System.Drawing.Size(280, 150)
         $usernamePicker.StartPosition = "CenterScreen"
         $usernamePicker.FormBorderStyle = "FixedDialog"
+        $usernamePicker.showInTaskbar = $false
         $usernamePicker.MaximizeBox = $false
         if ($config.quest -ne $null) {
             $usernamePicker.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
@@ -2104,6 +2107,7 @@ $reportServer.add_Click({
     $reportServer.Size = New-Object System.Drawing.Size(330, 290)
     $reportServer.StartPosition = "CenterScreen"
     $reportServer.FormBorderStyle = "FixedDialog"
+    $reportServer.showInTaskbar = $false
     $reportServer.MaximizeBox = $false
     if ($config.quest -ne $null) {
         $reportServer.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
@@ -2193,6 +2197,7 @@ $serverProperties.add_Click({
     $serverPropertiesWindow.Size = New-Object System.Drawing.Size(600, 290)
     $serverPropertiesWindow.StartPosition = "CenterScreen"
     $serverPropertiesWindow.FormBorderStyle = "FixedDialog"
+    $serverPropertiesWindow.showInTaskbar = $false
     $serverPropertiesWindow.MaximizeBox = $false
     if ($config.quest -ne $null) {
         $serverPropertiesWindow.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
@@ -2502,6 +2507,7 @@ $clientProperties.add_Click({
     $serverPropertiesWindow.Size = New-Object System.Drawing.Size(600, 290)
     $serverPropertiesWindow.StartPosition = "CenterScreen"
     $serverPropertiesWindow.FormBorderStyle = "FixedDialog"
+    $serverPropertiesWindow.showInTaskbar = $false
     $serverPropertiesWindow.MaximizeBox = $false
     if ($config.quest -ne $null) {
         $serverPropertiesWindow.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
@@ -2566,6 +2572,7 @@ $addServer.add_Click({
     $addServerMenu.Size = New-Object System.Drawing.Size(330, 290)
     $addServerMenu.StartPosition = "CenterScreen"
     $addServerMenu.FormBorderStyle = "FixedDialog"
+    $addServerMenu.showInTaskbar = $false
     $addServerMenu.MaximizeBox = $false
     if ($config.quest -ne $null) {
         $addServerMenu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)

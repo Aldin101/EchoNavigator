@@ -32,29 +32,30 @@ function Decompress-ZlibFile {
 function Read-FolderBrowserDialog([string]$Message, [string]$InitialDirectory) {
     $app = New-Object -ComObject Shell.Application
     $folder = $app.BrowseForFolder(0, $Message, 0, $InitialDirectory)
-    if ($folder) { return $folder.Self.Path } else { return 'C:\Program Files\Oculus\Software\Software' }
+    if ($folder) { return $folder.Self.Path } else { return 'C:\Program Files\Oculus\Software' }
 }
 
 function downgrade {
-    $menu.Hide()
 
     $downgradeMenu = new-object System.Windows.Forms.Form
-    $downgradeMenu.text = "Echo Relay Downgrader"
+    $downgradeMenu.text = "Downgrader"
     $downgradeMenu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($fileLocation1)
-    $downgradeMenu.Size = New-Object Drawing.Size @(300, 200)
+    $downgradeMenu.Size = New-Object Drawing.Size @(240, 200)
     $downgradeMenu.StartPosition = "CenterScreen"
     $downgradeMenu.FormBorderStyle = "FixedDialog"
+    $downgradeMenu.showInTaskbar = $false
     $downgradeMenu.MaximizeBox = $false
 
     $downgradeLabel = New-Object System.Windows.Forms.Label
     $downgradeLabel.Location = New-Object System.Drawing.Size(10,10)
     $downgradeLabel.Size = New-Object System.Drawing.Size(200,20)
     $downgradeLabel.Text = "Echo Relay Downgrader"
-    $downgradeLabel.Font = "Microsoft Sans Serif,10"
+    $downgradeLabel.Font = "Microsoft Sans Serif,12"
+    $downgradeLabel.TextAlign = "MiddleCenter"
     $downgradeMenu.Controls.Add($downgradeLabel)
 
     $segmentLabel = New-Object System.Windows.Forms.Label
-    $segmentLabel.Location = New-Object System.Drawing.Size(10,60)
+    $segmentLabel.Location = New-Object System.Drawing.Size(10,70)
     $segmentLabel.Size = New-Object System.Drawing.Size(200,20)
     $segmentLabel.Text = "Downloaded Segments"
     $segmentLabel.Font = "Microsoft Sans Serif,10"
@@ -62,7 +63,7 @@ function downgrade {
     $downgradeMenu.Controls.Add($segmentLabel)
 
     $segmentProgress = New-Object System.Windows.Forms.ProgressBar
-    $segmentProgress.Location = New-Object System.Drawing.Size(10,80)
+    $segmentProgress.Location = New-Object System.Drawing.Size(10,90)
     $segmentProgress.Size = New-Object System.Drawing.Size(200,15)
     $segmentProgress.Style = "Continuous"
     $segmentProgress.Maximum = 100
@@ -71,7 +72,7 @@ function downgrade {
     $downgradeMenu.Controls.Add($segmentProgress)
 
     $sizeLabel = New-Object System.Windows.Forms.Label
-    $sizeLabel.Location = New-Object System.Drawing.Size(10,100)
+    $sizeLabel.Location = New-Object System.Drawing.Size(10,110)
     $sizeLabel.Size = New-Object System.Drawing.Size(200,20)
     $sizeLabel.Text = "Downloaded Size"
     $sizeLabel.Font = "Microsoft Sans Serif,10"
@@ -79,7 +80,7 @@ function downgrade {
     $downgradeMenu.Controls.Add($sizeLabel)
 
     $sizeProgress = New-Object System.Windows.Forms.ProgressBar
-    $sizeProgress.Location = New-Object System.Drawing.Size(10,120)
+    $sizeProgress.Location = New-Object System.Drawing.Size(10,130)
     $sizeProgress.Size = New-Object System.Drawing.Size(200,15)
     $sizeProgress.Style = "Continuous"
     $sizeProgress.Maximum = 100
@@ -89,7 +90,7 @@ function downgrade {
 
 
     $downgradeButton = New-Object System.Windows.Forms.Button
-    $downgradeButton.Location = New-Object System.Drawing.Size(10,30)
+    $downgradeButton.Location = New-Object System.Drawing.Size(10,40)
     $downgradeButton.Size = New-Object System.Drawing.Size(200,30)
     $downgradeButton.Text = "Downgrade"
     $downgradeButton.Font = "Microsoft Sans Serif,10"
@@ -113,7 +114,7 @@ function downgrade {
         while ($firefox.url -notlike "https://developer.oculus.com/manage/*") {
             if ($firefox.url -eq $null) {
                 $firefox.Quit()
-                [System.Windows.Forms.MessageBox]::show("You closed the browser window without logging in. Please try again.`n`nThe account information entered is only ever used to download the game. If you wish not to enter your account information you will need to use anther method to get Echo Relay on Quest.", "Echo Relay Server Browser","OK", "Error")
+                [System.Windows.Forms.MessageBox]::show("You closed the browser window without logging in. Please try again.`n`nThe account information entered is only ever used to download the game. If you wish not to enter your account information you will need to use anther method to get Echo Relay.", "Echo Relay Downgrader","OK", "Error")
                 $downgradeButton.text = "Try again"
                 $downgradeButton.enabled = $true
                 return
@@ -141,6 +142,8 @@ function downgrade {
         }
         Expand-Archive -Path "$env:temp\manifest.zip" -DestinationPath "$env:temp\manifest" -force
         $manifest = get-content "$env:temp\manifest\manifest.json" | convertfrom-json
+        remove-item "$env:temp\manifest.zip"
+        remove-item "$env:temp\manifest" -recurse -force
         $segmentCount = 0
         for ($i=0; $i -lt $($manifest.files | get-member).name.count; $i++) {
             $segmentCount = $segmentCount + $manifest.files.$($($manifest.files | get-member).name[$i]).segments.count
@@ -152,8 +155,8 @@ function downgrade {
             $folderName = $folderName -split "\\"
             $folderName = $folderName[0..($folderName.Length - 2)]
             $folderName = $folderName -join "\"
-            mkdir "$env:temp\evr\$folderName\" -ErrorAction SilentlyContinue
-            $fileStream = New-Object System.IO.FileStream("$env:temp\evr\$($($manifest.files | get-member).name[$i])", [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write)
+            mkdir "$global:gamepath\..\evr.downloading\$folderName\" -ErrorAction SilentlyContinue
+            $fileStream = New-Object System.IO.FileStream("$global:gamepath\..\evr.downloading\$($($manifest.files | get-member).name[$i])", [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write)
             $bufferSize = 10KB
             foreach ($segment in $manifest.files.$($($manifest.files | get-member).name[$i]).segments) {
                 $targetStream = New-Object -TypeName System.IO.MemoryStream
@@ -174,7 +177,7 @@ function downgrade {
                 $segmentsDownloaded++
                 $segmentProgress.value = ($segmentsDownloaded / $segmentCount) * 100
                 $segmentProgress.Refresh()
-                $sizeProgress.value = (((Get-ChildItem "$env:temp\evr" -Recurse | Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum + $fileStream.Length)/ $totalSize) * 100
+                $sizeProgress.value = (((Get-ChildItem "$global:gamepath\..\evr.downloading" -Recurse | Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum + $fileStream.Length)/ $totalSize) * 100
                 $sizeProgress.Refresh()
             }
             $fileStream.Close()
@@ -186,10 +189,10 @@ function downgrade {
         $downgradeButton.Refresh()
 
         for ($i=0; $i -lt $($manifest.files | get-member).name.count; $i++) {
-            $hash = (Get-FileHash -Path "$env:temp\evr\$($($manifest.files | get-member).name[$i])" -Algorithm SHA256).hash
+            $hash = (Get-FileHash -Path "$global:gamepath\..\evr.downloading\$($($manifest.files | get-member).name[$i])" -Algorithm SHA256).hash
             if ($hash -ne $manifest.files.$($($manifest.files | get-member).name[$i]).sha256) {
                 $downgradeButton.text = "Downloading..."
-                $fileStream = New-Object System.IO.FileStream("$env:temp\evr\$($($manifest.files | get-member).name[$i])", [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write)
+                $fileStream = New-Object System.IO.FileStream("$global:gamepath\..\evr.downloading\$($($manifest.files | get-member).name[$i])", [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write)
                 $bufferSize = 10KB
                 $segmentsDownloaded = 0
                 foreach ($segment in $manifest.files.$($($manifest.files | get-member).name[$i]).segments) {
@@ -213,9 +216,9 @@ function downgrade {
                     $segmentProgress.Refresh()
                 }
                 $fileStream.Close()
-                $hash = (Get-FileHash -Path "$env:temp\evr\$($($manifest.files | get-member).name[$i])" -Algorithm SHA256).hash
+                $hash = (Get-FileHash -Path "$global:gamepath\..\evr.downloading\$($($manifest.files | get-member).name[$i])" -Algorithm SHA256).hash
                 if ($hash -ne $manifest.files.$($($manifest.files | get-member).name[$i]).sha256) {
-                    [System.Windows.Forms.MessageBox]::show("The download was corrupt even after a second download attempt. Please try again.", "Echo Relay Server Browser","OK", "Error")
+                    [System.Windows.Forms.MessageBox]::show("The download was corrupt even after a second download attempt. Please try again.", "Echo Relay Downgrader","OK", "Error")
                     $downgradeButton.text = "Try again"
                     $downgradeButton.enabled = $true
                     return
@@ -229,28 +232,28 @@ function downgrade {
         }
         $segmentProgress.Visible = $false
         $folderPicker.Visible = $true
-        $downgradeButton.text = "Installing..."
-        $downgradeButton.Refresh()
         $token = $null
 
-        rmdir "$env:temp\evr\Equals" -recurse -force
-        rmdir "$env:temp\evr\GetHashCode" -recurse -force
-        rmdir "$env:temp\evr\GetType" -recurse -force
-        rmdir "$env:temp\evr\ToString" -recurse -force
-
-        remove-item $global:gamePath -recurse -force
-        move-item "$env:temp\evr\*" $global:gamePath -force
-
+        rmdir "$global:gamepath\..\evr.downloading\Equals" -recurse -force
+        rmdir "$global:gamepath\..\evr.downloading\GetHashCode" -recurse -force
+        rmdir "$global:gamepath\..\evr.downloading\GetType" -recurse -force
+        rmdir "$global:gamepath\..\evr.downloading\ToString" -recurse -force
         $downgradeButton.text = "Finished!"
         $downgradeButton.Refresh()
+        $choice = [System.Windows.Forms.MessageBox]::show("Would you like to delete your old install?", "Echo Relay Downgrader", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Question)
+        if ($choice -eq "Yes") {
+            remove-item $global:gamePath -recurse -force
+        } else {
+            rename-item $global:gamePath "$global:gamePath.old"
+        }
+        rename-item "$global:gamepath\..\evr.downloading\" "ready-at-dawn-echo-arena" -force
         start-sleep -s 2
-        $menu.show()
         $downgradeMenu.Close()
     })
     $downgradeMenu.Controls.Add($downgradeButton)
 
     $folderPicker = New-Object System.Windows.Forms.Button
-    $folderPicker.Location = New-Object System.Drawing.Size(10,70)
+    $folderPicker.Location = New-Object System.Drawing.Size(10,80)
     $folderPicker.Size = New-Object System.Drawing.Size(200,30)
     $folderPicker.Text = "Target folder"
     $folderPicker.Font = "Microsoft Sans Serif,10"
@@ -319,7 +322,7 @@ function downgrade {
                     return
                 }
             }
-            $global:gamePath = "$($pickList.SelectedItem)\Software"
+            $global:gamePath = "$($pickList.SelectedItem)\Software\ready-at-dawn-echo-arena"
             $pickMenu.Close()
         })
         $pickMenu.Controls.Add($pickButton)
@@ -399,7 +402,7 @@ function install {
         }
     }
     if ((Get-FileHash -Path $global:gamePath\bin\win10\echovr.exe).hash -ne "B6D08277E5846900C81004B64B298DF6ACBA834B69700A640B758BDA94A52043") {
-        [system.windows.forms.messagebox]::Show("The game was not downgraded, please try again.", "Echo Relay Installer", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Information)
+        [system.windows.forms.messagebox]::Show("The game was not downgraded, please try again.", "Echo Relay Installer", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
         return
     }
     mkdir "$env:appdata\Echo Relay Server Browser\"
@@ -416,7 +419,7 @@ function install {
     $Shortcut = $WshShell.CreateShortcut("$env:USERPROFILE\Desktop\Echo VR.lnk")
     $Shortcut.TargetPath = "$global:gamePath\bin\win10\EchoVR.exe"
     $Shortcut.Save()
-    [system.windows.forms.messagebox]::Show("Echo Relay Successfully Installed", "Echo Relay Installer", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Information)
+    [system.windows.forms.messagebox]::Show("Echo Relay Server Browser installed!`n`nSelect a server in the server browser to get started!", "Echo Relay Installer", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Information)
     start-process "$global:gamePath\bin\win10\Echo Relay Server Browser.exe"
     $menu.Close()
 }
@@ -438,10 +441,10 @@ $menu.FormBorderStyle = "FixedDialog"
 $menu.MaximizeBox = $false
 
 $label = New-Object System.Windows.Forms.Label
-$label.Location = New-Object System.Drawing.Size(10,10)
-$label.Size = New-Object System.Drawing.Size(200,20)
+$label.Location = New-Object System.Drawing.Size(10,8)
+$label.Size = New-Object System.Drawing.Size(200,25)
 $label.Text = "Echo Relay Installer"
-$label.Font = "Microsoft Sans Serif,10"
+$label.Font = "Microsoft Sans Serif,15"
 $menu.Controls.Add($label)
 
 $username = New-Object System.Windows.Forms.Label
@@ -543,7 +546,7 @@ $menu.Controls.Add($install)
 $credits = New-Object System.Windows.Forms.Label
 $credits.Location = New-Object System.Drawing.Size(5,325)
 $credits.Size = New-Object System.Drawing.Size(2000,200)
-$credits.Text = "Echo Relay Created by: Xenomega`nInstaller Created by:Aldin101"
+$credits.Text = "Echo Relay Created by: Xenomega`nInstaller and Created by:Aldin101"
 $credits.Font = "Microsoft Sans Serif,10"
 $menu.Controls.Add($credits)
 
