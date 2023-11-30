@@ -39,12 +39,31 @@ function questPatcher {
 
             $patchEchoVR.text = "Preparing WebDriver..."
             $patchEchoVR.Refresh()
+
+            Install-PackageProvider -Name NuGet -Scope CurrentUser -MinimumVersion 2.8.5.201 -Confirm:$false -Force
             Install-Module -Name Selenium -Scope CurrentUser -Confirm:$false -Force
-
-            $patchEchoVR.text = "Downloading firefox..."
-            $patchEchoVR.Refresh()
-
-            winget install mozilla.firefox --source winget
+            try {
+                $firefox = Start-SeFirefox
+            } catch {
+                $patchEchoVR.text = "Downloading firefox..."
+                $patchEchoVR.Refresh()
+    
+                Invoke-WebRequest -uri "https://download.mozilla.org/?product=firefox-latest-ssl&os=win64&lang=en-US" -OutFile "$env:temp\firefox.exe"
+                while (1) {
+                    try {
+                        start-process "$env:temp\firefox.exe" -ArgumentList "/S" -verb RunAs -Wait
+                        $firefox = Start-SeFirefox
+                        break
+                    } catch {
+                        $choice = [System.Windows.Forms.MessageBox]::show("Please accept the admin prompt to install Firefox.`n`nNo prompt? Try installing manually.", "Echo Relay Downgrader","RetryCancel", "Error")
+                        if ($choice -eq "Cancel") {
+                            $patchEchoVR.text = "Try again"
+                            $patchEchoVR.enabled = $true
+                            return
+                        }
+                    }
+                }
+            }
 
             $patchEchoVR.text = "Waiting for login..."
             $patchEchoVR.Refresh()
@@ -131,10 +150,16 @@ function questPatcher {
                         break
                     }
                 }
-                if ($installed -eq $true) {
+                $javaCommandError = $false
+                try {
+                    & java -version
+                } catch {
+                    $javaCommandError = $true
+                }
+                if ($installed -eq $true -and $javaCommandError -eq $false) {
                     break
                 } else {
-                    $noJava = [System.Windows.Forms.MessageBox]::show("Java is required to patch Echo VR. Please accept the admin prompt after pressing retry.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
+                    $noJava = [System.Windows.Forms.MessageBox]::show("Java is required to patch Echo VR. Please accept the admin prompt after pressing retry.`n`nIf you did not receive a prompt you can try installing Java manually.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
                     if ($noJava -eq "Cancel") {
                         $patchEchoVR.text = "Try again"
                         $installProgress.Visible = $false

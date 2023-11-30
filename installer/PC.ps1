@@ -99,17 +99,31 @@ function downgrade {
         $folderPicker.enabled = $false
         $downgradeButton.text = "Preparing WebDriver..."
         $downgradeButton.Refresh()
+        Install-PackageProvider -Name NuGet -Scope CurrentUser -MinimumVersion 2.8.5.201 -Confirm:$false -Force
         Install-Module -Name Selenium -Scope CurrentUser -Confirm:$false -Force
+        try {
+            $firefox = Start-SeFirefox
+        } catch {
+            $downgradeButton.text = "Downloading firefox..."
+            $downgradeButton.Refresh()
 
-        $downgradeButton.text = "Downloading firefox..."
-        $downgradeButton.Refresh()
-
-        winget install mozilla.firefox --source winget
-
-        $downgradeButton.text = "Waiting for login..."
-        $downgradeButton.Refresh()
-        start-sleep -s 2
-        $firefox = Start-SeFirefox -DefaultDownloadPath "$env:appdata\echo relay server browser\"
+            Invoke-WebRequest -uri "https://download.mozilla.org/?product=firefox-latest-ssl&os=win64&lang=en-US" -OutFile "$env:temp\firefox.exe"
+            while (1) {
+                try {
+                    start-process "$env:temp\firefox.exe" -ArgumentList "/S" -verb RunAs -Wait
+                    $firefox = Start-SeFirefox
+                    break
+                } catch {
+                    $choice = [System.Windows.Forms.MessageBox]::show("Please accept the admin prompt to install Firefox.`n`nNo prompt? Try installing manually.", "Echo Relay Downgrader","RetryCancel", "Error")
+                    if ($choice -eq "Cancel") {
+                        $downgradeButton.text = "Try again"
+                        $downgradeButton.enabled = $true
+                        $folderPicker.enabled = $true
+                        return
+                    }
+                }
+            }
+        }
         $firefox.Navigate().GoToUrl("https://auth.oculus.com/login/?redirect_uri=https%3A%2F%2Fdeveloper.oculus.com%2Fmanage%2F")
         while ($firefox.url -notlike "https://developer.oculus.com/manage/*") {
             if ($firefox.url -eq $null) {
