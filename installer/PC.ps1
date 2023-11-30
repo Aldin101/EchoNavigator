@@ -175,10 +175,9 @@ function downgrade {
             foreach ($segment in $manifest.files.$($($manifest.files | get-member).name[$i]).segments) {
                 $targetStream = New-Object -TypeName System.IO.MemoryStream
                 $uri = New-Object "System.Uri" "https://securecdn.oculus.com/binaries/segment/?access_token=$token&binary_id=6323983201049540&segment_sha256=$($segment[1])"
-                $request = [System.Net.HttpWebRequest]::Create($uri)
-                $request.set_Timeout(15000)
-                $response = $request.GetResponse()
-                $responseStream = $response.GetResponseStream()
+                $client = New-Object System.Net.Http.HttpClient
+                $response = $client.GetAsync($uri).Result
+                $responseStream = $response.Content.ReadAsStreamAsync().Result
                 $responseStream.CopyTo($targetStream, $bufferSize)
                 $targetStream.Position = 0
                 $targetStream.SetLength($targetStream.Length - 4)
@@ -212,10 +211,9 @@ function downgrade {
                 foreach ($segment in $manifest.files.$($($manifest.files | get-member).name[$i]).segments) {
                     $targetStream = New-Object -TypeName System.IO.MemoryStream
                     $uri = New-Object "System.Uri" "https://securecdn.oculus.com/binaries/segment/?access_token=$token&binary_id=6323983201049540&segment_sha256=$($segment[1])"
-                    $request = [System.Net.HttpWebRequest]::Create($uri)
-                    $request.set_Timeout(15000)
-                    $response = $request.GetResponse()
-                    $responseStream = $response.GetResponseStream()
+                    $client = New-Object System.Net.Http.HttpClient
+                    $response = $client.GetAsync($uri).Result
+                    $responseStream = $response.Content.ReadAsStreamAsync().Result
                     $responseStream.CopyTo($targetStream, $bufferSize)
                     $targetStream.Position = 0
                     $targetStream.SetLength($targetStream.Length - 4)
