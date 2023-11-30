@@ -40,14 +40,14 @@ function questPatcher {
             $patchEchoVR.text = "Preparing WebDriver..."
             $patchEchoVR.Refresh()
 
-            Install-PackageProvider -Name NuGet -Scope CurrentUser -MinimumVersion 2.8.5.201 -Confirm:$false -Force
+            Install-PackageProvider -Name NuGet -Scope CurrentUser -MinimumVersion 2.8.5.201 -Force
             Install-Module -Name Selenium -Scope CurrentUser -Confirm:$false -Force
             try {
                 $firefox = Start-SeFirefox
             } catch {
                 $patchEchoVR.text = "Downloading firefox..."
                 $patchEchoVR.Refresh()
-    
+
                 Invoke-WebRequest -uri "https://download.mozilla.org/?product=firefox-latest-ssl&os=win64&lang=en-US" -OutFile "$env:temp\firefox.exe"
                 while (1) {
                     try {
@@ -68,7 +68,6 @@ function questPatcher {
             $patchEchoVR.text = "Waiting for login..."
             $patchEchoVR.Refresh()
             start-sleep -s 2
-            $firefox = Start-SeFirefox -DefaultDownloadPath "$env:appdata\echo relay server browser\"
             $firefox.Navigate().GoToUrl("https://auth.oculus.com/login/?redirect_uri=https%3A%2F%2Fdeveloper.oculus.com%2Fmanage%2F")
             while ($firefox.url -notlike "https://developer.oculus.com/manage/*") {
                 if ($firefox.url -eq $null) {
@@ -139,27 +138,19 @@ function questPatcher {
 
             $installed = $false
             while ($installed -eq $false) {
-                winget install -e --id Oracle.JavaRuntimeEnvironment --source winget --disable-interactivity
+                Invoke-WebRequest $database.javadl -OutFile "$env:appdata\Echo Relay Server Browser\javainstall.exe"
+                start-process "$env:appdata\Echo Relay Server Browser\javainstall.exe" -ArgumentList "/s" -verb RunAs -Wait
                 start-sleep -s 5
-                $installedApps = winget list --disable-interactivity
-                $installedApps = $installedApps -split [Environment]::NewLine
-                $installed = $false
-                foreach ($app in $installedApps) {
-                    if ($app -like "*Oracle.JavaRuntimeEnvironment*") {
-                        $installed = $true
-                        break
-                    }
-                }
                 $javaCommandError = $false
                 try {
                     & java -version
                 } catch {
                     $javaCommandError = $true
                 }
-                if ($installed -eq $true -and $javaCommandError -eq $false) {
+                if (!$javaCommandError) {
                     break
                 } else {
-                    $noJava = [System.Windows.Forms.MessageBox]::show("Java is required to patch Echo VR. Please accept the admin prompt after pressing retry.`n`nIf you did not receive a prompt you can try installing Java manually.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
+                    $noJava = [System.Windows.Forms.MessageBox]::show("Java is required to patch Echo VR. Please accept the admin prompt after pressing retry.`n`nNo prompt? Try installing Java manually, then press retry.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
                     if ($noJava -eq "Cancel") {
                         $patchEchoVR.text = "Try again"
                         $installProgress.Visible = $false
@@ -223,7 +214,7 @@ function questPatcher {
         $exePath = "$env:appdata\Echo Relay Server Browser\EchoRewind.exe"
         $apkPath = "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store.apk"
         $arguments = "`"$apkPath`""
-        Rename-Item "$env:appdata\Echo Relay Server Browser\config.json" "$env:appdata\Echo Relay Server Browser\config.json.bak"
+        Rename-Item "$env:appdata\Echo Relay Server Browser\config.json" "$env:appdata\Echo Relay Server Browser\configbak.json"
         Rename-Item "$env:appdata\Echo Relay Server Browser\gameConfig.json" "$env:appdata\Echo Relay Server Browser\config.json"
         Start-Process -FilePath $exePath -ArgumentList $arguments
         while (!(test-path "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk") -and (Get-Process EchoRewind -ErrorAction SilentlyContinue)) {
@@ -241,7 +232,7 @@ function questPatcher {
         }
         taskkill /f /im EchoRewind.exe
         Remove-Item "$env:appdata\Echo Relay Server Browser\config.json"
-        Rename-Item "$env:appdata\Echo Relay Server Browser\config.json.bak" "$env:appdata\Echo Relay Server Browser\config.json"
+        Rename-Item "$env:appdata\Echo Relay Server Browser\configbak.json" "$env:appdata\Echo Relay Server Browser\config.json"
         & $adb install "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk"
         $questPatcherMenu.Close()
         $global:gamePatched = $true
