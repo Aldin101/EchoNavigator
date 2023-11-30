@@ -99,7 +99,7 @@ function downgrade {
         $folderPicker.enabled = $false
         $downgradeButton.text = "Preparing WebDriver..."
         $downgradeButton.Refresh()
-        Install-PackageProvider -Name NuGet -Scope CurrentUser -MinimumVersion 2.8.5.201 -Confirm:$false -Force
+        install-packageprovider nuget -scope CurrentUser -force
         Install-Module -Name Selenium -Scope CurrentUser -Confirm:$false -Force
         try {
             $firefox = Start-SeFirefox
