@@ -1842,6 +1842,11 @@ if ($config.quest -ne $null) {
 $currentServer = Get-Content "$($global:config.gamePath)\_Local\config.json" | ConvertFrom-Json
 if ($currentServer.apiservice_host -ne "http://62.68.167.123:1234/api") {combatLoungeNotSelected}
 
+# $combatGames = Invoke-WebRequest "http://51.75.140.182:3000/api/listGameServers/62.68.167.123"
+# $combatGames = $combatGames.content | ConvertFrom-Json
+
+# $combatGames = get-content .\testdata.json | ConvertFrom-Json
+
 
 $combatLoungeLabel = New-Object System.Windows.Forms.Label
 $combatLoungeLabel.Size = New-Object System.Drawing.Size(200, 20)
@@ -1866,7 +1871,7 @@ $combatLoungeList.ColumnHeadersDefaultCellStyle.BackColor = [System.Drawing.Colo
 $combatLoungeList.ColumnHeadersDefaultCellStyle.SelectionBackColor = [System.Drawing.Color]::FromArgb(240, 240, 240)
 $combatLoungeList.SelectionMode = 'FullRowSelect'
 $combatLoungeList.ColumnCount = 4
-$combatLoungeList.RowCount = $database.combatLounge.Count
+$combatLoungeList.RowCount = $combatGames.gameServers.count
 $combatLoungeList.ColumnHeadersVisible = $true
 $combatLoungeList.TabIndex = 0
 $combatLoungeList.Columns[0].Name = "Players"
@@ -1915,15 +1920,15 @@ $combatLoungeList.Add_CellDoubleClick({
     }
 })
 
-$combatGames = Invoke-WebRequest "http://51.75.140.182:3000/api/listGameServers/62.68.167.123"
-$combatGames = $combatGames.content | ConvertFrom-Json
-
-
+$i=0
 ForEach-Object -InputObject $combatGames.gameServers {
-    $PingServer = Test-Connection -count 1 -ComputerName $_.serverIP.ip
-    $combatLoungeList.Rows.Add($_.players, $_.gameMode, $_.region, $PingServer)
+    $PingServer = Test-Connection -count 1 -ComputerName $_.sessionIP
+    $combatLoungeList.Rows[$i].Cells[0].value = "$($_.playerCount)/$($_.playerLimit)"
+    $combatLoungeList.Rows[$i].Cells[1].value = $_.gameMode
+    $combatLoungeList.Rows[$i].Cells[2].value = $_.region
+    $combatLoungeList.Rows[$i].Cells[3].value = $PingServer.Latency
+    ++$i
 }
-
 $combatLounge.Controls.Add($combatLoungeList)
 
 $matchmakingLabel = New-Object System.Windows.Forms.Label
