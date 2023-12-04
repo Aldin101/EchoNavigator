@@ -55,6 +55,11 @@ function questPatcher {
                         $firefox = Start-SeFirefox
                         break
                     } catch {
+                        $jsonData = @{
+                            action = "Telemetry"
+                            message = "Firefox install and launch failed`n$($error[0])`n$($error[1])"
+                        } | ConvertTo-Json
+                        Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
                         $choice = [System.Windows.Forms.MessageBox]::show("Please accept the admin prompt to install Firefox.`n`nNo prompt? Try installing manually.", "Echo Relay Downgrader","RetryCancel", "Error")
                         if ($choice -eq "Cancel") {
                             $patchEchoVR.text = "Try again"
@@ -72,6 +77,11 @@ function questPatcher {
             while ($firefox.url -notlike "https://developer.oculus.com/manage/*") {
                 if ($firefox.url -eq $null) {
                     $firefox.Quit()
+                    $jsonData = @{
+                        action = "Telemetry"
+                        message = "Firefox closed`n$($error[0])`n$($error[1])"
+                    } | ConvertTo-Json
+                    Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
                     [System.Windows.Forms.MessageBox]::show("You closed the browser window without logging in. Please try again.`n`nThe account information entered is only ever used to download the game. If you wish not to enter your account information you will need to use anther method to get Echo Relay on Quest.", "Echo Relay Server Browser","OK", "Error")
                     $patchEchoVR.text = "Try again"
                     $installProgress.Visible = $false
@@ -123,6 +133,11 @@ function questPatcher {
             $installProgress.Visible = $false
             $installProgress.Refresh()
             if ((Get-FileHash "$env:appdata\Echo Relay Server Browser\main.4987566.com.readyatdawn.r15.obb" MD5).hash -ne "5CE4C24C4316B77CD4F5C68A4B20A5F6" -or (Get-FileHash "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store.apk" MD5).hash -ne "C14C0F68ADB62A4C5DEAEF46D046F872") {
+                $jsonData = @{
+                    action = "Telemetry"
+                    message = "Downloaded files failed verification`n$($error[0])`n$($error[1])"
+                } | ConvertTo-Json
+                Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
                 $patchEchoVR.text = "Try again"
                 $installProgress.Visible = $false
                 $patchEchoVR.enabled = $true
@@ -135,21 +150,29 @@ function questPatcher {
             Expand-Archive -Path "$env:appdata\Echo Relay Server Browser\platform-tools.zip" -DestinationPath "$env:appdata\Echo Relay Server Browser\adb\"
 
             Invoke-WebRequest "https://github.com/C-Luddy/EchoRewind/releases/download/V.1.0.1/EchoRewind.exe" -OutFile "$env:appdata\Echo Relay Server Browser\EchoRewind.exe"
-
-            $installed = $false
-            while ($installed -eq $false) {
+            $javaCommandError = $false
+            try {
+                & java -version
+            } catch {
+                $javaCommandError = $true
+            }
+            while ($javaCommandError) {
                 Invoke-WebRequest $database.javadl -OutFile "$env:appdata\Echo Relay Server Browser\javainstall.exe"
                 start-process "$env:appdata\Echo Relay Server Browser\javainstall.exe" -ArgumentList "/s" -verb RunAs -Wait
                 start-sleep -s 5
                 $javaCommandError = $false
+                $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User") 
                 try {
                     & java -version
                 } catch {
                     $javaCommandError = $true
                 }
-                if (!$javaCommandError) {
-                    break
-                } else {
+                if ($javaCommandError) {
+                    $jsonData = @{
+                        action = "Telemetry"
+                        message = "Java install failed`n$($error[0])`n$($error[1])"
+                    } | ConvertTo-Json
+                    Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
                     $noJava = [System.Windows.Forms.MessageBox]::show("Java is required to patch Echo VR. Please accept the admin prompt after pressing retry.`n`nNo prompt? Try installing Java manually, then press retry.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
                     if ($noJava -eq "Cancel") {
                         $patchEchoVR.text = "Try again"
@@ -168,6 +191,11 @@ function questPatcher {
             $devices = & $adb devices
             $devices = $devices -split "`n"
             if ($devices.count -gt 3) {
+                $jsonData = @{
+                    action = "Telemetry"
+                    message = "One or more devices detected`n$($error[0])`n$($error[1])"
+                } | ConvertTo-Json
+                Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
                 $noDevice = [System.Windows.Forms.MessageBox]::show("More than one device detected, make sure only your Quest is connected to your PC. If you have any other Android devices connected is it a possibility that the game will be installed onto the wrong device. Please unplug any devices that you do not need before pressing retry.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
                 if ($noDevice -eq "Cancel") {
                     $patchEchoVR.text = "Try again"
@@ -222,6 +250,11 @@ function questPatcher {
         }
         start-sleep -s 1
         if (!(Test-Path "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk")) {
+            $jsonData = @{
+                action = "Telemetry"
+                message = "Patched APK not found`n$($error[0])`n$($error[1])"
+            } | ConvertTo-Json
+            Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
             [System.Windows.Forms.MessageBox]::show("Echo Rewind exited but no patched APK could be found. Please try again.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Error)
             $patchEchoVR.text = "Try again"
             $installProgress.Visible = $false
@@ -236,6 +269,11 @@ function questPatcher {
         & $adb install "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk"
         $questPatcherMenu.Close()
         $global:gamePatched = $true
+        $jsonData = @{
+            action = "Telemetry"
+            message = "Echo VR patched successfully"
+        } | ConvertTo-Json
+        Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
     })
     $questPatcherMenu.Controls.Add($patchEchoVR)
 
