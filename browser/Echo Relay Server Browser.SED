@@ -30,8 +30,10 @@ AppLaunched=powershell -windowstyle hidden -nologo -noprofile -executionpolicy b
 PostInstallCmd=<None>
 AdminQuietInstCmd=
 UserQuietInstCmd=
-FILE0="serverBrowser.ps1"
+FILE0"serverBrowser.ps1"
+FILE1"loading.gif"
 [SourceFiles]
 SourceFiles0=C:\Users\jinda\Desktop\Echo Relay Server Browser Client\browser\
 [SourceFiles0]
 %FILE0%=
+%FILE1%=

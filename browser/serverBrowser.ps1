@@ -2000,6 +2000,7 @@ $serverImage = New-Object System.Windows.Forms.PictureBox
 $serverImage.Size = New-Object System.Drawing.Size(340, 203)
 $serverImage.Location = New-Object System.Drawing.Point(12, 50)
 $serverImage.SizeMode = 'Zoom'
+$serverImage.Image = [System.Drawing.Image]::FromFile(".\loading.gif")
 $sideBar.Controls.Add($serverImage)
 
 $serverDescription = New-Object System.Windows.Forms.Label
@@ -2265,6 +2266,7 @@ $serverList.Add_CellClick({
     $sideBar.Visible = $true
     $serverName.Text = $database.online[$rowIndex].name
     $serverDescription.Text = $database.online[$rowIndex].longDescription
+    $serverImage.Image = [System.Drawing.Image]::FromFile(".\loading.gif")
     $serverImage.ImageLocation = $database.online[$rowIndex].image
 })
 
