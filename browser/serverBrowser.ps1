@@ -1,4 +1,4 @@
-start-sleep -s 3
+# start-sleep -s 3
 
 function questPatcher {
     $global:gamePatched = $false
@@ -1725,6 +1725,22 @@ function matchmaking {
     $exitButton.BringToFront()
 }
 
+function pingServer {
+    param($serverIP)
+    $port = 6792
+    $udpClient = New-Object System.Net.Sockets.UdpClient
+    $udpClient.Client.ReceiveTimeout = 1000
+    $udpClient.Connect($serverIP, $port)
+    $packet = [byte[]]@(0xB0, 0x03, 0x5A, 0x06, 0xDE, 0x79, 0x72, 0x99, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00)
+    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+    $udpClient.Send($packet, $packet.Length)
+    $remoteEndPoint = New-Object System.Net.IPEndPoint([System.Net.IPAddress]::Any, 0)
+    $response = $udpClient.Receive([ref]$remoteEndPoint)
+    $stopwatch.Stop()
+    $udpClient.Close()
+    return $stopwatch.ElapsedMilliseconds
+}
+
 $ProgressPreference = 'SilentlyContinue'
 
 [reflection.assembly]::LoadWithPartialName("System.Windows.Forms") | Out-Null
@@ -1803,8 +1819,8 @@ $combatLounge.Text = "Combat Lounge"
 $combatLounge.Size = New-Object System.Drawing.Size(1280, 720)
 $combatLounge.Location = New-Object System.Drawing.Point(0, 0)
 $tabs.Controls.Add($combatLounge)
-$combatLounge.Visible = $false
-$combatLounge.Enabled = $false
+# $combatLounge.Visible = $false
+# $combatLounge.Enabled = $false
 
 $otherServers = New-Object System.Windows.Forms.TabPage
 $otherServers.Text = "Other Servers"
@@ -1830,20 +1846,20 @@ if ($config.quest -ne $null) {
     $questLabel.Font = New-Object System.Drawing.Font("Arial", 50)
     $combatLounge.Controls.Add($questLabel)
 } else {
-    $questLabel = New-Object System.Windows.Forms.Label
-    $questLabel.Size = New-Object System.Drawing.Size(1300, 720)
-    $questLabel.Location = New-Object System.Drawing.Point(-30, -60)
-    $questLabel.Text = "This tab is under construction."
-    $questLabel.TextAlign = 'MiddleCenter'
-    $questLabel.Font = New-Object System.Drawing.Font("Arial", 50)
-    $combatLounge.Controls.Add($questLabel)
+    # $questLabel = New-Object System.Windows.Forms.Label
+    # $questLabel.Size = New-Object System.Drawing.Size(1300, 720)
+    # $questLabel.Location = New-Object System.Drawing.Point(-30, -60)
+    # $questLabel.Text = "This tab is under construction."
+    # $questLabel.TextAlign = 'MiddleCenter'
+    # $questLabel.Font = New-Object System.Drawing.Font("Arial", 50)
+    # $combatLounge.Controls.Add($questLabel)
 }
 
 $currentServer = Get-Content "$($global:config.gamePath)\_Local\config.json" | ConvertFrom-Json
 if ($currentServer.apiservice_host -ne "http://62.68.167.123:1234/api") {combatLoungeNotSelected}
 
-# $combatGames = Invoke-WebRequest "http://51.75.140.182:3000/api/listGameServers/62.68.167.123"
-# $combatGames = $combatGames.content | ConvertFrom-Json
+$combatGames = Invoke-WebRequest "http://51.75.140.182:3000/api/listGameServers/62.68.167.123"
+$combatGames = $combatGames.content | ConvertFrom-Json
 
 # $combatGames = get-content .\testdata.json | ConvertFrom-Json
 
@@ -1870,7 +1886,7 @@ $combatLoungeList.ColumnHeadersDefaultCellStyle = New-Object System.Windows.Form
 $combatLoungeList.ColumnHeadersDefaultCellStyle.BackColor = [System.Drawing.Color]::FromArgb(240, 240, 240)
 $combatLoungeList.ColumnHeadersDefaultCellStyle.SelectionBackColor = [System.Drawing.Color]::FromArgb(240, 240, 240)
 $combatLoungeList.SelectionMode = 'FullRowSelect'
-$combatLoungeList.ColumnCount = 4
+$combatLoungeList.ColumnCount = 3
 $combatLoungeList.RowCount = $combatGames.gameServers.count
 $combatLoungeList.ColumnHeadersVisible = $true
 $combatLoungeList.TabIndex = 0
@@ -1878,11 +1894,11 @@ $combatLoungeList.Columns[0].Name = "Players"
 $combatLoungeList.Columns[0].Width = 50
 $combatLoungeList.Columns[1].Name = "Game Mode"
 $combatLoungeList.Columns[1].Width = 200
-$combatLoungeList.Columns[2].Name = "Region"
+# $combatLoungeList.Columns[2].Name = "Region"
+# $combatLoungeList.Columns[2].Width = 50
+$combatLoungeList.Columns[2].Name = "Ping"
 $combatLoungeList.Columns[2].Width = 50
-$combatLoungeList.Columns[3].Name = "Ping"
-$combatLoungeList.Columns[3].Width = 50
-$combatLoungeList.Columns[3].DefaultCellStyle.Alignment = 'MiddleCenter'
+# $combatLoungeList.Columns[3].DefaultCellStyle.Alignment = 'MiddleCenter'
 
 $combatLoungeList.Add_CellClick({
     param($sender, $e)
@@ -1891,17 +1907,19 @@ $combatLoungeList.Add_CellClick({
     $combatSideBar.Visible = $true
     $global:rowIndex = $e.RowIndex
     $global:clientselected = $true
+    $currentGameMode.Text = $combatLoungeList.Rows[$e.RowIndex].Cells[1].value
+    $currentGameModeImage.Image = [System.Drawing.Image]::FromFile(".\loading.gif")
 })
 
 $combatLoungeList.Add_KeyDown({
     param($sender, $e)
 
+    $global:rowIndex = $combatLoungeList.SelectedRows.index
+    $combatLoungeList.Rows[$global:rowIndex].Selected = $true
+    
     if ($e.KeyCode -eq 'Enter') {
         $combatLoungeList.ClearSelection()
-        $combatLoungeList.Rows[$e.RowIndex].Selected = $true
-        $global:rowIndex = $e.RowIndex
-        $global:clientselected = $true
-        $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to join $($combatGames.gameServers[$global:RowIndex].gameMode)?", "Echo Relay Server Browser", "YesNo", "Question")
+        $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to join $($combatLoungeList.rows[$global:rowIndex].cells[1].value)?", "Echo Relay Server Browser", "YesNo", "Question")
         if ($choice -eq "Yes") {
             Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-join $($combatGames.gameServer[$global:RowIndex].sessionID)" -Wait
         }
@@ -1913,20 +1931,28 @@ $combatLoungeList.Add_CellDoubleClick({
     $combatLoungeList.ClearSelection()
     $combatLoungeList.Rows[$e.RowIndex].Selected = $true
     $global:rowIndex = $e.RowIndex
-    $global:clientselected = $true
-    $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to join $($combatGames.gameServers[$global:RowIndex].gameMode)?", "Echo Relay Server Browser", "YesNo", "Question")
+    $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to join $($combatLoungeList.rows[$global:RowIndex].cells[1].value)?", "Echo Relay Server Browser", "YesNo", "Question")
     if ($choice -eq "Yes") {
         Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-join $($combatGames.gameServer[$global:RowIndex].sessionID)" -Wait
     }
 })
 
 $i=0
-ForEach-Object -InputObject $combatGames.gameServers {
-    $PingServer = Test-Connection -count 1 -ComputerName $_.sessionIP
-    $combatLoungeList.Rows[$i].Cells[0].value = "$($_.playerCount)/$($_.playerLimit)"
-    $combatLoungeList.Rows[$i].Cells[1].value = $_.gameMode
-    $combatLoungeList.Rows[$i].Cells[2].value = $_.region
-    $combatLoungeList.Rows[$i].Cells[3].value = $PingServer.Latency
+foreach ($gameServer in $combatGames.gameServers) {
+    $combatLoungeList.Rows[$i].Cells[0].value = "$($gameServer.playerCount)/$(if($gameServer.activePlayerLimit -eq $null){$gameServer.playerLimit}else{$gameServer.activePlayerLimit})"
+    $combatLoungeList.Rows[$i].Cells[1].value = (Get-Culture).TextInfo.ToTitleCase($($gameServer.gameMode -replace '^(echo_|mpl_combat_)', '')) -replace '_',' '
+    if ($combatLoungeList.Rows[$i].Cells[1].value -eq "Social 2.0") {
+        $combatLoungeList.Rows[$i].Cells[1].value = "Lobby"
+    }
+    $combatLoungeList.Rows[$i].Cells[2].value = $(pingServer $gameServer.sessionIp)[1]
+    if ($combatLoungeList.Rows[$i].Cells[2].value -gt 1000) {
+        $PingServer = Test-Connection -count 1 -ComputerName $gameServer.sessionIP -TimeoutSeconds 1
+        if ($PingServer.Latency -eq 0){
+            $combatLoungeList.Rows[$i].Cells[2].value = "Error"
+        } else {
+            $combatLoungeList.Rows[$i].Cells[2].value = $PingServer.Latency
+        }
+    }
     ++$i
 }
 $combatLounge.Controls.Add($combatLoungeList)
