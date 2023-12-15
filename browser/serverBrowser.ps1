@@ -1,4 +1,4 @@
-# start-sleep -s 3
+$startdelaystopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
 function questPatcher {
     $global:gamePatched = $false
@@ -37,114 +37,160 @@ function questPatcher {
         $patchEchoVR.Enabled = $false
         if (!(test-path "$env:appdata\Echo Relay Server Browser\setUpFinished.set")) {
 
-            $patchEchoVR.text = "Preparing WebDriver..."
-            $patchEchoVR.Refresh()
+            # $patchEchoVR.text = "Preparing WebDriver..."
+            # $patchEchoVR.Refresh()
 
-            Install-PackageProvider -Name NuGet -Scope CurrentUser -MinimumVersion 2.8.5.201 -Force
-            Install-Module -Name Selenium -Scope CurrentUser -Confirm:$false -Force
-            try {
-                $firefox = Start-SeFirefox
-            } catch {
-                $patchEchoVR.text = "Downloading firefox..."
-                $patchEchoVR.Refresh()
+            # Install-PackageProvider -Name NuGet -Scope CurrentUser -MinimumVersion 2.8.5.201 -Force
+            # Install-Module -Name Selenium -Scope CurrentUser -Confirm:$false -Force
+            # try {
+            #     $firefox = Start-SeFirefox
+            # } catch {
+            #     $patchEchoVR.text = "Downloading firefox..."
+            #     $patchEchoVR.Refresh()
 
-                Invoke-WebRequest -uri "https://download.mozilla.org/?product=firefox-latest-ssl&os=win64&lang=en-US" -OutFile "$env:temp\firefox.exe"
-                while (1) {
-                    try {
-                        start-process "$env:temp\firefox.exe" -ArgumentList "/S" -verb RunAs -Wait
-                        $firefox = Start-SeFirefox
-                        break
-                    } catch {
-                        $jsonData = @{
-                            action = "Telemetry"
-                            message = "Firefox install and launch failed`n$($error[0])`n$($error[1])"
-                        } | ConvertTo-Json
-                        Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
-                        $choice = [System.Windows.Forms.MessageBox]::show("Please accept the admin prompt to install Firefox.`n`nNo prompt? Try installing manually.", "Echo Relay Downgrader","RetryCancel", "Error")
-                        if ($choice -eq "Cancel") {
-                            $patchEchoVR.text = "Try again"
-                            $patchEchoVR.enabled = $true
-                            return
-                        }
+            #     Invoke-WebRequest -uri "https://download.mozilla.org/?product=firefox-latest-ssl&os=win64&lang=en-US" -OutFile "$env:temp\firefox.exe"
+            #     while (1) {
+            #         try {
+            #             start-process "$env:temp\firefox.exe" -ArgumentList "/S" -verb RunAs -Wait
+            #             $firefox = Start-SeFirefox
+            #             break
+            #         } catch {
+            #             $jsonData = @{
+            #                 action = "Telemetry"
+            #                 message = "Firefox install and launch failed`n$($error[0])`n$($error[1])"
+            #             } | ConvertTo-Json
+            #             Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
+            #             $choice = [System.Windows.Forms.MessageBox]::show("Please accept the admin prompt to install Firefox.`n`nNo prompt? Try installing manually.", "Echo Relay Downgrader","RetryCancel", "Error")
+            #             if ($choice -eq "Cancel") {
+            #                 $patchEchoVR.text = "Try again"
+            #                 $patchEchoVR.enabled = $true
+            #                 return
+            #             }
+            #         }
+            #     }
+            # }
+
+            # $patchEchoVR.text = "Waiting for login..."
+            # $patchEchoVR.Refresh()
+            # start-sleep -s 2
+            # $firefox.Navigate().GoToUrl("https://auth.oculus.com/login/?redirect_uri=https%3A%2F%2Fdeveloper.oculus.com%2Fmanage%2F")
+            # while ($firefox.url -notlike "https://developer.oculus.com/manage/*") {
+            #     if ($firefox.url -eq $null) {
+            #         $firefox.Quit()
+            #         $jsonData = @{
+            #             action = "Telemetry"
+            #             message = "Firefox closed`n$($error[0])`n$($error[1])"
+            #         } | ConvertTo-Json
+            #         Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
+            #         [System.Windows.Forms.MessageBox]::show("You closed the browser window without logging in. Please try again.`n`nThe account information entered is only ever used to download the game. If you wish not to enter your account information you will need to use anther method to get Echo Relay on Quest.", "Echo Relay Server Browser","OK", "Error")
+            #         $patchEchoVR.text = "Try again"
+            #         $installProgress.Visible = $false
+            #         $patchEchoVR.enabled = $true
+            #         return
+            #     }
+            #     Start-Sleep -Seconds 1
+            # }
+            # $token = $firefox.Manage().Cookies.GetCookieNamed("oc_www_at").Value
+            # $firefox.Quit()
+            # $patchEchoVR.text = "Downloading obb..."
+            # $patchEchoVR.Refresh()
+            # $installProgress.Visible = $true
+            # $cookie = New-Object System.Net.Cookie
+            # $cookie.Name = "oc_www_at"
+            # $cookie.Value = $token
+            # $cookie.Domain = "oculus.com"
+            # $cookie.Path = "/"
+            # $job = start-job {
+            #     param($cookie)
+            #     $webClient = New-Object System.Net.WebClient
+            #     $webClient.Headers.Add([System.Net.HttpRequestHeader]::Cookie, $cookie.ToString())
+            #     $webClient.DownloadFile("https://securecdn.oculus.com/binaries/download/?id=6528312897208382", "$env:appdata\Echo Relay Server Browser\main.4987566.com.readyatdawn.r15.obb")
+            # } -ArgumentList $cookie
+            # $installProgress.Value = 0
+            # while ($job.state -ne "Completed") {
+            #     $installProgress.Value = (((Get-Item "$env:appdata\echo relay server browser\main.4987566.com.readyatdawn.r15.obb").length / 946094131) * 100)
+            #     start-sleep -Milliseconds 100
+            # }
+            # remove-job $job
+            # $patchEchoVR.text = "Downloading apk..."
+            # $patchEchoVR.Refresh()
+            # $job = start-job {
+            #     param($cookie)
+            #     $webClient = New-Object System.Net.WebClient
+            #     $webClient.Headers.Add([System.Net.HttpRequestHeader]::Cookie, $cookie.ToString())
+            #     $webClient.DownloadFile("https://securecdn.oculus.com/binaries/download/?id=6528386917200980", "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store.apk")
+            # } -ArgumentList $cookie
+            # $installProgress.Value = 0
+            # while ($job.state -ne "Completed") {
+            #     $installProgress.Value = (((Get-Item "$env:appdata\echo relay server browser\r15_goldmaster_store.apk").length / 96177060) * 100)
+            #     start-sleep -Milliseconds 100
+            # }
+            # remove-job $job
+            # $installProgress.Value = 100
+            # $patchEchoVR.text = "Verifying..."
+            # $patchEchoVR.Refresh()
+            # start-sleep -s 3
+            # $installProgress.Visible = $false
+            # $installProgress.Refresh()
+            # if ((Get-FileHash "$env:appdata\Echo Relay Server Browser\main.4987566.com.readyatdawn.r15.obb" MD5).hash -ne "5CE4C24C4316B77CD4F5C68A4B20A5F6" -or (Get-FileHash "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store.apk" MD5).hash -ne "C14C0F68ADB62A4C5DEAEF46D046F872") {
+            #     $jsonData = @{
+            #         action = "Telemetry"
+            #         message = "Downloaded files failed verification`n$($error[0])`n$($error[1])"
+            #     } | ConvertTo-Json
+            #     Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
+            #     $patchEchoVR.text = "Try again"
+            #     $installProgress.Visible = $false
+            #     $patchEchoVR.enabled = $true
+            #     [System.Windows.Forms.MessageBox]::show("The download failed, please try again", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
+            #     return
+            # }
+            if (!(test-path "$env:appdata\Echo Relay Server Browser\main.4987566.com.readyatdawn.r15.obb")) {
+                $globaL:dragDropLabel = New-Object System.Windows.Forms.Label
+                $dragDropLabel.Size = New-Object System.Drawing.Size(284, 60)
+                $dragDropLabel.Location = New-Object System.Drawing.Point(0, 100)
+                $dragDropLabel.Text = "Drag and drop APK here"
+                $dragDropLabel.TextAlign = "MiddleCenter"
+                $dragDropLabel.Font = New-Object System.Drawing.Font("Microsoft Sans Serif", 12)
+                $dragDropLabel.BorderStyle = "FixedSingle"
+                $dragDropLabel.AllowDrop = $true
+                $questPatcherMenu.Controls.Add($dragDropLabel)
+
+                $dragDropLabel.SendToBack()
+
+                [system.windows.forms.messagebox]::show("Because of changes in Meta's authentication system you will need to supply your own APK and OBB files. Please drag your APK on to the box below, then drag your OBB onto it.`n`nPlease press OK on this message before starting", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Information)
+
+                $patchEchoVR.text = "Drag APK onto box"
+
+                $global:dragDropLabel.add_dragover({
+                    if ($_.Data.GetDataPresent([Windows.Forms.DataFormats]::FileDrop))
+                    {
+                        $_.Effect = 'Copy'
                     }
-                }
-            }
+                    else
+                    {
+                        $_.Effect = 'None'
+                    }
+                })
 
-            $patchEchoVR.text = "Waiting for login..."
-            $patchEchoVR.Refresh()
-            start-sleep -s 2
-            $firefox.Navigate().GoToUrl("https://auth.oculus.com/login/?redirect_uri=https%3A%2F%2Fdeveloper.oculus.com%2Fmanage%2F")
-            while ($firefox.url -notlike "https://developer.oculus.com/manage/*") {
-                if ($firefox.url -eq $null) {
-                    $firefox.Quit()
-                    $jsonData = @{
-                        action = "Telemetry"
-                        message = "Firefox closed`n$($error[0])`n$($error[1])"
-                    } | ConvertTo-Json
-                    Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
-                    [System.Windows.Forms.MessageBox]::show("You closed the browser window without logging in. Please try again.`n`nThe account information entered is only ever used to download the game. If you wish not to enter your account information you will need to use anther method to get Echo Relay on Quest.", "Echo Relay Server Browser","OK", "Error")
-                    $patchEchoVR.text = "Try again"
-                    $installProgress.Visible = $false
-                    $patchEchoVR.enabled = $true
-                    return
-                }
-                Start-Sleep -Seconds 1
-            }
-            $token = $firefox.Manage().Cookies.GetCookieNamed("oc_www_at").Value
-            $firefox.Quit()
-            $patchEchoVR.text = "Downloading obb..."
-            $patchEchoVR.Refresh()
-            $installProgress.Visible = $true
-            $cookie = New-Object System.Net.Cookie
-            $cookie.Name = "oc_www_at"
-            $cookie.Value = $token
-            $cookie.Domain = "oculus.com"
-            $cookie.Path = "/"
-            $job = start-job {
-                param($cookie)
-                $webClient = New-Object System.Net.WebClient
-                $webClient.Headers.Add([System.Net.HttpRequestHeader]::Cookie, $cookie.ToString())
-                $webClient.DownloadFile("https://securecdn.oculus.com/binaries/download/?id=6528312897208382", "$env:appdata\Echo Relay Server Browser\main.4987566.com.readyatdawn.r15.obb")
-            } -ArgumentList $cookie
-            $installProgress.Value = 0
-            while ($job.state -ne "Completed") {
-                $installProgress.Value = (((Get-Item "$env:appdata\echo relay server browser\main.4987566.com.readyatdawn.r15.obb").length / 946094131) * 100)
-                start-sleep -Milliseconds 100
-            }
-            remove-job $job
-            $patchEchoVR.text = "Downloading apk..."
-            $patchEchoVR.Refresh()
-            $job = start-job {
-                param($cookie)
-                $webClient = New-Object System.Net.WebClient
-                $webClient.Headers.Add([System.Net.HttpRequestHeader]::Cookie, $cookie.ToString())
-                $webClient.DownloadFile("https://securecdn.oculus.com/binaries/download/?id=6528386917200980", "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store.apk")
-            } -ArgumentList $cookie
-            $installProgress.Value = 0
-            while ($job.state -ne "Completed") {
-                $installProgress.Value = (((Get-Item "$env:appdata\echo relay server browser\r15_goldmaster_store.apk").length / 96177060) * 100)
-                start-sleep -Milliseconds 100
-            }
-            remove-job $job
-            $installProgress.Value = 100
-            $patchEchoVR.text = "Verifying..."
-            $patchEchoVR.Refresh()
-            start-sleep -s 3
-            $installProgress.Visible = $false
-            $installProgress.Refresh()
-            if ((Get-FileHash "$env:appdata\Echo Relay Server Browser\main.4987566.com.readyatdawn.r15.obb" MD5).hash -ne "5CE4C24C4316B77CD4F5C68A4B20A5F6" -or (Get-FileHash "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store.apk" MD5).hash -ne "C14C0F68ADB62A4C5DEAEF46D046F872") {
-                $jsonData = @{
-                    action = "Telemetry"
-                    message = "Downloaded files failed verification`n$($error[0])`n$($error[1])"
-                } | ConvertTo-Json
-                Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
-                $patchEchoVR.text = "Try again"
-                $installProgress.Visible = $false
-                $patchEchoVR.enabled = $true
-                [System.Windows.Forms.MessageBox]::show("The download failed, please try again", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
+                $global:dragDropLabel.Add_DragDrop({
+                    param($sender, $e)
+                    
+                    Copy-Item $e.Data.GetData("FileNameW") "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store.apk" -Force
+                    $patchEchoVR.text = "Drag OBB onto box"
+                    $dragDropLabel.Text = "Drag and drop OBB here"
+
+                    $global:dragDropLabel.Remove_DragDrop($dragDropLabel.DragDrop)
+                    $global:dragDropLabel.Add_DragDrop({
+                        param($sender, $e)
+
+                        Copy-Item $e.Data.GetData("FileNameW") "$env:appdata\Echo Relay Server Browser\main.4987566.com.readyatdawn.r15.obb" -Force
+                        $questPatcherMenu.Close()
+                        questPatcher
+                    })
+                })
                 return
             }
-
+            
             $patchEchoVR.text = "Installing dependencies..."
             Invoke-WebRequest "https://dl.google.com/android/repository/platform-tools-latest-windows.zip" -OutFile "$env:appdata\Echo Relay Server Browser\platform-tools.zip"
             Expand-Archive -Path "$env:appdata\Echo Relay Server Browser\platform-tools.zip" -DestinationPath "$env:appdata\Echo Relay Server Browser\adb\"
@@ -684,1047 +730,6 @@ function combatLoungeNotSelected {
     })
 }
 
-function stopMatchmaking {
-    $cancelMatchmaking.Dispose()
-    $searchingLabel.Dispose()
-    $screenCover.Dispose()
-    $playerSlots.Dispose()
-    $playerSlotsSearching.Dispose()
-    $cancelMatchmaking.Dispose()
-    $getMatchTimer.Dispose()
-    $voteForEarlyStart.Dispose()
-    $voteCountLabel.Dispose()
-    $otherServers.Enabled = $true
-
-}
-
-function joinBoth {
-
-    $otherServers.Enabled = $false
-    $global:screenCover = New-Object System.Windows.Forms.Label
-    $screenCover.Size = New-Object System.Drawing.Size(1280, 720)
-    $screenCover.Location = New-Object System.Drawing.Point(0, -80)
-    $screenCover.Text = "Connecting"
-    $screenCover.TextAlign = 'MiddleCenter'
-    $screenCover.Font = New-Object System.Drawing.Font("Arial", 50)
-    $combatLounge.Controls.Add($screenCover)
-    $screenCover.BringToFront()
-
-    $joinMatchmaker = start-job {
-        param($config, $api)
-        $data = @{
-            action = "joinCombatMatchmaker"
-            userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
-            userName = $config.username
-        }
-        $request = $data | ConvertTo-Json
-        $combat = Invoke-RestMethod -Uri $api -Method Post -ContentType "application/json" -Body $request
-        $data.action = "joinArenaMatchmaker"
-        $arena = Invoke-RestMethod -Uri $api -Method Post -ContentType "application/json" -Body $request
-
-        $return = @{
-            combat = $combat
-            arena = $arena
-        }
-
-        return $return
-    } -ArgumentList $global:config, $database.api
-
-    $progressBar = New-Object System.Windows.Forms.ProgressBar
-    $progressBar.Size = New-Object System.Drawing.Size(400, 20)
-    $progressBar.Location = New-Object System.Drawing.Point(440, 325)
-    $progressBar.Style = 'Marquee'
-    $combatLounge.Controls.Add($progressBar)
-    $progressBar.BringToFront()
-
-    do {
-        $screenCover.Refresh()
-        $progressBar.Refresh()
-        Start-Sleep -Milliseconds 10
-    } while ($joinMatchmaker.State -eq "Running")
-    $screenCover.text = ""
-    $progressBar.Dispose()
-    $global:getMatch = $joinMatchmaker | receive-job
-    $joinMatchmaker | remove-job
-
-    if ($getMatch -eq $null) {
-        $screenCover.ForeColor = [System.Drawing.Color]::FromArgb(255, 255, 0, 0)
-        $screenCover.Text = "`nCould not connect to the matchmaking server."
-        $screenCover.Refresh()
-        Start-Sleep -Seconds 3
-        stopMatchmaking
-        return
-    }
-
-    if ($getMatch.combat.players.count -gt 8 -or $getMatch.arena.players.count -gt 8) {
-        $getMatchTimer.Interval = 99999
-        $getMatchTimer.stop()
-        $screenCover.text = "`nAn error has occurred."
-        $screenCover.ForeColor = [System.Drawing.Color]::FromArgb(100, 255, 0, 0)
-        $screenCover.bringToFront()
-        $screenCover.Refresh()
-        Start-Sleep -Seconds 3
-        $data = @{
-            action = "get$($global:gamemode)Match"
-            userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
-            userName = "Join error"
-        } | ConvertTo-Json
-        Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $data
-        stopMatchmaking
-        return
-    }
-
-    $global:searchingLabel = New-Object System.Windows.Forms.Label
-    $searchingLabel.Size = New-Object System.Drawing.Size(500, 70)
-    $searchingLabel.Location = New-Object System.Drawing.Point(10, 10)
-    $searchingLabel.Text = "Searching for players..."
-    $searchingLabel.Font = New-Object System.Drawing.Font("Arial", 20)
-    $combatLounge.Controls.Add($searchingLabel)
-    $searchingLabel.BringToFront()
-
-    $global:playerSlotsSearchingCombat = New-Object System.Windows.Forms.Label[] 8
-    for ($i=0; $i -lt 8; ++$i) {
-        $playerSlotsSearchingCombat[$i] = New-Object System.Windows.Forms.Label
-        $playerSlotsSearchingCombat[$i].Size = New-Object System.Drawing.Size(200, 35)
-        $playerSlotsSearchingCombat[$i].Location = New-Object System.Drawing.Point(10, (100+$i*40))
-        $playerSlotsSearchingCombat[$i].BackColor = [System.Drawing.Color]::FromArgb(100, 0, 0, 0)
-        $playerSlotsSearchingCombat[$i].BorderStyle = 'FixedSingle'
-        $playerSlotsSearchingCombat[$i].TextAlign = 'MiddleCenter'
-        $playerSlotsSearchingCombat[$i].Font = New-Object System.Drawing.Font("Arial", 20)
-        $playerSlotsSearchingCombat[$i].Text = "Searching"
-        $combatLounge.Controls.Add($playerSlotsSearchingCombat[$i])
-    }
-    foreach ($slot in $playerSlotsSearchingCombat) {
-        $slot.BringToFront()
-        $slot.Refresh()
-    }
-
-    $global:playerSlotsSearchingArena = New-Object System.Windows.Forms.Label[] 8
-    for ($i=0; $i -lt 8; ++$i) {
-        $playerSlotsSearchingArena[$i] = New-Object System.Windows.Forms.Label
-        $playerSlotsSearchingArena[$i].Size = New-Object System.Drawing.Size(200, 35)
-        $playerSlotsSearchingArena[$i].Location = New-Object System.Drawing.Point(1040, (100+$i*40))
-        $playerSlotsSearchingArena[$i].BackColor = [System.Drawing.Color]::FromArgb(100, 0, 0, 0)
-        $playerSlotsSearchingArena[$i].BorderStyle = 'FixedSingle'
-        $playerSlotsSearchingArena[$i].TextAlign = 'MiddleCenter'
-        $playerSlotsSearchingArena[$i].Font = New-Object System.Drawing.Font("Arial", 20)
-        $playerSlotsSearchingArena[$i].Text = "Searching"
-        $combatLounge.Controls.Add($playerSlotsSearchingArena[$i])
-    }
-    foreach ($slot in $playerSlotsSearchingArena) {
-        $slot.BringToFront()
-        $slot.Refresh()
-    }
-
-    $global:voteForEarlyStart = New-Object System.Windows.Forms.Button
-    $voteForEarlyStart.Size = New-Object System.Drawing.Size(200, 35)
-    $voteForEarlyStart.Location = New-Object System.Drawing.Point(10, 450)
-    $voteForEarlyStart.Text = "Vote to begin"
-    $voteForEarlyStart.Visible = $false
-    $voteForEarlyStart.add_click({
-        $voteForEarlyStart.Text = "Voting..."
-        $voteForEarlyStart.Enabled = $false
-        $voteForEarlyStart.Refresh()
-        $data=@{
-            action = "voteForEarlyStart$($global:gamemode)"
-            userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
-            userName = $global:config.username
-        } | ConvertTo-Json
-        Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $data
-        $voteForEarlyStart.text = "Voted!"
-        $voteCountLabel.Text = "$($getMatch.voted.count+1)/$($getMatch.neededToStart)"
-        foreach ($playerSlot in $playerSlots) {
-            if ($config.username -eq $playerSlot.Text) {
-                $playerSlot.BackColor = [System.Drawing.Color]::FromArgb(100, 0, 255, 0)
-                $playerSlot.Refresh()
-            }
-        }
-        $voteForEarlyStart.Refresh()
-        $voteCountLabel.Refresh()
-    })
-    $combatLounge.Controls.Add($voteForEarlyStart)
-    $voteForEarlyStart.BringToFront()
-
-    $global:voteCountLabel = New-Object System.Windows.Forms.Label
-    $voteCountLabel.Size = New-Object System.Drawing.Size(200, 35)
-    $voteCountLabel.Location = New-Object System.Drawing.Point(220, 450)
-    $voteCountLabel.Text = "$($getMatch.voted.count)/Loading..."
-    $voteCountLabel.Font = New-Object System.Drawing.Font("Arial", 20)
-    $voteCountLabel.Visible = $false
-    $combatLounge.Controls.Add($voteCountLabel)
-    $voteCountLabel.BringToFront()
-
-    $global:voteBanner = New-Object system.windows.forms.label
-    $voteBanner.Size = New-Object System.Drawing.Size(350,600)
-    $voteBanner.Location = New-Object System.Drawing.Point(-350, -600)
-    $voteBanner.Text = "Voting available!"
-    $voteBanner.TextAlign = 'MiddleCenter'
-    $voteBanner.Font = New-Object System.Drawing.Font("Arial", 25)
-    $voteBanner.ForeColor = [System.Drawing.Color]::FromArgb(255,255,255)
-    $voteBanner.BackColor = [System.Drawing.Color]::FromArgb(0,0,139)
-    $voteBanner.Visible = $false
-    $combatLounge.Controls.Add($voteBanner)
-    $voteBanner.BringToFront()
-
-    $global:cancelMatchmaking = New-Object System.Windows.Forms.Button
-    $cancelMatchmaking.Size = New-Object System.Drawing.Size(200, 35)
-    $cancelMatchmaking.Location = New-Object System.Drawing.Point(10, 600)
-    $cancelMatchmaking.Text = "Cancel Matchmaking"
-    $cancelMatchmaking.add_click({
-        $data = @{
-            action = "cancel$($global:gamemode)Matchmaking"
-            userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
-            userName = $global:config.username
-        } | ConvertTo-Json
-        Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $data
-        stopMatchmaking
-    })
-    $combatLounge.Controls.Add($cancelMatchmaking)
-    $cancelMatchmaking.BringToFront()
-
-    $global:playerSlotsCombat = New-Object System.Windows.Forms.Label[] 8
-    for ($i = 0; $i -lt $playerSlotsCombat.Length; $i++) {
-        $playerSlotsCombat[$i] = New-Object System.Windows.Forms.Label
-        $playerSlotsCombat[$i].Size = New-Object System.Drawing.Size(200, 35)
-        $playerSlotsCombat[$i].Location = New-Object System.Drawing.Point(-300, (100+$i*40))
-        $playerSlotsCombat[$i].Text = $getMatch.Combat.players[$i]
-        $playerSlotsCombat[$i].BackColor = [System.Drawing.Color]::FromArgb(100, 0, 0, 255)
-        $playerSlotsCombat[$i].TextAlign = 'MiddleCenter'
-        $playerSlotsCombat[$i].BorderStyle = 'FixedSingle'
-        $playerSlotsCombat[$i].Font = New-Object System.Drawing.Font("Arial", 20)
-        $combatLounge.Controls.Add($playerSlotsCombat[$i])
-        $playerSlotsCombat[$i].BringToFront()
-    }
-
-    $global:playerSlotsArena = New-Object System.Windows.Forms.Label[] 8
-    for ($i = 0; $i -lt $playerSlotsArena.Length; $i++) {
-        $playerSlotsArena[$i] = New-Object System.Windows.Forms.Label
-        $playerSlotsArena[$i].Size = New-Object System.Drawing.Size(200, 35)
-        $playerSlotsArena[$i].Location = New-Object System.Drawing.Point(1310, (100+$i*40))
-        $playerSlotsArena[$i].Text = $getMatch.Arena.players[$i]
-        $playerSlotsArena[$i].BackColor = [System.Drawing.Color]::FromArgb(100, 0, 0, 255)
-        $playerSlotsArena[$i].TextAlign = 'MiddleCenter'
-        $playerSlotsArena[$i].BorderStyle = 'FixedSingle'
-        $playerSlotsArena[$i].Font = New-Object System.Drawing.Font("Arial", 20)
-        $combatLounge.Controls.Add($playerSlotsArena[$i])
-        $playerSlotsArena[$i].BringToFront()
-    }
-
-    $i=0
-    foreach ($player in $getMatch.Combat.players) {
-        $playerSlotsCombat[$i].Text = $player
-        if ($config.username -eq $player) {
-            while ($playerSlotsCombat[$i].Location.X -lt 10) {
-                $playerSlotsCombat[$i].Location = New-Object System.Drawing.Point($($playerSlotsCombat[$i].Location.X+10), $playerSlotsCombat[$i].Location.Y)
-                $playerSlotsCombat[$i].Refresh()
-                start-sleep -Milliseconds 1
-            }
-        }
-        $playerSlotsCombat[$i].Location = New-Object System.Drawing.Point(10, $playerSlotsCombat[$i].Location.Y)
-        $i++
-    }
-
-    $i=0
-    foreach ($player in $getMatch.Arena.players) {
-        $playerSlotsArena[$i].Text = $player
-        if ($config.username -eq $player) {
-            while ($playerSlotsArena[$i].Location.X -gt 1040) {
-                $playerSlotsArena[$i].Location = New-Object System.Drawing.Point($($playerSlotsArena[$i].Location.X-10), $playerSlotsArena[$i].Location.Y)
-                $playerSlotsArena[$i].Refresh()
-                start-sleep -Milliseconds 1
-            }
-        }
-        $playerSlotsArena[$i].Location = New-Object System.Drawing.Point(1040, $playerSlotsArena[$i].Location.Y)
-        $i++
-    }
-
-    $global:getMatchTimer = New-Object System.Windows.Forms.Timer
-    $getMatchTimer.Interval = 3000
-
-    $getMatchTimer.add_Tick({
-        $global:oldGetMatch = $getMatch
-        $combatData = @{
-            action = "getCombatMatch"
-            userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
-            userName = $config.username
-        } | ConvertTo-Json
-        $arenaData = @{
-            action = "getArenaMatch"
-            userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
-            userName = $config.username
-        } | ConvertTo-Json
-        try {
-            $getMatch = @{
-                combat = Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $combatData
-                arena = Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $arenaData
-            }
-            $searchingLabel.text = "Searching for players..."
-            $searchingLabel.ForeColor = [System.Drawing.Color]::FromArgb(255, 0, 0, 0)
-            $searchingLabel.BackColor = [System.Drawing.Color]::Transparent
-            $searchingLabel.Refresh()
-        } catch {
-            if ($searchingLabel.text -eq "Searching for players...`nThe connection is unstable!") {
-                $getMatchTimer.Stop()
-                $screenCover.text = "`nA communication error has occurred."
-                $screenCover.ForeColor = [System.Drawing.Color]::FromArgb(100, 255, 0, 0)
-                $screenCover.bringToFront()
-                $screenCover.Refresh()
-
-                $global:commErrorOK = New-Object System.Windows.Forms.Button
-                $commErrorOK.Size = New-Object System.Drawing.Size(200, 35)
-                $commErrorOK.Location = New-Object System.Drawing.Point(10, 600)
-                $commErrorOK.Text = "OK"
-                $commErrorOK.add_click({
-                    $commErrorOK.Dispose()
-                    stopMatchmaking
-                })
-                $combatLounge.Controls.Add($commErrorOK)
-                $commErrorOK.BringToFront()
-
-                return
-            }
-            $searchingLabel.text = "Searching for players...`nThe connection is unstable!"
-            $searchingLabel.ForeColor = [System.Drawing.Color]::FromArgb(100, 255, 255, 0)
-            $searchingLabel.BackColor = [System.Drawing.Color]::FromArgb(100, 0, 0, 0)
-            $searchingLabel.Refresh()
-        }
-        if ($getMatch.combat.players.count -eq 8 -and $searchingLabel.text -ne "Searching for players...`nThe connection is unstable!" -and $getMatch.startTime -eq $null) {
-            $searchingLabel.text = "Combat match ready, preparing..."
-            $searchingLabel.Refresh()
-        }
-
-        if ($getMatch.combat.players.count -gt 8 -or $getMatch.arena.players.count -gt 8) {
-            $getMatchTimer.Stop()
-            $getMatchTimer.Interval = 99999
-            $screenCover.text = "`nAn error has occurred."
-            $screenCover.ForeColor = [System.Drawing.Color]::FromArgb(100, 255, 0, 0)
-            $screenCover.bringToFront()
-            $screenCover.Refresh()
-
-            $global:ErrorOK = New-Object System.Windows.Forms.Button
-            $ErrorOK.Size = New-Object System.Drawing.Size(200, 35)
-            $ErrorOK.Location = New-Object System.Drawing.Point(10, 600)
-            $ErrorOK.Text = "OK"
-            $ErrorOK.add_click({
-                stopMatchmaking
-                $ErrorOK.Dispose()
-            })
-            $combatLounge.Controls.Add($ErrorOK)
-            $ErrorOK.BringToFront()
-            $ErrorOK.Refresh()
-
-            return
-        }
-        if ($getMatch.combat.players.count -lt $oldGetMatch.combat.players.count) {
-            write-output "player left"
-            for($i=0; $i -lt 8; $i++) {
-                while ($playerSlotsCombat[0].Location.X -gt -300) {
-                    foreach ($slot in $playerSlotsCombat) {
-                        if ($slot.Location.X -gt -300) {
-                            $slot.Location = New-Object System.Drawing.Point($($slot.Location.X-10), $slot.Location.Y)
-                            $slot.Refresh()
-                        }
-                    }
-                    start-sleep -Milliseconds 1
-                }
-            }
-            foreach ($slot in $playerSlotsCombat) {
-                $slot.Text = ""
-                $slot.Refresh()
-            }
-            for($i=0; $i -lt $getMatch.combat.players.count; $i++) {
-                $playerSlotsCombat[$i].Text = $getMatch.combat.players[$i]
-            }
-            $i=0
-            while ($playerSlotsCombat[0].Location.X -lt 10) {
-                foreach ($slot in $playerSlotsCombat) {
-                    if ($slot.Location.X -lt 10 -and $getMatch.combat.players -contains $slot.Text) {
-                        $slot.Location = New-Object System.Drawing.Point($($slot.Location.X+10), $slot.Location.Y)
-                        $slot.Refresh()
-                    }
-                }
-                start-sleep -Milliseconds 1
-            }
-        }
-        if ($getMatch.combat.players.count -gt $oldGetMatch.combat.players.count) {
-            write-output "new player"
-            for($i=0; $i -lt $getMatch.combat.players.count; $i++) {
-                $playerSlotsCombat[$i].Text = $getMatch.combat.players[$i]
-                while ($playerSlotsCombat[$i].Location.X -lt 10) {
-                    $playerSlotsCombat[$i].Location = New-Object System.Drawing.Point($($playerSlotsCombat[$i].Location.X+10), $playerSlotsCombat[$i].Location.Y)
-                    $playerSlotsCombat[$i].Refresh()
-                    start-sleep -Milliseconds 1
-                }
-            }
-        }
-        if ($getMatch.combat.players.count -gt 3) {
-            if ($voteBanner.Visible -eq $false) {
-                $voteBanner.Visible = $true
-                $voteBanner.BringToFront()
-                while ($voteBanner.Location.X -lt 10) {
-                    $moveX = ($voteBanner.Location.X-10)*($voteBanner.Location.X-10)
-                    $moveY = ($voteBanner.Location.Y-10)*($voteBanner.Location.Y-10)
-                    $moveX = ($moveX/5000)+1
-                    $moveY = ($moveY/5000)+1
-                    $voteBanner.Location = New-Object System.Drawing.Point($($voteBanner.Location.X+$moveX), $($voteBanner.Location.Y+$moveY))
-                    $combatLounge.Refresh()
-                    start-sleep -Milliseconds 1
-                }
-                $voteForEarlyStart.Visible = $true
-                $voteCountLabel.Visible = $true
-                $voteCountLabel.Text = "$($getMatch.combat.voted.count)/$($getMatch.combat.neededToStart)"
-                foreach ($playerSlot in $playerSlotsCombat) {
-                    if ($getMatch.combat.voted -notcontains $playerSlot.Text) {
-                        $playerSlot.BackColor = [System.Drawing.Color]::FromArgb(100, 255, 0, 0)
-                        $playerSlot.Refresh()
-                    } else {
-                        $playerSlot.BackColor = [System.Drawing.Color]::FromArgb(100, 0, 255, 0)
-                        $playerSlot.Refresh()
-                    }
-                }
-                while ($voteBanner.Location.X -lt 2000) {
-                    $move = ($voteBanner.Location.X-10)*($voteBanner.Location.X-10)
-                    $move = ($move/1000)+1
-                    $voteBanner.Location = New-Object System.Drawing.Point($($voteBanner.Location.X+$move), $($voteBanner.Location.Y+$move))
-                    $combatLounge.Refresh()
-                    start-sleep -Milliseconds 1
-                }
-            }
-        } else {
-            $voteBanner.Visible = $false
-            $voteBanner.Location = New-Object System.Drawing.Point(-350, -600)
-            $voteForEarlyStart.Visible = $false
-            $voteCountLabel.Visible = $false
-        }
-        if ($getMatch.combat.startTime -ne $null) {
-            $getMatchTimer.Stop()
-            if ($getMatch.ID -eq $null) {
-                $searchingLabel.text = "No game servers are available to host this match, try again later."
-                $searchingLabel.Refresh()
-                start-sleep -s 5
-                stopMatchmaking
-                return
-            }
-            while ([int][double]::Parse((Get-Date (get-date).ToUniversalTime() -UFormat %s)) -lt $getMatch.startTime) {
-                $searchingLabel.Text = "Match ready, starting in $([int](($getMatch.startTime - (Get-Date (get-date).ToUniversalTime() -UFormat %s)))) seconds..."
-                if ($searchingLabel.Text -eq "Match ready, starting in 1 seconds...") {
-                    $searchingLabel.Text = "Match ready, starting in 1 second..."
-                }
-                $searchingLabel.Refresh()
-                start-sleep -Milliseconds 100
-            }
-            $global:getMatchTimer.stop()
-            $screenCover.text = "Game running"
-            $screenCover.BringToFront()
-            $screenCover.Refresh()
-            $global:job = start-job ({
-                param($getMatch, $config)
-                Start-Process "$($config.gamePath)\bin\win10\EchoVR.exe" -wait #-ArgumentList "-join $($getMatch.ID)"
-                return
-            }) -ArgumentList $getMatch, $global:config
-            $global:gameRunTimer = New-Object System.Windows.Forms.Timer
-            $gameRunTimer.Interval = 1000
-            $gameRunTimer.add_tick({
-                if ($job.state -ne "Running") {
-                    Remove-Job $job
-                    $gameRunTimer.Stop()
-                    stopMatchmaking
-                }
-            })
-            $gameRunTimer.Start()
-        }
-
-
-        if ($getMatch.arena.players.count -lt $oldGetMatch.arena.players.count) {
-            write-output "player left"
-            for($i=0; $i -lt 8; $i++) {
-                while ($playerSlotsarena[0].Location.X -lt 1310) {
-                    foreach ($slot in $playerSlotsarena) {
-                        if ($slot.Location.X -lt 1310) {
-                            $slot.Location = New-Object System.Drawing.Point($($slot.Location.X+10), $slot.Location.Y)
-                            $slot.Refresh()
-                        }
-                    }
-                    start-sleep -Milliseconds 1
-                }
-            }
-            foreach ($slot in $playerSlotsarena) {
-                $slot.Text = ""
-                $slot.Refresh()
-            }
-            for($i=0; $i -lt $getMatch.arena.players.count; $i++) {
-                $playerSlotsarena[$i].Text = $getMatch.arena.players[$i]
-            }
-            $i=0
-            while ($playerSlotsarena[0].Location.X -gt 1040) {
-                foreach ($slot in $playerSlotsarena) {
-                    if ($slot.Location.X -gt 1040 -and $getMatch.arena.players -contains $slot.Text) {
-                        $slot.Location = New-Object System.Drawing.Point($($slot.Location.X-10), $slot.Location.Y)
-                        $slot.Refresh()
-                    }
-                }
-                start-sleep -Milliseconds 1
-            }
-        }
-        if ($getMatch.arena.players.count -gt $oldGetMatch.arena.players.count) {
-            write-output "new player"
-            for($i=0; $i -lt $getMatch.arena.players.count; $i++) {
-                $playerSlotsarena[$i].Text = $getMatch.arena.players[$i]
-                while ($playerSlotsarena[$i].Location.X -gt 1040) {
-                    $playerSlotsarena[$i].Location = New-Object System.Drawing.Point($($playerSlotsarena[$i].Location.X-10), $playerSlotsarena[$i].Location.Y)
-                    $playerSlotsarena[$i].Refresh()
-                    start-sleep -Milliseconds 1
-                }
-            }
-        }
-        if ($getMatch.arena.players.count -gt 3) {
-            if ($voteBanner.Visible -eq $false) {
-                $voteBanner.Visible = $true
-                $voteBanner.BringToFront()
-                while ($voteBanner.Location.X -lt 10) {
-                    $moveX = ($voteBanner.Location.X-10)*($voteBanner.Location.X-10)
-                    $moveY = ($voteBanner.Location.Y-10)*($voteBanner.Location.Y-10)
-                    $moveX = ($moveX/5000)+1
-                    $moveY = ($moveY/5000)+1
-                    $voteBanner.Location = New-Object System.Drawing.Point($($voteBanner.Location.X+$moveX), $($voteBanner.Location.Y+$moveY))
-                    $combatLounge.Refresh()
-                    start-sleep -Milliseconds 1
-                }
-                $voteForEarlyStart.Visible = $true
-                $voteCountLabel.Visible = $true
-                $voteCountLabel.Text = "$($getMatch.arena.voted.count)/$($getMatch.arena.neededToStart)"
-                foreach ($playerSlot in $playerSlotsarena) {
-                    if ($getMatch.arena.voted -notcontains $playerSlot.Text) {
-                        $playerSlot.BackColor = [System.Drawing.Color]::FromArgb(100, 255, 0, 0)
-                        $playerSlot.Refresh()
-                    } else {
-                        $playerSlot.BackColor = [System.Drawing.Color]::FromArgb(100, 0, 255, 0)
-                        $playerSlot.Refresh()
-                    }
-                }
-                while ($voteBanner.Location.X -lt 2000) {
-                    $move = ($voteBanner.Location.X-10)*($voteBanner.Location.X-10)
-                    $move = ($move/1000)+1
-                    $voteBanner.Location = New-Object System.Drawing.Point($($voteBanner.Location.X+$move), $($voteBanner.Location.Y+$move))
-                    $combatLounge.Refresh()
-                    start-sleep -Milliseconds 1
-                }
-            }
-        } else {
-            $voteBanner.Visible = $false
-            $voteBanner.Location = New-Object System.Drawing.Point(-350, -600)
-            $voteForEarlyStart.Visible = $false
-            $voteCountLabel.Visible = $false
-        }
-        if ($getMatch.arena.startTime -ne $null) {
-            $getMatchTimer.Stop()
-            if ($getMatch.ID -eq $null) {
-                $searchingLabel.text = "No game servers are available to host this match, try again later."
-                $searchingLabel.Refresh()
-                start-sleep -s 5
-                stopMatchmaking
-                return
-            }
-            while ([int][double]::Parse((Get-Date (get-date).ToUniversalTime() -UFormat %s)) -lt $getMatch.startTime) {
-                $searchingLabel.Text = "Match ready, starting in $([int](($getMatch.startTime - (Get-Date (get-date).ToUniversalTime() -UFormat %s)))) seconds..."
-                if ($searchingLabel.Text -eq "Match ready, starting in 1 seconds...") {
-                    $searchingLabel.Text = "Match ready, starting in 1 second..."
-                }
-                $searchingLabel.Refresh()
-                start-sleep -Milliseconds 100
-            }
-            $global:getMatchTimer.stop()
-            $screenCover.text = "Game running"
-            $screenCover.BringToFront()
-            $screenCover.Refresh()
-            $global:job = start-job ({
-                param($getMatch, $config)
-                Start-Process "$($config.gamePath)\bin\win10\EchoVR.exe" -wait #-ArgumentList "-join $($getMatch.ID)"
-                return
-            }) -ArgumentList $getMatch, $global:config
-            $global:gameRunTimer = New-Object System.Windows.Forms.Timer
-            $gameRunTimer.Interval = 1000
-            $gameRunTimer.add_tick({
-                if ($job.state -ne "Running") {
-                    Remove-Job $job
-                    $gameRunTimer.Stop()
-                    stopMatchmaking
-                }
-            })
-            $gameRunTimer.Start()
-        }
-    })
-
-    $getMatchTimer.Start()
-}
-
-function joinMatchmaking {
-    param (
-        [switch]$joinCombat,
-        [switch]$joinArena
-    )
-
-    $otherServers.Enabled = $false
-    $global:screenCover = New-Object System.Windows.Forms.Label
-    $screenCover.Size = New-Object System.Drawing.Size(1280, 720)
-    $screenCover.Location = New-Object System.Drawing.Point(0, -80)
-    $screenCover.Text = "Connecting"
-    $screenCover.TextAlign = 'MiddleCenter'
-    $screenCover.Font = New-Object System.Drawing.Font("Arial", 50)
-    $combatLounge.Controls.Add($screenCover)
-    $screenCover.BringToFront()
-
-    $joinMatchmaker = start-job {
-        param($config, $api, $joinCombat, $joinArena)
-        $data = @{
-            action = ""
-            userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
-            userName = $config.username
-        }
-        if ($joinCombat) {
-            $data.action = "joinCombatMatchmaker"
-        } elseif ($joinArena) {
-            $data.action = "joinArenaMatchmaker"
-        }
-        $data = $data | ConvertTo-Json
-        $response = Invoke-RestMethod -Uri $api -Method Post -ContentType "application/json" -Body $data
-        return $response
-    } -ArgumentList $global:config, $database.api, $joinCombat, $joinArena
-
-    if ($joinCombat) {
-        $global:gameMode = "Combat"
-    } elseif ($joinArena) {
-        $global:gameMode = "Arena"
-    }
-
-    $progressBar = New-Object System.Windows.Forms.ProgressBar
-    $progressBar.Size = New-Object System.Drawing.Size(400, 20)
-    $progressBar.Location = New-Object System.Drawing.Point(440, 325)
-    $progressBar.Style = 'Marquee'
-    $combatLounge.Controls.Add($progressBar)
-    $progressBar.BringToFront()
-
-    do {
-        $screenCover.Refresh()
-        $progressBar.Refresh()
-        Start-Sleep -Milliseconds 10
-    } while ($joinMatchmaker.State -eq "Running")
-    $screenCover.text = ""
-    $progressBar.Dispose()
-    $global:getMatch = $joinMatchmaker | receive-job
-    $global:playerInfo = $global:getMatch.Players
-    $joinMatchmaker | remove-job
-
-    if ($getMatch -eq $null) {
-        $screenCover.ForeColor = [System.Drawing.Color]::FromArgb(255, 255, 0, 0)
-        $screenCover.Text = "`nCould not connect to the matchmaking server."
-        $screenCover.Refresh()
-        Start-Sleep -Seconds 3
-        stopMatchmaking
-        return
-    }
-
-    if ($getMatch.players.count -gt 8) {
-        $getMatchTimer.Interval = 99999
-        $getMatchTimer.stop()
-        $screenCover.text = "`nAn error has occurred."
-        $screenCover.ForeColor = [System.Drawing.Color]::FromArgb(100, 255, 0, 0)
-        $screenCover.bringToFront()
-        $screenCover.Refresh()
-        Start-Sleep -Seconds 3
-        $data = @{
-            action = "get$($global:gamemode)Match"
-            userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
-            userName = "Join error"
-        } | ConvertTo-Json
-        Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $data
-        stopMatchmaking
-        return
-    }
-
-    $global:searchingLabel = New-Object System.Windows.Forms.Label
-    $searchingLabel.Size = New-Object System.Drawing.Size(500, 70)
-    $searchingLabel.Location = New-Object System.Drawing.Point(10, 10)
-    $searchingLabel.Text = "Searching for players..."
-    $searchingLabel.Font = New-Object System.Drawing.Font("Arial", 20)
-    $combatLounge.Controls.Add($searchingLabel)
-    $searchingLabel.BringToFront()
-
-    $global:playerSlotsSearching = New-Object System.Windows.Forms.Label[] 8
-    for ($i=0; $i -lt 8; ++$i) {
-        $playerSlotsSearching[$i] = New-Object System.Windows.Forms.Label
-        $playerSlotsSearching[$i].Size = New-Object System.Drawing.Size(200, 35)
-        $playerSlotsSearching[$i].Location = New-Object System.Drawing.Point(10, (100+$i*40))
-        $playerSlotsSearching[$i].BackColor = [System.Drawing.Color]::FromArgb(100, 0, 0, 0)
-        $playerSlotsSearching[$i].BorderStyle = 'FixedSingle'
-        $playerSlotsSearching[$i].Font = New-Object System.Drawing.Font("Arial", 20)
-        $playerSlotsSearching[$i].Text = "Searching..."
-        $combatLounge.Controls.Add($playerSlotsSearching[$i])
-    }
-    foreach ($slot in $playerSlotsSearching) {
-        $slot.BringToFront()
-        $slot.Refresh()
-    }
-
-    $global:voteForEarlyStart = New-Object System.Windows.Forms.Button
-    $voteForEarlyStart.Size = New-Object System.Drawing.Size(200, 35)
-    $voteForEarlyStart.Location = New-Object System.Drawing.Point(10, 450)
-    $voteForEarlyStart.Text = "Vote to begin"
-    $voteForEarlyStart.Visible = $false
-    $voteForEarlyStart.add_click({
-        $voteForEarlyStart.Text = "Voting..."
-        $voteForEarlyStart.Enabled = $false
-        $voteForEarlyStart.Refresh()
-        $data=@{
-            action = "voteForEarlyStart$($global:gamemode)"
-            userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
-            userName = $global:config.username
-        } | ConvertTo-Json
-        Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $data
-        $voteForEarlyStart.text = "Voted!"
-        $voteCountLabel.Text = "$($getMatch.voted.count+1)/$($getMatch.neededToStart)"
-        foreach ($playerSlot in $playerSlots) {
-            if ($config.username -eq $playerSlot.Text) {
-                $playerSlot.BackColor = [System.Drawing.Color]::FromArgb(100, 0, 255, 0)
-                $playerSlot.Refresh()
-            }
-        }
-        $voteForEarlyStart.Refresh()
-        $voteCountLabel.Refresh()
-    })
-    $combatLounge.Controls.Add($voteForEarlyStart)
-    $voteForEarlyStart.BringToFront()
-
-    $global:voteCountLabel = New-Object System.Windows.Forms.Label
-    $voteCountLabel.Size = New-Object System.Drawing.Size(200, 35)
-    $voteCountLabel.Location = New-Object System.Drawing.Point(220, 450)
-    $voteCountLabel.Text = "$($getMatch.voted.count)/Loading..."
-    $voteCountLabel.Font = New-Object System.Drawing.Font("Arial", 20)
-    $voteCountLabel.Visible = $false
-    $combatLounge.Controls.Add($voteCountLabel)
-    $voteCountLabel.BringToFront()
-
-    $global:voteBanner = New-Object system.windows.forms.label
-    $voteBanner.Size = New-Object System.Drawing.Size(350,600)
-    $voteBanner.Location = New-Object System.Drawing.Point(-350, -600)
-    $voteBanner.Text = "Voting available!"
-    $voteBanner.TextAlign = 'MiddleCenter'
-    $voteBanner.Font = New-Object System.Drawing.Font("Arial", 25)
-    $voteBanner.ForeColor = [System.Drawing.Color]::FromArgb(255,255,255)
-    $voteBanner.BackColor = [System.Drawing.Color]::FromArgb(0,0,139)
-    $voteBanner.Visible = $false
-    $combatLounge.Controls.Add($voteBanner)
-    $voteBanner.BringToFront()
-
-    $global:cancelMatchmaking = New-Object System.Windows.Forms.Button
-    $cancelMatchmaking.Size = New-Object System.Drawing.Size(200, 35)
-    $cancelMatchmaking.Location = New-Object System.Drawing.Point(10, 600)
-    $cancelMatchmaking.Text = "Cancel Matchmaking"
-    $cancelMatchmaking.add_click({
-        $data = @{
-            action = "cancel$($global:gamemode)Matchmaking"
-            userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
-            userName = $global:config.username
-        } | ConvertTo-Json
-        Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $data
-        stopMatchmaking
-    })
-    $combatLounge.Controls.Add($cancelMatchmaking)
-    $cancelMatchmaking.BringToFront()
-
-    $global:playerSlots = New-Object System.Windows.Forms.Label[] 8
-    for ($i = 0; $i -lt $playerSlots.Length; $i++) {
-        $playerSlots[$i] = New-Object System.Windows.Forms.Label
-        $playerSlots[$i].Size = New-Object System.Drawing.Size(200, 35)
-        $playerSlots[$i].Location = New-Object System.Drawing.Point(-300, (100+$i*40))
-        $playerSlots[$i].Text = $playerInfo[$i]
-        $playerSlots[$i].BackColor = [System.Drawing.Color]::FromArgb(100, 0, 0, 255)
-        $playerSlots[$i].BorderStyle = 'FixedSingle'
-        $playerSlots[$i].Font = New-Object System.Drawing.Font("Arial", 20)
-        $combatLounge.Controls.Add($playerSlots[$i])
-        $playerSlots[$i].BringToFront()
-    }
-
-    $i=0
-    foreach ($player in $playerInfo) {
-        $playerSlots[$i].Text = $player
-        if ($config.username -eq $player) {
-            while ($playerSlots[$i].Location.X -lt 10) {
-                $playerSlots[$i].Location = New-Object System.Drawing.Point($($playerSlots[$i].Location.X+10), $playerSlots[$i].Location.Y)
-                $playerSlots[$i].Refresh()
-                start-sleep -Milliseconds 1
-            }
-        }
-        $playerSlotsSearching[$i].Location = New-Object System.Drawing.Point($(-300), $playerSlotsSearching[$i].Location.Y)
-        $playerSlots[$i].Location = New-Object System.Drawing.Point($(10), $playerSlots[$i].Location.Y)
-        $i++
-    }
-    $global:getMatchTimer = New-Object System.Windows.Forms.Timer
-    $getMatchTimer.Interval = 3000
-
-    $getMatchTimer.add_Tick({
-        $global:oldGetMatch = $getMatch
-        $data = @{
-            action = "get$($global:gamemode)Match"
-            userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
-            userName = $config.username
-        } | ConvertTo-Json
-        try {
-            $global:getMatch = Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $data
-
-            $searchingLabel.text = "Searching for players..."
-            $searchingLabel.ForeColor = [System.Drawing.Color]::FromArgb(255, 0, 0, 0)
-            $searchingLabel.BackColor = [System.Drawing.Color]::Transparent
-            $searchingLabel.Refresh()
-        } catch {
-            if ($searchingLabel.text -eq "Searching for players...`nThe connection is unstable!") {
-                $getMatchTimer.Stop()
-                $screenCover.text = "`nA communication error has occurred."
-                $screenCover.ForeColor = [System.Drawing.Color]::FromArgb(100, 255, 0, 0)
-                $screenCover.bringToFront()
-                $screenCover.Refresh()
-
-                $global:commErrorOK = New-Object System.Windows.Forms.Button
-                $commErrorOK.Size = New-Object System.Drawing.Size(200, 35)
-                $commErrorOK.Location = New-Object System.Drawing.Point(10, 600)
-                $commErrorOK.Text = "OK"
-                $commErrorOK.add_click({
-                    $commErrorOK.Dispose()
-                    stopMatchmaking
-                })
-                $combatLounge.Controls.Add($commErrorOK)
-                $commErrorOK.BringToFront()
-
-                return
-            }
-            $searchingLabel.text = "Searching for players...`nThe connection is unstable!"
-            $searchingLabel.ForeColor = [System.Drawing.Color]::FromArgb(100, 255, 255, 0)
-            $searchingLabel.BackColor = [System.Drawing.Color]::FromArgb(100, 0, 0, 0)
-            $searchingLabel.Refresh()
-        }
-        if ($getMatch.players.count -eq 8 -and $searchingLabel.text -ne "Searching for players...`nThe connection is unstable!" -and $match.startTime -eq $null) {
-            $searchingLabel.text = "Match ready, preparing..."
-            $searchingLabel.Refresh()
-        }
-
-        if ($getMatch.players.count -gt 8) {
-            $getMatchTimer.Stop()
-            $getMatchTimer.Interval = 99999
-            $screenCover.text = "`nAn error has occurred."
-            $screenCover.ForeColor = [System.Drawing.Color]::FromArgb(100, 255, 0, 0)
-            $screenCover.bringToFront()
-            $screenCover.Refresh()
-
-            $global:ErrorOK = New-Object System.Windows.Forms.Button
-            $ErrorOK.Size = New-Object System.Drawing.Size(200, 35)
-            $ErrorOK.Location = New-Object System.Drawing.Point(10, 600)
-            $ErrorOK.Text = "OK"
-            $ErrorOK.add_click({
-                stopMatchmaking
-                $ErrorOK.Dispose()
-            })
-            $combatLounge.Controls.Add($ErrorOK)
-            $ErrorOK.BringToFront()
-            $ErrorOK.Refresh()
-
-            return
-        }
-        if ($getMatch.players.count -lt $oldGetMatch.players.count) {
-            write-output "player left"
-            foreach ($slot in $playerSlotsSearching) {
-                if ($slot.Location.X -lt 10) {
-                    $slot.Location = New-Object System.Drawing.Point(10, $slot.Location.Y)
-                    $slot.Refresh()
-                }
-            }
-            for($i=0; $i -lt 8; $i++) {
-                while ($playerSlots[0].Location.X -gt -300) {
-                    foreach ($slot in $playerSlots) {
-                        if ($slot.Location.X -gt -300) {
-                            $slot.Location = New-Object System.Drawing.Point($($slot.Location.X-10), $slot.Location.Y)
-                            $slot.Refresh()
-                        }
-                    }
-                    start-sleep -Milliseconds 1
-                }
-            }
-            foreach ($slot in $playerSlots) {
-                $slot.Text = ""
-                $slot.Refresh()
-            }
-            for($i=0; $i -lt $getMatch.players.count; $i++) {
-                $playerSlots[$i].Text = $getMatch.players[$i]
-            }
-            $i=0
-            while ($playerSlots[0].Location.X -lt 10) {
-                foreach ($slot in $playerSlots) {
-                    if ($slot.Location.X -lt 10 -and $getMatch.players -contains $slot.Text) {
-                        $slot.Location = New-Object System.Drawing.Point($($slot.Location.X+10), $slot.Location.Y)
-                        $slot.Refresh()
-                    }
-                }
-                start-sleep -Milliseconds 1
-            }
-            for($i=0; $i -lt $getMatch.players.count; $i++) {
-                $playerSlotsSearching[$i].Location = New-Object System.Drawing.Point(-300, $playerSlotsSearching[$i].Location.Y)
-                $playerSlotsSearching[$i].Refresh()
-            }
-        }
-        if ($getMatch.players.count -gt $oldGetMatch.players.count) {
-            write-output "new player"
-            for($i=0; $i -lt $getMatch.players.count; $i++) {
-                $playerSlots[$i].Text = $getMatch.players[$i]
-                while ($playerSlots[$i].Location.X -lt 10) {
-                    $playerSlots[$i].Location = New-Object System.Drawing.Point($($playerSlots[$i].Location.X+10), $playerSlots[$i].Location.Y)
-                    $playerSlots[$i].Refresh()
-                    start-sleep -Milliseconds 1
-                }
-            }
-        }
-        if ($getMatch.players.count -gt 3) {
-            if ($voteBanner.Visible -eq $false) {
-                $voteBanner.Visible = $true
-                $voteBanner.BringToFront()
-                while ($voteBanner.Location.X -lt 10) {
-                    $moveX = ($voteBanner.Location.X-10)*($voteBanner.Location.X-10)
-                    $moveY = ($voteBanner.Location.Y-10)*($voteBanner.Location.Y-10)
-                    $moveX = ($moveX/5000)+1
-                    $moveY = ($moveY/5000)+1
-                    $voteBanner.Location = New-Object System.Drawing.Point($($voteBanner.Location.X+$moveX), $($voteBanner.Location.Y+$moveY))
-                    $combatLounge.Refresh()
-                    start-sleep -Milliseconds 1
-                }
-                $voteForEarlyStart.Visible = $true
-                $voteCountLabel.Visible = $true
-                $voteCountLabel.Text = "$($getMatch.voted.count)/$($getMatch.neededToStart)"
-                foreach ($playerSlot in $playerSlots) {
-                    if ($getMatch.voted -notcontains $playerSlot.Text) {
-                        $playerSlot.BackColor = [System.Drawing.Color]::FromArgb(100, 255, 0, 0)
-                        $playerSlot.Refresh()
-                    } else {
-                        $playerSlot.BackColor = [System.Drawing.Color]::FromArgb(100, 0, 255, 0)
-                        $playerSlot.Refresh()
-                    }
-                }
-                while ($voteBanner.Location.X -lt 2000) {
-                    $move = ($voteBanner.Location.X-10)*($voteBanner.Location.X-10)
-                    $move = ($move/1000)+1
-                    $voteBanner.Location = New-Object System.Drawing.Point($($voteBanner.Location.X+$move), $($voteBanner.Location.Y+$move))
-                    $combatLounge.Refresh()
-                    start-sleep -Milliseconds 1
-                }
-            }
-        } else {
-            $voteBanner.Visible = $false
-            $voteBanner.Location = New-Object System.Drawing.Point(-350, -600)
-            $voteForEarlyStart.Visible = $false
-            $voteCountLabel.Visible = $false
-        }
-        if ($getMatch.startTime -ne $null) {
-            $getMatchTimer.Stop()
-            if ($getMatch.ID -eq $null) {
-                $searchingLabel.text = "No game servers are available to host this match, try again later."
-                $searchingLabel.Refresh()
-                start-sleep -s 5
-                stopMatchmaking
-                return
-            }
-            while ([int][double]::Parse((Get-Date (get-date).ToUniversalTime() -UFormat %s)) -lt $getMatch.startTime) {
-                $searchingLabel.Text = "Match ready, starting in $([int](($getMatch.startTime - (Get-Date (get-date).ToUniversalTime() -UFormat %s)))) seconds..."
-                if ($searchingLabel.Text -eq "Match ready, starting in 1 seconds...") {
-                    $searchingLabel.Text = "Match ready, starting in 1 second..."
-                }
-                $searchingLabel.Refresh()
-                start-sleep -Milliseconds 100
-            }
-            $global:getMatchTimer.stop()
-            $screenCover.text = "Game running"
-            $screenCover.BringToFront()
-            $screenCover.Refresh()
-            $global:job = start-job ({
-                param($getMatch, $config)
-                Start-Process "$($config.gamePath)\bin\win10\EchoVR.exe" -wait #-ArgumentList "-join $($getMatch.ID)"
-                return
-            }) -ArgumentList $getMatch, $global:config
-            $global:gameRunTimer = New-Object System.Windows.Forms.Timer
-            $gameRunTimer.Interval = 1000
-            $gameRunTimer.add_tick({
-                if ($job.state -ne "Running") {
-                    Remove-Job $job
-                    $gameRunTimer.Stop()
-                    stopMatchmaking
-                }
-            })
-            $gameRunTimer.Start()
-        }
-    })
-
-    $getMatchTimer.Start()
-}
-
-function matchmaking {
-    $config.username = random -Minimum 100000 -Maximum 999999
-
-    $global:screenCover = New-Object System.Windows.Forms.Label
-    $screenCover.Size = New-Object System.Drawing.Size(1280, 720)
-    $screenCover.Location = New-Object System.Drawing.Point(0, -80)
-    $screenCover.Text = ""
-    $screenCover.TextAlign = 'MiddleCenter'
-    $screenCover.Font = New-Object System.Drawing.Font("Arial", 50)
-    $combatLounge.Controls.Add($screenCover)
-    $screenCover.BringToFront()
-
-    $global:joinCombat = New-Object System.Windows.Forms.Button
-    $joinCombat.Size = New-Object System.Drawing.Size(300,300)
-    $joinCombat.Location = New-Object System.Drawing.Point(160, 150)
-    $joinCombat.Text = "Join combat matchmaking"
-    $joinCombat.Font = New-Object System.Drawing.Font("Arial", 17)
-    $joinCombat.add_click({
-        joinMatchmaking -joinCombat
-    })
-    $combatLounge.Controls.Add($joinCombat)
-    $joinCombat.BringToFront()
-
-    $global:joinBoth = New-Object System.Windows.Forms.Button
-    $joinBoth.Size = New-Object System.Drawing.Size(300,300)
-    $joinBoth.Location = New-Object System.Drawing.Point(480,150)
-    $joinBoth.Text = "Join matchmaking for both"
-    $joinBoth.Font = New-Object System.Drawing.Font("Arial", 17)
-    $joinBoth.add_click({
-        joinBoth
-    })
-    $combatLounge.Controls.Add($joinBoth)
-    $joinBoth.BringToFront()
-
-    $global:joinArena = New-Object System.Windows.Forms.Button
-    $joinArena.Size = New-Object System.Drawing.Size(300,300)
-    $joinArena.Location = New-Object System.Drawing.Point(800,150)
-    $joinArena.Text = "Join arena matchmaking"
-    $joinArena.Font = New-Object System.Drawing.Font("Arial", 17)
-    $joinArena.add_click({
-        joinMatchmaking -joinArena
-    })
-    $combatLounge.Controls.Add($joinArena)
-    $joinArena.BringToFront()
-
-    $global:exitButton = New-Object System.Windows.Forms.Button
-    $exitButton.Size = New-Object System.Drawing.Size(940, 35)
-    $exitButton.Location = New-Object System.Drawing.Point(160, 460)
-    $exitButton.Text = "Exit"
-    $exitButton.add_click({
-        $exitButton.Visible = $false
-        $screenCover.Visible = $false
-        $screenCover.SendToBack()
-        $screenCover.Refresh()
-        $joinCombat.Dispose()
-        $joinBoth.Dispose()
-        $joinArena.Dispose()
-        $screenCover.Dispose()
-    })
-    $combatLounge.Controls.Add($exitButton)
-    $exitButton.BringToFront()
-}
-
 function pingServer {
     param($serverIP)
     $port = 6792
@@ -1921,7 +926,7 @@ $combatLoungeList.Add_KeyDown({
         $combatLoungeList.ClearSelection()
         $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to join $($combatLoungeList.rows[$global:rowIndex].cells[1].value)?", "Echo Relay Server Browser", "YesNo", "Question")
         if ($choice -eq "Yes") {
-            Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-join $($combatGames.gameServer[$global:RowIndex].sessionID)" -Wait
+            Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-lobbyid $($combatGames.gameServers[$global:RowIndex].sessionID)" -Wait
         }
     }
 })
@@ -1933,7 +938,7 @@ $combatLoungeList.Add_CellDoubleClick({
     $global:rowIndex = $e.RowIndex
     $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to join $($combatLoungeList.rows[$global:RowIndex].cells[1].value)?", "Echo Relay Server Browser", "YesNo", "Question")
     if ($choice -eq "Yes") {
-        Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-join $($combatGames.gameServer[$global:RowIndex].sessionID)" -Wait
+        Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-lobbyid $($combatGames.gameServers[$global:RowIndex].sessionID)" -Wait
     }
 })
 
@@ -1957,19 +962,44 @@ foreach ($gameServer in $combatGames.gameServers) {
 }
 $combatLounge.Controls.Add($combatLoungeList)
 
-$matchmakingLabel = New-Object System.Windows.Forms.Label
-$matchmakingLabel.Size = New-Object System.Drawing.Size(200, 20)
-$matchmakingLabel.Location = New-Object System.Drawing.Point(10, 470)
-$matchmakingLabel.Text = "Matchmaking:"
-$matchmakingLabel.Font = New-Object System.Drawing.Font("Arial", 12)
-$combatLounge.Controls.Add($matchmakingLabel)
+$refreshCombatLounge = New-Object System.Windows.Forms.Button
+$refreshCombatLounge.Location = New-Object System.Drawing.Point(236, 25)
+$refreshCombatLounge.Text = "Refresh"
+$refreshCombatLounge.Font = New-Object System.Drawing.Font("Arial", 10)
+$refreshCombatLounge.add_click({
 
-$matchmakingButton = New-Object System.Windows.Forms.Button
-$matchmakingButton.Size = New-Object System.Drawing.Size(250, 35)
-$matchmakingButton.Location = New-Object System.Drawing.Point(10, 500)
-$matchmakingButton.Text = "Join Matchmaking"
-$matchmakingButton.add_click({matchmaking})
-$combatLounge.Controls.Add($matchmakingButton)
+    $refreshCombatLounge.Enabled = $false
+    $refreshCombatLounge.text = "Refreshing..."
+    $refreshCombatLounge.Font = New-Object System.Drawing.Font("Arial", 8)
+
+    $combatGames = Invoke-WebRequest "http://51.75.140.182:3000/api/listGameServers/62.68.167.123"
+    $global:combatGames = $combatGames.content | ConvertFrom-Json
+
+    $i=0
+    foreach ($gameServer in $global:combatGames.gameServers) {
+        $combatLoungeList.Rows[$i].Cells[0].value = "$($gameServer.playerCount)/$(if($gameServer.activePlayerLimit -eq $null){$gameServer.playerLimit}else{$gameServer.activePlayerLimit})"
+        $combatLoungeList.Rows[$i].Cells[1].value = (Get-Culture).TextInfo.ToTitleCase($($gameServer.gameMode -replace '^(echo_|mpl_combat_)', '')) -replace '_',' '
+        if ($combatLoungeList.Rows[$i].Cells[1].value -eq "Social 2.0") {
+            $combatLoungeList.Rows[$i].Cells[1].value = "Lobby"
+        }
+        $combatLoungeList.Rows[$i].Cells[2].value = $(pingServer $gameServer.sessionIp)[1]
+        if ($combatLoungeList.Rows[$i].Cells[2].value -gt 1000) {
+            $PingServer = Test-Connection -count 1 -ComputerName $gameServer.sessionIP -TimeoutSeconds 1
+            if ($PingServer.Latency -eq 0){
+                $combatLoungeList.Rows[$i].Cells[2].value = "Error"
+            } else {
+                $combatLoungeList.Rows[$i].Cells[2].value = $PingServer.Latency
+            }
+        }
+        ++$i
+    }
+
+
+    $refreshCombatLounge.Enabled = $true
+    $refreshCombatLounge.text = "Refresh"
+    $refreshCombatLounge.Font = New-Object System.Drawing.Font("Arial", 10)
+})
+$combatLounge.Controls.Add($refreshCombatLounge)
 
 $combatSideBar = New-Object System.Windows.Forms.Panel
 $combatSideBar.Size = New-Object System.Drawing.Size(385, 721)
@@ -1998,7 +1028,7 @@ $combatSideBar.Controls.Add($currentGameModeImage)
 $currentGameModeDescription = New-Object System.Windows.Forms.Label
 $currentGameModeDescription.Size = New-Object System.Drawing.Size(360, 100)
 $currentGameModeDescription.Location = New-Object System.Drawing.Point(10, 260)
-$currentGameModeDescription.Text = "Game Mode Objective Placeholder"
+# $currentGameModeDescription.Text = "Game Mode Objective Placeholder"
 $currentGameModeDescription.Font = New-Object System.Drawing.Font("Arial", 12)
 $currentGameModeDescription.BackColor = 'LightGray'
 $combatSideBar.Controls.Add($currentGameModeDescription)
@@ -2009,7 +1039,7 @@ $join.Location = New-Object System.Drawing.Point(10, 600)
 $join.Text = "Join Game"
 $join.Font = New-Object System.Drawing.Font("Arial", 12)
 $join.add_click({
-    Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-join $($combatGames.gameServers[$global:RowIndex].sessionID)" -Wait
+    Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-lobbyid $($combatGames.gameServers[$global:RowIndex].sessionID)" -Wait
 })
 
 $combatSideBar.Controls.Add($join)
@@ -2379,20 +1409,21 @@ $refresh.Font = New-Object System.Drawing.Font("Arial", 10)
 $refresh.add_click({
     $refresh.Enabled = $false
     $refresh.text = "Refreshing..."
+    $refresh.Font = New-Object System.Drawing.Font("Arial", 8)
     $refresh.Update()
     $file = Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/servers.json" -UseBasicParsing
     $newList = $file.content | ConvertFrom-Json
-    $database.online = $newList.online
-    $database.offline = $newList.offline
+    $global:database.online = $newList.online
+    $global:database.offline = $newList.offline
     if ($showOfflineServers.Checked -eq $true) {
         $i=0
         $newList = [System.Collections.ArrayList]@($database.online)
-        foreach ($server in $database.offline) {
+        foreach ($server in $global:database.offline) {
             $newList.Add($server)
         }
         $database.online = $newList.ToArray()
         $serverList.RowCount = $database.online.Count
-        foreach ($server in $database.online) {
+        foreach ($server in $global:database.online) {
             $serverList.Rows[$i].Cells[0].Value = $server.name
             $serverList.Rows[$i].Cells[1].Value = $server.description
             ++$i
@@ -2400,13 +1431,14 @@ $refresh.add_click({
     } else {
         $serverList.RowCount = $database.online.Count
         $i=0
-        foreach ($server in $database.online) {
+        foreach ($server in $global:database.online) {
             $serverList.Rows[$i].Cells[0].Value = $server.name
             $serverList.Rows[$i].Cells[1].Value = $server.description
             ++$i
         }
     }
     $refresh.text = "Refresh"
+    $refresh.Font = New-Object System.Drawing.Font("Arial", 10)
     $refresh.Enabled = $true
 })
 $otherServers.controls.add($refresh)
@@ -2746,16 +1778,9 @@ $addServer.add_Click({
 
 $otherServers.Controls.Add($addServer)
 
-$menu.showDialog()
-if ($global:gameMode) {
-    $data = @{
-        action = "cancel$($global:gamemode)Matchmaking"
-        userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
-        userName = $global:config.username
-    } | ConvertTo-Json
-    Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $data
-    $getMatchTimer.Stop()
-    $gameRunTimer.Stop()
+while ($startdelaystopwatch.ElapsedMilliseconds -lt 3000) {
+    start-sleep -Milliseconds 100
 }
 
+$menu.showDialog()
 $config | convertto-json | set-content "$env:appdata\Echo Relay Server Browser\config.json"
