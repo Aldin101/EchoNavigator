@@ -35,9 +35,6 @@ function Read-FolderBrowserDialog([string]$Message, [string]$InitialDirectory) {
 
 function downgrade {
 
-    [system.windows.forms.messagebox]::show("Downgrading is currently unavailable do to Meta changing how they handle authentication. I am working to resolve this issue.", "Echo Relay Installer", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Error)
-    return
-
     $downgradeMenu = new-object System.Windows.Forms.Form
     $downgradeMenu.text = "Downgrader"
     $downgradeMenu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($fileLocation1)
@@ -51,7 +48,7 @@ function downgrade {
     $downgradeLabel.Location = New-Object System.Drawing.Size(10,10)
     $downgradeLabel.Size = New-Object System.Drawing.Size(200,20)
     $downgradeLabel.Text = "Echo Navigator Downgrader"
-    $downgradeLabel.Font = "Microsoft Sans Serif,12"
+    $downgradeLabel.Font = "Microsoft Sans Serif,11"
     $downgradeLabel.TextAlign = "MiddleCenter"
     $downgradeMenu.Controls.Add($downgradeLabel)
 
@@ -98,46 +95,57 @@ function downgrade {
     $downgradeButton.Add_Click({
         $downgradeButton.enabled = $false
         $folderPicker.enabled = $false
-        $downgradeButton.text = "Preparing WebDriver..."
-        $downgradeButton.Refresh()
-        Install-PackageProvider NuGet -Scope CurrentUser -Force
-        Install-Module -Name Selenium -Scope CurrentUser -Confirm:$false -Force
-        try {
-            $firefox = Start-SeFirefox
-        } catch {
-            $downgradeButton.text = "Downloading firefox..."
-            $downgradeButton.Refresh()
+        $patchEchoVR.text = "Please Enter Token"
+        $patchEchoVR.Refresh()
 
-            Invoke-WebRequest -uri "https://download.mozilla.org/?product=firefox-latest-ssl&os=win64&lang=en-US" -OutFile "$env:temp\firefox.exe"
-            while (1) {
-                try {
-                    start-process "$env:temp\firefox.exe" -ArgumentList "/S" -verb RunAs -Wait
-                    $firefox = Start-SeFirefox
-                    break
-                } catch {
-                    $choice = [System.Windows.Forms.MessageBox]::show("Please accept the admin prompt to install Firefox.`n`nNo prompt? Try installing manually.", "Echo Navigator Downgrader","RetryCancel", "Error")
-                    if ($choice -eq "Cancel") {
-                        $downgradeButton.text = "Try again"
-                        $downgradeButton.enabled = $true
-                        $folderPicker.enabled = $true
-                        return
-                    }
-                }
-            }
-        }
-        $firefox.Navigate().GoToUrl("https://auth.oculus.com/login/?redirect_uri=https%3A%2F%2Fdeveloper.oculus.com%2Fmanage%2F")
-        while ($firefox.url -notlike "https://developer.oculus.com/manage/*") {
-            if ($firefox.url -eq $null) {
-                $firefox.Quit()
-                [System.Windows.Forms.MessageBox]::show("You closed the browser window without logging in. Please try again.`n`nThe account information entered is only ever used to download the game. If you wish not to enter your account information you will need to use anther method to get Echo Relay.", "Echo Navigator Downgrader","OK", "Error")
-                $downgradeButton.text = "Try again"
-                $downgradeButton.enabled = $true
-                return
-            }
-            Start-Sleep -Seconds 1
-        }
-        $token = $firefox.Manage().Cookies.GetCookieNamed("oc_www_at").Value
-        $firefox.Quit()
+        [System.Windows.Forms.MessageBox]::Show("Browser authentication can not longer be performed, this means that you will need to manually obtain and enter your token. A guide on obtaining your token will appear after pressing OK.", "Echo Navigator", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Information)
+        start-process "https://computerelite.github.io/tools/Oculus/ObtainTokenNew.html"
+
+        $tokenEntry = New-Object System.Windows.Forms.Form
+        $tokenEntry.Text = "Echo Navigator"
+        $tokenEntry.Size = New-Object System.Drawing.Size(300,200)
+        $tokenEntry.StartPosition = "CenterScreen"
+        $tokenEntry.FormBorderStyle = "FixedDialog"
+        $tokenEntry.MaximizeBox = $false
+        $tokenEntry.showInTaskbar = $false
+        $tokenEntry.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
+
+        $tokenLabel = New-Object System.Windows.Forms.Label
+        $tokenLabel.Size = New-Object System.Drawing.Size(300, 20)
+        $tokenLabel.Location = New-Object System.Drawing.Point(-5, 5)
+        $tokenLabel.Text = "Enter your token"
+        $tokenLabel.Font = New-Object System.Drawing.Font("Arial", 12)
+        $tokenLabel.TextAlign = "MiddleCenter"
+        $tokenEntry.Controls.Add($tokenLabel)
+
+        $tokenInput = New-Object System.Windows.Forms.TextBox
+        $tokenInput.Size = New-Object System.Drawing.Size(250, 20)
+        $tokenInput.Location = New-Object System.Drawing.Point(17, 30)
+        $tokenInput.Font = New-Object System.Drawing.Font("Arial", 12)
+        $tokenEntry.Controls.Add($tokenInput)
+
+        $pasteIntoBoxButton = New-Object System.Windows.Forms.Button
+        $pasteIntoBoxButton.Size = New-Object System.Drawing.Size(250, 35)
+        $pasteIntoBoxButton.Location = New-Object System.Drawing.Point(17, 60)
+        $pasteIntoBoxButton.Text = "Paste from clipboard"
+        $pasteIntoBoxButton.add_click({
+            $tokenInput.Text = Get-Clipboard -Raw
+        })
+        $tokenEntry.Controls.Add($pasteIntoBoxButton)
+
+        $tokenButton = New-Object System.Windows.Forms.Button
+        $tokenButton.Size = New-Object System.Drawing.Size(250, 35)
+        $tokenButton.Location = New-Object System.Drawing.Point(17, 100)
+        $tokenButton.Text = "Continue"
+        $tokenButton.add_click({
+            $global:token = $tokenInput.Text
+            $tokenEntry.Close()
+        })
+        $tokenEntry.Controls.Add($tokenButton)
+
+        $tokenEntry.showDialog()
+
+
         $downgradeButton.text = "Downloading..."
         $downgradeButton.Refresh()
         $folderPicker.Visible = $false
@@ -489,7 +497,7 @@ $showPassword = New-Object System.Windows.Forms.PictureBox
 $showPassword.Location = New-Object System.Drawing.Size(188, 111)
 $showPassword.Size = New-Object System.Drawing.Size(21, 21)
 $showPassword.SizeMode = [System.Windows.Forms.PictureBoxSizeMode]::StretchImage
-$showPassword.ImageLocation = "https://aldin101.github.io/Echo-Relay-Installer/eye.png"
+$showPassword.ImageLocation = "https://aldin101.github.io/EchoNavigatorAPI/eye.png"
 $showPassword.BackColor = [System.Drawing.Color]::White
 $showPassword.Add_Click({
     if ($passwordBox.PasswordChar -eq "*") {

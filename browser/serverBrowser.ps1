@@ -15,7 +15,7 @@ function questPatcher {
     $global:questPatcherLabel = New-Object System.Windows.Forms.Label
     $questPatcherLabel.Size = New-Object System.Drawing.Size(2500, 20)
     $questPatcherLabel.Location = New-Object System.Drawing.Point(10, 10)
-    $questPatcherLabel.Text = "Echo VR Quest Patcher"
+    $questPatcherLabel.Text = "Echo Navigator Quest Patcher"
     $questPatcherLabel.Font = New-Object System.Drawing.Font("Arial", 12)
     $questPatcherMenu.Controls.Add($questPatcherLabel)
 
@@ -37,197 +37,115 @@ function questPatcher {
         $patchEchoVR.Enabled = $false
         if (!(test-path "$env:appdata\EchoNavigator\setUpFinished.set")) {
 
-            # $patchEchoVR.text = "Preparing WebDriver..."
-            # $patchEchoVR.Refresh()
+            $patchEchoVR.text = "Please Enter Token"
+            $patchEchoVR.Refresh()
 
-            # Install-PackageProvider -Name NuGet -Scope CurrentUser -MinimumVersion 2.8.5.201 -Force
-            # Install-Module -Name Selenium -Scope CurrentUser -Confirm:$false -Force
-            # try {
-            #     $firefox = Start-SeFirefox
-            # } catch {
-            #     $patchEchoVR.text = "Downloading firefox..."
-            #     $patchEchoVR.Refresh()
+            [System.Windows.Forms.MessageBox]::Show("Browser authentication can not longer be performed, this means that you will need to manually obtain and enter your token. A guide on obtaining your token will appear after pressing OK.", "Echo Navigator", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Information)
+            start-process "https://computerelite.github.io/tools/Oculus/ObtainTokenNew.html"
 
-            #     Invoke-WebRequest -uri "https://download.mozilla.org/?product=firefox-latest-ssl&os=win64&lang=en-US" -OutFile "$env:temp\firefox.exe"
-            #     while (1) {
-            #         try {
-            #             start-process "$env:temp\firefox.exe" -ArgumentList "/S" -verb RunAs -Wait
-            #             $firefox = Start-SeFirefox
-            #             break
-            #         } catch {
-            #             $jsonData = @{
-            #                 action = "Telemetry"
-            #                 message = "Firefox install and launch failed`n$($error[0])`n$($error[1])"
-            #             } | ConvertTo-Json
-            #             Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
-            #             $choice = [System.Windows.Forms.MessageBox]::show("Please accept the admin prompt to install Firefox.`n`nNo prompt? Try installing manually.", "Echo Relay Downgrader","RetryCancel", "Error")
-            #             if ($choice -eq "Cancel") {
-            #                 $patchEchoVR.text = "Try again"
-            #                 $patchEchoVR.enabled = $true
-            #                 return
-            #             }
-            #         }
-            #     }
-            # }
+            $tokenEntry = New-Object System.Windows.Forms.Form
+            $tokenEntry.Text = "Echo Navigator"
+            $tokenEntry.Size = New-Object System.Drawing.Size(300,200)
+            $tokenEntry.StartPosition = "CenterScreen"
+            $tokenEntry.FormBorderStyle = "FixedDialog"
+            $tokenEntry.MaximizeBox = $false
+            $tokenEntry.showInTaskbar = $false
+            $tokenEntry.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
 
-            # $patchEchoVR.text = "Waiting for login..."
-            # $patchEchoVR.Refresh()
-            # start-sleep -s 2
-            # $firefox.Navigate().GoToUrl("https://auth.oculus.com/login/?redirect_uri=https%3A%2F%2Fdeveloper.oculus.com%2Fmanage%2F")
-            # while ($firefox.url -notlike "https://developer.oculus.com/manage/*") {
-            #     if ($firefox.url -eq $null) {
-            #         $firefox.Quit()
-            #         $jsonData = @{
-            #             action = "Telemetry"
-            #             message = "Firefox closed`n$($error[0])`n$($error[1])"
-            #         } | ConvertTo-Json
-            #         Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
-            #         [System.Windows.Forms.MessageBox]::show("You closed the browser window without logging in. Please try again.`n`nThe account information entered is only ever used to download the game. If you wish not to enter your account information you will need to use anther method to get Echo Relay on Quest.", "Echo Navigator","OK", "Error")
-            #         $patchEchoVR.text = "Try again"
-            #         $installProgress.Visible = $false
-            #         $patchEchoVR.enabled = $true
-            #         return
-            #     }
-            #     Start-Sleep -Seconds 1
-            # }
-            # $token = $firefox.Manage().Cookies.GetCookieNamed("oc_www_at").Value
-            # $firefox.Quit()
-            # $patchEchoVR.text = "Downloading obb..."
-            # $patchEchoVR.Refresh()
-            # $installProgress.Visible = $true
-            # $cookie = New-Object System.Net.Cookie
-            # $cookie.Name = "oc_www_at"
-            # $cookie.Value = $token
-            # $cookie.Domain = "oculus.com"
-            # $cookie.Path = "/"
-            # $job = start-job {
-            #     param($cookie)
-            #     $webClient = New-Object System.Net.WebClient
-            #     $webClient.Headers.Add([System.Net.HttpRequestHeader]::Cookie, $cookie.ToString())
-            #     $webClient.DownloadFile("https://securecdn.oculus.com/binaries/download/?id=6528312897208382", "$env:appdata\EchoNavigator\main.4987566.com.readyatdawn.r15.obb")
-            # } -ArgumentList $cookie
-            # $installProgress.Value = 0
-            # while ($job.state -ne "Completed") {
-            #     $installProgress.Value = (((Get-Item "$env:appdata\EchoNavigator\main.4987566.com.readyatdawn.r15.obb").length / 946094131) * 100)
-            #     start-sleep -Milliseconds 100
-            # }
-            # remove-job $job
-            # $patchEchoVR.text = "Downloading apk..."
-            # $patchEchoVR.Refresh()
-            # $job = start-job {
-            #     param($cookie)
-            #     $webClient = New-Object System.Net.WebClient
-            #     $webClient.Headers.Add([System.Net.HttpRequestHeader]::Cookie, $cookie.ToString())
-            #     $webClient.DownloadFile("https://securecdn.oculus.com/binaries/download/?id=6528386917200980", "$env:appdata\EchoNavigator\r15_goldmaster_store.apk")
-            # } -ArgumentList $cookie
-            # $installProgress.Value = 0
-            # while ($job.state -ne "Completed") {
-            #     $installProgress.Value = (((Get-Item "$env:appdata\EchoNavigator\r15_goldmaster_store.apk").length / 96177060) * 100)
-            #     start-sleep -Milliseconds 100
-            # }
-            # remove-job $job
-            # $installProgress.Value = 100
-            # $patchEchoVR.text = "Verifying..."
-            # $patchEchoVR.Refresh()
-            # start-sleep -s 3
-            # $installProgress.Visible = $false
-            # $installProgress.Refresh()
-            # if ((Get-FileHash "$env:appdata\EchoNavigator\main.4987566.com.readyatdawn.r15.obb" MD5).hash -ne "5CE4C24C4316B77CD4F5C68A4B20A5F6" -or (Get-FileHash "$env:appdata\EchoNavigator\r15_goldmaster_store.apk" MD5).hash -ne "C14C0F68ADB62A4C5DEAEF46D046F872") {
-            #     $jsonData = @{
-            #         action = "Telemetry"
-            #         message = "Downloaded files failed verification`n$($error[0])`n$($error[1])"
-            #     } | ConvertTo-Json
-            #     Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
-            #     $patchEchoVR.text = "Try again"
-            #     $installProgress.Visible = $false
-            #     $patchEchoVR.enabled = $true
-            #     [System.Windows.Forms.MessageBox]::show("The download failed, please try again", "Echo Navigator", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
-            #     return
-            # }
-            if (!(test-path "$env:appdata\Echo Relay Server Browser\main.4987566.com.readyatdawn.r15.obb")) {
-                $globaL:dragDropLabel = New-Object System.Windows.Forms.Label
-                $dragDropLabel.Size = New-Object System.Drawing.Size(284, 60)
-                $dragDropLabel.Location = New-Object System.Drawing.Point(0, 100)
-                $dragDropLabel.Text = "Drag and drop APK here"
-                $dragDropLabel.TextAlign = "MiddleCenter"
-                $dragDropLabel.Font = New-Object System.Drawing.Font("Microsoft Sans Serif", 12)
-                $dragDropLabel.BorderStyle = "FixedSingle"
-                $dragDropLabel.AllowDrop = $true
-                $questPatcherMenu.Controls.Add($dragDropLabel)
+            $tokenLabel = New-Object System.Windows.Forms.Label
+            $tokenLabel.Size = New-Object System.Drawing.Size(300, 20)
+            $tokenLabel.Location = New-Object System.Drawing.Point(-5, 5)
+            $tokenLabel.Text = "Enter your token"
+            $tokenLabel.Font = New-Object System.Drawing.Font("Arial", 12)
+            $tokenLabel.TextAlign = "MiddleCenter"
+            $tokenEntry.Controls.Add($tokenLabel)
 
-                $dragDropLabel.SendToBack()
+            $tokenInput = New-Object System.Windows.Forms.TextBox
+            $tokenInput.Size = New-Object System.Drawing.Size(250, 20)
+            $tokenInput.Location = New-Object System.Drawing.Point(17, 30)
+            $tokenInput.Font = New-Object System.Drawing.Font("Arial", 12)
+            $tokenEntry.Controls.Add($tokenInput)
 
-                [system.windows.forms.messagebox]::show("Because of changes in Meta's authentication system you will need to supply your own APK and OBB files. Please drag your APK on to the box below, then drag your OBB onto it.`n`nPlease press OK on this message before starting", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Information)
+            $pasteIntoBoxButton = New-Object System.Windows.Forms.Button
+            $pasteIntoBoxButton.Size = New-Object System.Drawing.Size(250, 35)
+            $pasteIntoBoxButton.Location = New-Object System.Drawing.Point(17, 60)
+            $pasteIntoBoxButton.Text = "Paste from clipboard"
+            $pasteIntoBoxButton.add_click({
+                $tokenInput.Text = Get-Clipboard -Raw
+            })
+            $tokenEntry.Controls.Add($pasteIntoBoxButton)
 
-                $patchEchoVR.text = "Drag APK onto box"
+            $tokenButton = New-Object System.Windows.Forms.Button
+            $tokenButton.Size = New-Object System.Drawing.Size(250, 35)
+            $tokenButton.Location = New-Object System.Drawing.Point(17, 100)
+            $tokenButton.Text = "Continue"
+            $tokenButton.add_click({
+                $global:token = $tokenInput.Text
+                $tokenEntry.Close()
+            })
+            $tokenEntry.Controls.Add($tokenButton)
 
-                $global:dragDropLabel.add_dragover({
-                    if ($_.Data.GetDataPresent([Windows.Forms.DataFormats]::FileDrop))
-                    {
-                        $_.Effect = 'Copy'
-                    }
-                    else
-                    {
-                        $_.Effect = 'None'
-                    }
-                })
+            $tokenEntry.showDialog()
 
-                $global:dragDropLabel.Add_DragDrop({
-                    param($sender, $e)
-                    
-                    Copy-Item $e.Data.GetData("FileNameW") "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store.apk" -Force
-                    $patchEchoVR.text = "Drag OBB onto box"
-                    $dragDropLabel.Text = "Drag and drop OBB here"
 
-                    $global:dragDropLabel.Remove_DragDrop($dragDropLabel.DragDrop)
-                    $global:dragDropLabel.Add_DragDrop({
-                        param($sender, $e)
-
-                        Copy-Item $e.Data.GetData("FileNameW") "$env:appdata\Echo Relay Server Browser\main.4987566.com.readyatdawn.r15.obb" -Force
-                        $questPatcherMenu.Close()
-                        questPatcher
-                    })
-                })
+            $patchEchoVR.text = "Downloading obb..."
+            $patchEchoVR.Refresh()
+            $installProgress.Visible = $true
+            $cookie = New-Object System.Net.Cookie
+            $cookie.Name = "oc_www_at"
+            $cookie.Value = $token
+            $cookie.Domain = "oculus.com"
+            $cookie.Path = "/"
+            $job = start-job {
+                param($cookie)
+                $webClient = New-Object System.Net.WebClient
+                $webClient.Headers.Add([System.Net.HttpRequestHeader]::Cookie, $cookie.ToString())
+                $webClient.DownloadFile("https://securecdn.oculus.com/binaries/download/?id=6528312897208382", "$env:appdata\EchoNavigator\main.4987566.com.readyatdawn.r15.obb")
+            } -ArgumentList $cookie
+            $installProgress.Value = 0
+            while ($job.state -ne "Completed") {
+                $installProgress.Value = (((Get-Item "$env:appdata\EchoNavigator\main.4987566.com.readyatdawn.r15.obb").length / 946094131) * 100)
+                start-sleep -Milliseconds 100
+            }
+            remove-job $job
+            $patchEchoVR.text = "Downloading apk..."
+            $patchEchoVR.Refresh()
+            $job = start-job {
+                param($cookie)
+                $webClient = New-Object System.Net.WebClient
+                $webClient.Headers.Add([System.Net.HttpRequestHeader]::Cookie, $cookie.ToString())
+                $webClient.DownloadFile("https://securecdn.oculus.com/binaries/download/?id=6528386917200980", "$env:appdata\EchoNavigator\r15_goldmaster_store.apk")
+            } -ArgumentList $cookie
+            $installProgress.Value = 0
+            while ($job.state -ne "Completed") {
+                $installProgress.Value = (((Get-Item "$env:appdata\EchoNavigator\r15_goldmaster_store.apk").length / 96177060) * 100)
+                start-sleep -Milliseconds 100
+            }
+            remove-job $job
+            $installProgress.Value = 100
+            $patchEchoVR.text = "Verifying..."
+            $patchEchoVR.Refresh()
+            start-sleep -s 3
+            $installProgress.Visible = $false
+            $installProgress.Refresh()
+            if ((Get-FileHash "$env:appdata\EchoNavigator\main.4987566.com.readyatdawn.r15.obb" MD5).hash -ne "5CE4C24C4316B77CD4F5C68A4B20A5F6" -or (Get-FileHash "$env:appdata\EchoNavigator\r15_goldmaster_store.apk" MD5).hash -ne "C14C0F68ADB62A4C5DEAEF46D046F872") {
+                $jsonData = @{
+                    action = "Telemetry"
+                    message = "Downloaded files failed verification`n$($error[0])`n$($error[1])"
+                } | ConvertTo-Json
+                Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
+                $patchEchoVR.text = "Try again"
+                $installProgress.Visible = $false
+                $patchEchoVR.enabled = $true
+                [System.Windows.Forms.MessageBox]::show("The download failed, please try again", "Echo Navigator", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
                 return
             }
-            
+
             $patchEchoVR.text = "Installing dependencies..."
             Invoke-WebRequest "https://dl.google.com/android/repository/platform-tools-latest-windows.zip" -OutFile "$env:appdata\EchoNavigator\platform-tools.zip"
             Expand-Archive -Path "$env:appdata\EchoNavigator\platform-tools.zip" -DestinationPath "$env:appdata\EchoNavigator\adb\"
 
-            Invoke-WebRequest "https://github.com/C-Luddy/EchoRewind/releases/download/V.1.0.1/EchoRewind.exe" -OutFile "$env:appdata\EchoNavigator\EchoRewind.exe"
-            $javaCommandError = $false
-            try {
-                & java -version
-            } catch {
-                $javaCommandError = $true
-            }
-            while ($javaCommandError) {
-                Invoke-WebRequest $database.javadl -OutFile "$env:appdata\EchoNavigator\javainstall.exe"
-                start-process "$env:appdata\EchoNavigator\javainstall.exe" -ArgumentList "/s" -verb RunAs -Wait
-                start-sleep -s 5
-                $javaCommandError = $false
-                $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User") 
-                try {
-                    & java -version
-                } catch {
-                    $javaCommandError = $true
-                }
-                if ($javaCommandError) {
-                    $jsonData = @{
-                        action = "Telemetry"
-                        message = "Java install failed`n$($error[0])`n$($error[1])"
-                    } | ConvertTo-Json
-                    Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
-                    $noJava = [System.Windows.Forms.MessageBox]::show("Java is required to patch Echo VR. Please accept the admin prompt after pressing retry.`n`nNo prompt? Try installing Java manually, then press retry.", "Echo Navigator", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
-                    if ($noJava -eq "Cancel") {
-                        $patchEchoVR.text = "Try again"
-                        $installProgress.Visible = $false
-                        $patchEchoVR.enabled = $true
-                        return
-                    }
-                }
-            }
+            Invoke-WebRequest "https://github.com/EchoTools/EchoRewind/releases/download/V.1.0.2/EchoRewind.exe" -OutFile "$env:appdata\EchoNavigator\EchoRewind.exe"
             "setup completed" | set-content "$env:appdata\EchoNavigator\setUpFinished.set"
         }
         $patchEchoVR.text = "Patching..."
@@ -927,7 +845,7 @@ $combatLoungeList.Add_KeyDown({
         $combatLoungeList.Rows[$e.RowIndex].Selected = $true
         $global:rowIndex = $e.RowIndex
         $global:clientselected = $true
-        $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to join $($combatGames.gameServers[$global:RowIndex].gameMode)?", "Echo Relay Server Browser", "YesNo", "Question")
+        $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to join $($combatGames.gameServers[$global:RowIndex].gameMode)?", "Echo Navigator", "YesNo", "Question")
         if ($choice -eq "Yes") {
             Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-lobbyid $($combatGames.gameServers[$global:RowIndex].sessionID)" -Wait
         }
@@ -940,7 +858,7 @@ $combatLoungeList.Add_CellDoubleClick({
     $combatLoungeList.Rows[$e.RowIndex].Selected = $true
     $global:rowIndex = $e.RowIndex
     $global:clientselected = $true
-    $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to join $($combatGames.gameServers[$global:RowIndex].gameMode)?", "Echo Relay Server Browser", "YesNo", "Question")
+    $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to join $($combatGames.gameServers[$global:RowIndex].gameMode)?", "Echo Navigator", "YesNo", "Question")
     if ($choice -eq "Yes") {
         Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-lobbyid $($combatGames.gameServers[$global:RowIndex].sessionID)" -Wait
     }
@@ -1794,4 +1712,4 @@ if ($global:gameMode) {
     $gameRunTimer.Stop()
 }
 
-$config | convertto-json | set-content "$env:appdata\Echo Relay Server Browser\config.json"
+$config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
