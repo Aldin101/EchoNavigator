@@ -1,6 +1,4 @@
 $ProgressPreference = 'SilentlyContinue'
-$file = Invoke-WebRequest https://aldin101.github.io/Echo-Relay-Installer/host.json -UseBasicParsing
-$global:database = $file.Content | ConvertFrom-Json
 function Decompress-ZlibFile {
     param(
         [Parameter(Mandatory=$true)]
@@ -49,7 +47,7 @@ function downgrade {
     $downgradeLabel = New-Object System.Windows.Forms.Label
     $downgradeLabel.Location = New-Object System.Drawing.Size(10,10)
     $downgradeLabel.Size = New-Object System.Drawing.Size(200,20)
-    $downgradeLabel.Text = "Echo Relay Downgrader"
+    $downgradeLabel.Text = "Echo Navigator Downgrader"
     $downgradeLabel.Font = "Microsoft Sans Serif,12"
     $downgradeLabel.TextAlign = "MiddleCenter"
     $downgradeMenu.Controls.Add($downgradeLabel)
@@ -114,7 +112,7 @@ function downgrade {
                     $firefox = Start-SeFirefox
                     break
                 } catch {
-                    $choice = [System.Windows.Forms.MessageBox]::show("Please accept the admin prompt to install Firefox.`n`nNo prompt? Try installing manually.", "Echo Relay Downgrader","RetryCancel", "Error")
+                    $choice = [System.Windows.Forms.MessageBox]::show("Please accept the admin prompt to install Firefox.`n`nNo prompt? Try installing manually.", "Echo Navigator Downgrader","RetryCancel", "Error")
                     if ($choice -eq "Cancel") {
                         $downgradeButton.text = "Try again"
                         $downgradeButton.enabled = $true
@@ -128,7 +126,7 @@ function downgrade {
         while ($firefox.url -notlike "https://developer.oculus.com/manage/*") {
             if ($firefox.url -eq $null) {
                 $firefox.Quit()
-                [System.Windows.Forms.MessageBox]::show("You closed the browser window without logging in. Please try again.`n`nThe account information entered is only ever used to download the game. If you wish not to enter your account information you will need to use anther method to get Echo Relay.", "Echo Relay Downgrader","OK", "Error")
+                [System.Windows.Forms.MessageBox]::show("You closed the browser window without logging in. Please try again.`n`nThe account information entered is only ever used to download the game. If you wish not to enter your account information you will need to use anther method to get Echo Relay.", "Echo Navigator Downgrader","OK", "Error")
                 $downgradeButton.text = "Try again"
                 $downgradeButton.enabled = $true
                 return
@@ -149,7 +147,7 @@ function downgrade {
         try {
             Invoke-WebRequest -uri "https://securecdn.oculus.com/binaries/download/?id=6323983201049540&access_token=$token&get_manifest=1" -OutFile "$env:temp\manifest.zip"
         } catch {
-            [System.Windows.Forms.MessageBox]::show("Failed to start download. This is usually caused by you not owning Echo VR on the account to logged in with, or having no internet.", "Echo Relay Server Browser","OK", "Error")
+            [System.Windows.Forms.MessageBox]::show("Failed to start download. This is usually caused by you not owning Echo VR on the account to logged in with, or having no internet.", "Echo Navigator Server Browser","OK", "Error")
             $downgradeButton.text = "Try again"
             $downgradeButton.enabled = $true
             return
@@ -230,7 +228,7 @@ function downgrade {
                 $fileStream.Close()
                 $hash = (Get-FileHash -Path "$global:gamepath\..\evr.downloading\$($($manifest.files | get-member).name[$i])" -Algorithm SHA256).hash
                 if ($hash -ne $manifest.files.$($($manifest.files | get-member).name[$i]).sha256) {
-                    [System.Windows.Forms.MessageBox]::show("The download was corrupt even after a second download attempt. Please try again.", "Echo Relay Downgrader","OK", "Error")
+                    [System.Windows.Forms.MessageBox]::show("The download was corrupt even after a second download attempt. Please try again.", "Echo Navigator Downgrader","OK", "Error")
                     $downgradeButton.text = "Try again"
                     $downgradeButton.enabled = $true
                     return
@@ -252,7 +250,7 @@ function downgrade {
         rmdir "$global:gamepath\..\evr.downloading\ToString" -recurse -force
         $downgradeButton.text = "Finished!"
         $downgradeButton.Refresh()
-        $choice = [System.Windows.Forms.MessageBox]::show("Would you like to delete your old install?", "Echo Relay Downgrader", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Question)
+        $choice = [System.Windows.Forms.MessageBox]::show("Would you like to delete your old install?", "Echo Navigator Downgrader", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Question)
         if ($choice -eq "Yes") {
             remove-item $global:gamePath -recurse -force
         } else {
@@ -283,7 +281,7 @@ function downgrade {
             $i++
         }
         $pickMenu = new-object System.Windows.Forms.Form
-        $pickMenu.text = "Echo Relay Downgrader"
+        $pickMenu.text = "Echo Navigator Downgrader"
         $pickMenu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($fileLocation1)
         $pickMenu.Size = New-Object Drawing.Size @(320, 270)
         $pickMenu.StartPosition = "CenterScreen"
@@ -313,7 +311,7 @@ function downgrade {
         $customPath.Text = "Custom Path"
         $customPath.Font = "Microsoft Sans Serif,10"
         $customPath.Add_Click({
-            $choice = [System.Windows.Forms.MessageBox]::Show("It is recommended that you use the pre-selected folder so that the Oculus app launches the downgraded version of the game.`n`n`While you can use a custom path it is not recommended. Would you still like to use a custom path?", "Echo Relay Downgrader", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Warning)
+            $choice = [System.Windows.Forms.MessageBox]::Show("It is recommended that you use the pre-selected folder so that the Oculus app launches the downgraded version of the game.`n`n`While you can use a custom path it is not recommended. Would you still like to use a custom path?", "Echo Navigator Downgrader", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Warning)
             if ($choice -eq "No") {
                 return
             }
@@ -329,7 +327,7 @@ function downgrade {
         $pickButton.Font = "Microsoft Sans Serif,10"
         $pickButton.Add_Click({
             if ($picklist.SelectedIndex -ne $i) {
-                $choice = [System.Windows.Forms.MessageBox]::show("It is recommended that you use the pre-selected folder so that the Oculus app launches the downgraded version of the game.`n`n`While you can still pick this folder it is not recommended. Would you still like to use the selected folder?", "Echo Relay Downgrader", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Warning)
+                $choice = [System.Windows.Forms.MessageBox]::show("It is recommended that you use the pre-selected folder so that the Oculus app launches the downgraded version of the game.`n`n`While you can still pick this folder it is not recommended. Would you still like to use the selected folder?", "Echo Navigator Downgrader", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Warning)
                 if ($choice -eq "No") {
                     return
                 }
@@ -376,14 +374,14 @@ function install {
         return
     }
     if (!(test-path $global:gamePath\bin\win10\echovr.exe)) {
-        $choice = [System.Windows.Forms.MessageBox]::show("Please select a valid game folder or install the game.`n`nDon't have the game installed? Click Yes to install it.", "Echo Relay Installer", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Warning)
+        $choice = [System.Windows.Forms.MessageBox]::show("Please select a valid game folder or install the game.`n`nDon't have the game installed? Click Yes to install it.", "Echo Navigator Installer", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Warning)
         if ($choice -eq "Yes") {
             downgrade
         } else {
             return
         }
         if (!(test-path $global:gamePath\bin\win10\echovr.exe)) {
-            [System.Windows.Forms.MessageBox]::Show("The game was not installed", "Echo Relay Installer", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Error)
+            [System.Windows.Forms.MessageBox]::Show("The game was not installed", "Echo Navigator Installer", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Error)
         }
     }
     if ($infoCheckBox.Checked -eq $false) {
@@ -406,7 +404,7 @@ function install {
     if ((Get-FileHash -Path $global:gamePath\bin\win10\echovr.exe).hash -ne "B6D08277E5846900C81004B64B298DF6ACBA834B69700A640B758BDA94A52043") {
         $noUsernameOrPassword.Text = "You are on the wrong version of EchoVR"
         $noUsernameOrPassword.Visible = $true
-        $choice = [System.windows.forms.messagebox]::show("You are on the wrong version of EchoVR, would you like to downgrade?" , "Echo Relay Installer", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Warning)
+        $choice = [System.windows.forms.messagebox]::show("You are on the wrong version of EchoVR, would you like to downgrade?" , "Echo Navigator Installer", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Warning)
         if ($choice -eq "Yes") {
             downgrade
         } else {
@@ -414,25 +412,22 @@ function install {
         }
     }
     if ((Get-FileHash -Path $global:gamePath\bin\win10\echovr.exe).hash -ne "B6D08277E5846900C81004B64B298DF6ACBA834B69700A640B758BDA94A52043") {
-        [system.windows.forms.messagebox]::Show("The game was not downgraded, please try again.", "Echo Relay Installer", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
+        [system.windows.forms.messagebox]::Show("The game was not downgraded, please try again.", "Echo Navigator Installer", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
         return
     }
-    mkdir "$env:appdata\Echo Relay Server Browser\"
+    mkdir "$env:appdata\EchoNavigator\"
     $config = @{}
     $config | Add-Member -Name 'username' -Type NoteProperty -Value "$($usernameBox.text)"
     $config | Add-Member -Name 'password' -Type NoteProperty -Value "$($passwordBox.text)"
     $config | Add-Member -Name 'gamePath' -Type NoteProperty -Value "$($global:gamePath)"
-    $config | convertto-json | set-content "$env:appdata\Echo Relay Server Browser\config.json"
-    Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/Echo%20Relay%20Server%20Browser.exe" -OutFile "$global:gamePath\bin\win10\Echo Relay Server Browser.exe"
+    $config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
+    Invoke-WebRequest "https://aldin101.github.io/EchoNavigatorAPI/EchoNavigator.exe" -OutFile "$global:gamePath\bin\win10\EchoNavigator.exe"
     $WshShell = New-Object -comObject WScript.Shell
-    $Shortcut = $WshShell.CreateShortcut("$env:USERPROFILE\Desktop\Echo Relay Server Browser.lnk")
-    $Shortcut.TargetPath = "$global:gamePath\bin\win10\Echo Relay Server Browser.exe"
+    $Shortcut = $WshShell.CreateShortcut("$env:USERPROFILE\Desktop\Echo Navigator.lnk")
+    $Shortcut.TargetPath = "$global:gamePath\bin\win10\EchoNavigator.exe"
     $Shortcut.Save()
-    $Shortcut = $WshShell.CreateShortcut("$env:USERPROFILE\Desktop\Echo VR.lnk")
-    $Shortcut.TargetPath = "$global:gamePath\bin\win10\EchoVR.exe"
-    $Shortcut.Save()
-    [system.windows.forms.messagebox]::Show("Echo Relay Server Browser installed!`n`nSelect a server in the server browser to get started!", "Echo Relay Installer", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Information)
-    start-process "$global:gamePath\bin\win10\Echo Relay Server Browser.exe"
+    [system.windows.forms.messagebox]::Show("Echo Navigator installed!`n`nSelect a server to get started!", "Echo Navigator Installer", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Information)
+    start-process "$global:gamePath\bin\win10\EchoNavigator.exe"
     $menu.Close()
 }
 
@@ -443,7 +438,7 @@ function install {
 [System.Windows.Forms.Application]::EnableVisualStyles()
 $menu = new-object System.Windows.Forms.Form
 
-$menu.text = "Echo Relay Installer"
+$menu.text = "Echo Navigator Installer"
 $fileLocation = Get-CimInstance Win32_Process -Filter "name = 'Echo Relay Installer.exe'" -ErrorAction SilentlyContinue
 $fileLocation1 = $fileLocation.CommandLine -replace '"', ""
 $menu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($fileLocation1)
@@ -455,8 +450,9 @@ $menu.MaximizeBox = $false
 $label = New-Object System.Windows.Forms.Label
 $label.Location = New-Object System.Drawing.Size(10,8)
 $label.Size = New-Object System.Drawing.Size(200,25)
-$label.Text = "Echo Relay Installer"
-$label.Font = "Microsoft Sans Serif,15"
+$label.Text = "Echo Navigator Installer"
+$label.Font = "Microsoft Sans Serif,13"
+$label.TextAlign = "MiddleLeft"
 $menu.Controls.Add($label)
 
 $username = New-Object System.Windows.Forms.Label
@@ -558,7 +554,7 @@ $menu.Controls.Add($install)
 $credits = New-Object System.Windows.Forms.Label
 $credits.Location = New-Object System.Drawing.Size(5,325)
 $credits.Size = New-Object System.Drawing.Size(2000,200)
-$credits.Text = "Echo Relay Created by: Xenomega`nInstaller and Created by:Aldin101"
+$credits.Text = "Echo Navigator Created By: Aldin101`nOriginal Echo Relay Created By:Xenomega"
 $credits.Font = "Microsoft Sans Serif,10"
 $menu.Controls.Add($credits)
 
@@ -583,7 +579,7 @@ if (!(test-path "C:\Program Files\Oculus\Software\Software\ready-at-dawn-echo-ar
             }
         }
         $pickMenu = new-object System.Windows.Forms.Form
-        $pickMenu.text = "Echo Relay Installer"
+        $pickMenu.text = "Echo Navigator Installer"
         $pickMenu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($fileLocation1)
         $pickMenu.Size = New-Object Drawing.Size @(320, 270)
         $pickMenu.StartPosition = "CenterScreen"
@@ -613,13 +609,13 @@ if (!(test-path "C:\Program Files\Oculus\Software\Software\ready-at-dawn-echo-ar
         $customPath.Text = "Custom Path"
         $customPath.Font = "Microsoft Sans Serif,10"
         $customPath.Add_Click({
-            $choice = [System.Windows.Forms.MessageBox]::Show("It is recommended that you use the pre-selected folder so that the Oculus app launches the correct version of the game.`n`n`While you can use a custom path it is not recommended. Would you still like to use a custom path?", "Echo Relay Downgrader", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Warning)
+            $choice = [System.Windows.Forms.MessageBox]::Show("It is recommended that you use the pre-selected folder so that the Oculus app launches the correct version of the game.`n`n`While you can use a custom path it is not recommended. Would you still like to use a custom path?", "Echo Navigator Downgrader", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Warning)
             if ($choice -eq "No") {
                 return
             }
             $global:gamePath = Read-FolderBrowserDialog -Message "Select the folder Echo VR is installed in"
             if (!(test-path "$global:gamePath\bin\win10\echovr.exe")) {
-                [System.Windows.Forms.MessageBox]::show("Please select a valid game folder", "Echo Relay Downgrader", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
+                [System.Windows.Forms.MessageBox]::show("Please select a valid game folder", "Echo Navigator Downgrader", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
                 return
             }
             $pickMenu.Close()
@@ -633,7 +629,7 @@ if (!(test-path "C:\Program Files\Oculus\Software\Software\ready-at-dawn-echo-ar
         $pickButton.Font = "Microsoft Sans Serif,10"
         $pickButton.Add_Click({
             if (!(test-path "$($locations[$picklist.SelectedIndex])\Software\ready-at-dawn-echo-arena\bin\win10\echovr.exe")) {
-                [System.Windows.Forms.MessageBox]::show("Please select a valid game folder", "Echo Relay Downgrader", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
+                [System.Windows.Forms.MessageBox]::show("Please select a valid game folder", "Echo Navigator Downgrader", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
                 return
             }
             $global:gamePath = "$($pickList.SelectedItem)\Software\ready-at-dawn-echo-arena"
@@ -664,7 +660,7 @@ if (!(test-path "C:\Program Files\Oculus\Software\Software\ready-at-dawn-echo-ar
             }
         }
         $pickMenu = new-object System.Windows.Forms.Form
-        $pickMenu.text = "Echo Relay Installer"
+        $pickMenu.text = "Echo Navigator Installer"
         $pickMenu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($fileLocation1)
         $pickMenu.Size = New-Object Drawing.Size @(320, 270)
         $pickMenu.StartPosition = "CenterScreen"
@@ -694,13 +690,13 @@ if (!(test-path "C:\Program Files\Oculus\Software\Software\ready-at-dawn-echo-ar
         $customPath.Text = "Custom Path"
         $customPath.Font = "Microsoft Sans Serif,10"
         $customPath.Add_Click({
-            $choice = [System.Windows.Forms.MessageBox]::Show("It is recommended that you use the pre-selected folder so that the Oculus app launches the correct version of the game.`n`n`While you can use a custom path it is not recommended. Would you still like to use a custom path?", "Echo Relay Downgrader", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Warning)
+            $choice = [System.Windows.Forms.MessageBox]::Show("It is recommended that you use the pre-selected folder so that the Oculus app launches the correct version of the game.`n`n`While you can use a custom path it is not recommended. Would you still like to use a custom path?", "Echo Navigator Downgrader", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Warning)
             if ($choice -eq "No") {
                 return
             }
             $global:gamePath = Read-FolderBrowserDialog -Message "Select the folder Echo VR is installed in"
             if (!(test-path "$global:gamePath\bin\win10\echovr.exe")) {
-                [System.Windows.Forms.MessageBox]::show("Please select a valid game folder", "Echo Relay Downgrader", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
+                [System.Windows.Forms.MessageBox]::show("Please select a valid game folder", "Echo Navigator Downgrader", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
                 return
             }
             $pickMenu.Close()
@@ -714,7 +710,7 @@ if (!(test-path "C:\Program Files\Oculus\Software\Software\ready-at-dawn-echo-ar
         $pickButton.Font = "Microsoft Sans Serif,10"
         $pickButton.Add_Click({
             if (!(test-path "$($locations[$picklist.SelectedIndex])\Software\ready-at-dawn-echo-arena\bin\win10\echovr.exe")) {
-                [System.Windows.Forms.MessageBox]::show("Please select a valid game folder", "Echo Relay Downgrader", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
+                [System.Windows.Forms.MessageBox]::show("Please select a valid game folder", "Echo Navigator Downgrader", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
                 return
             }
             $global:gamePath = "$($pickList.SelectedItem)\Software\ready-at-dawn-echo-arena"

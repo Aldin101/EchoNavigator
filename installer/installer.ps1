@@ -3,12 +3,15 @@ $ProgressPreference = 'SilentlyContinue'
 [System.Windows.Forms.Application]::EnableVisualStyles()
 $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
 start-sleep -Seconds 3
-$fileLocation = Get-CimInstance Win32_Process -Filter "name = 'Echo Relay Installer.exe'" -ErrorAction SilentlyContinue
+$fileLocation = Get-CimInstance Win32_Process -Filter "name = 'Echo Navigator Installer.exe'" -ErrorAction SilentlyContinue
+if ($fileLocation -eq $null) {
+    $fileLocation = Get-CimInstance Win32_Process -Filter "name = 'EchoNavigatorInstaller.exe'" -ErrorAction SilentlyContinue
+}
 $fileLocation1 = $fileLocation.CommandLine -replace '"', ""
 $menu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($fileLocation1)
 $platformMenu = new-object System.Windows.Forms.Form
 $platformMenu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($fileLocation1)
-$platformMenu.text = "Echo Relay Installer"
+$platformMenu.text = "Echo Navigator Installer"
 $platformMenu.Size = New-Object Drawing.Size @(400, 200)
 $platformMenu.StartPosition = "CenterScreen"
 $platformMenu.FormBorderStyle = "FixedDialog"
@@ -29,10 +32,10 @@ $pcButton.Text = "PC"
 $pcButton.Font = "Microsoft Sans Serif,30"
 $pcButton.Add_Click({
     $platformMenu.Close()
-    $file = Invoke-WebRequest https://aldin101.github.io/Echo-Relay-Installer/pc.json -UseBasicParsing
+    $file = Invoke-WebRequest https://aldin101.github.io/EchoNavigatorAPI/pc.json -UseBasicParsing
     $global:database = $file.Content | ConvertFrom-Json
     if ($global:database -eq $null) {
-        [system.windows.forms.messagebox]::Show("No internet connection")
+        [system.windows.forms.messagebox]::Show("The server could not be contacted, this is usually because you have not internet.", "Echo Navigator Installer", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Error)
         exit
     }
 })
@@ -45,10 +48,10 @@ $questButton.Text = "Quest"
 $questButton.Font = "Microsoft Sans Serif,30"
 $questButton.Add_Click({
     $platformMenu.Close()
-    $file = Invoke-WebRequest https://aldin101.github.io/Echo-Relay-Installer/quest.json -UseBasicParsing
+    $file = Invoke-WebRequest https://aldin101.github.io/EchoNavigatorAPI/quest.json -UseBasicParsing
     $global:database = $file.Content | ConvertFrom-Json
     if ($global:database -eq $null) {
-        [system.windows.forms.messagebox]::Show("No internet connection")
+        [system.windows.forms.messagebox]::Show("The server could not be contacted, this is usually because you have not internet.", "Echo Navigator Installer", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Error)
         exit
     }
 })

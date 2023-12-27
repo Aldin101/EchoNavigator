@@ -1,7 +1,4 @@
 $ProgressPreference = 'SilentlyContinue'
-$file = Invoke-WebRequest https://aldin101.github.io/Echo-Relay-Installer/quest.json -UseBasicParsing
-$global:database = $file.Content | ConvertFrom-Json
-
 function install {
     $noUsernameOrPassword.Visible = $false
     if ($usernameBox.text -eq "" -or $passwordBox.text -eq "") {
@@ -44,20 +41,20 @@ function install {
         return
     }
 
-    mkdir "$env:appdata\Echo Relay Server Browser\"
+    mkdir "$env:appdata\EchoNavigator\"
     $config = @{}
     $config | Add-Member -Name 'username' -Type NoteProperty -Value "$($usernameBox.text)"
     $config | Add-Member -Name 'password' -Type NoteProperty -Value "$($passwordBox.text)"
     $config | Add-Member -Name 'gamePath' -Type NoteProperty -Value "$($global:gamePath)"
-    $config | Add-Member -Name 'quest' -Type NoteProperty -Value "$env:appdata\Echo Relay Server Browser\Echo Relay Server Browser.exe"
-    $config | convertto-json | set-content "$env:appdata\Echo Relay Server Browser\config.json"
-    Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/Echo%20Relay%20Server%20Browser.exe" -OutFile "$env:appdata\Echo Relay Server Browser\Echo Relay Server Browser.exe"
+    $config | Add-Member -Name 'quest' -Type NoteProperty -Value "$env:appdata\EchoNavigator\EchoNavigator.exe"
+    $config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
+    Invoke-WebRequest "https://aldin101.github.io/EchoNavigatorAPI/EchoNavigator.exe" -OutFile "$env:appdata\EchoNavigator\EchoNavigator.exe"
     $WshShell = New-Object -comObject WScript.Shell
-    $Shortcut = $WshShell.CreateShortcut("$env:USERPROFILE\Desktop\Echo Relay Server Browser.lnk")
-    $Shortcut.TargetPath = "$env:appdata\Echo Relay Server Browser\Echo Relay Server Browser.exe"
+    $Shortcut = $WshShell.CreateShortcut("$env:USERPROFILE\Desktop\EchoNavigator.lnk")
+    $Shortcut.TargetPath = "$env:appdata\EchoNavigator\EchoNavigator.exe"
     $Shortcut.Save()
-    [system.windows.forms.messagebox]::Show("Echo Relay Server Browser installed!`n`nSelect a server in the server browser to get started!", "Echo Relay Installer", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Information)
-    start-process "$env:appdata\Echo Relay Server Browser\Echo Relay Server Browser.exe"
+    [system.windows.forms.messagebox]::Show("Echo Navigator installed!`n`nSelect a server to get started!", "Echo Navigator Installer", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Information)
+    start-process "$env:appdata\EchoNavigator\EchoNavigator.exe"
     $menu.Close()
 }
 
@@ -68,7 +65,7 @@ function install {
 [System.Windows.Forms.Application]::EnableVisualStyles()
 $menu = new-object System.Windows.Forms.Form
 
-$menu.text = "Echo Relay Installer"
+$menu.text = "Echo Navigator Installer"
 $fileLocation = Get-CimInstance Win32_Process -Filter "name = 'Echo Relay Installer.exe'" -ErrorAction SilentlyContinue
 $fileLocation1 = $fileLocation.CommandLine -replace '"', ""
 $menu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($fileLocation1)
@@ -78,11 +75,11 @@ $menu.FormBorderStyle = "FixedDialog"
 $menu.MaximizeBox = $false
 
 $label = New-Object System.Windows.Forms.Label
-$label = New-Object System.Windows.Forms.Label
 $label.Location = New-Object System.Drawing.Size(10,8)
 $label.Size = New-Object System.Drawing.Size(200,25)
-$label.Text = "Echo Relay Installer"
-$label.Font = "Microsoft Sans Serif,15"
+$label.Text = "Echo Navigator Installer"
+$label.Font = "Microsoft Sans Serif,13"
+$label.TextAlign = "MiddleLeft"
 $menu.Controls.Add($label)
 
 $username = New-Object System.Windows.Forms.Label
@@ -116,7 +113,7 @@ $showPassword = New-Object System.Windows.Forms.PictureBox
 $showPassword.Location = New-Object System.Drawing.Size(188, 111)
 $showPassword.Size = New-Object System.Drawing.Size(21, 21)
 $showPassword.SizeMode = [System.Windows.Forms.PictureBoxSizeMode]::StretchImage
-$showPassword.ImageLocation = "https://aldin101.github.io/Echo-Relay-Installer/eye.png"
+$showPassword.ImageLocation = "https://aldin101.github.io/EchoNavigatorAPI/eye.png"
 $showPassword.BackColor = [System.Drawing.Color]::White
 $showPassword.Add_Click({
     if ($passwordBox.PasswordChar -eq "*") {
@@ -184,7 +181,7 @@ $menu.Controls.Add($install)
 $credits = New-Object System.Windows.Forms.Label
 $credits.Location = New-Object System.Drawing.Size(5,325)
 $credits.Size = New-Object System.Drawing.Size(2000,200)
-$credits.Text = "Echo Relay Created by: Xenomega`nInstaller Created by:Aldin101"
+$credits.Text = "Echo Navigator Created By: Aldin101`nOriginal Echo Relay Created By:Xenomega"
 $credits.Font = "Microsoft Sans Serif,10"
 $menu.Controls.Add($credits)
 

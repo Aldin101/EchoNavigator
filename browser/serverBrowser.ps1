@@ -4,7 +4,7 @@ function questPatcher {
     $global:gamePatched = $false
 
     $global:questPatcherMenu = New-Object System.Windows.Forms.Form
-    $questPatcherMenu.Text = "Echo Relay Server Browser"
+    $questPatcherMenu.Text = "Echo Navigator"
     $questPatcherMenu.Size = New-Object System.Drawing.Size(300,200)
     $questPatcherMenu.StartPosition = "CenterScreen"
     $questPatcherMenu.FormBorderStyle = "FixedDialog"
@@ -35,7 +35,7 @@ function questPatcher {
     $patchEchoVR.Text = "Patch Echo VR"
     $patchEchoVR.add_click({
         $patchEchoVR.Enabled = $false
-        if (!(test-path "$env:appdata\Echo Relay Server Browser\setUpFinished.set")) {
+        if (!(test-path "$env:appdata\EchoNavigator\setUpFinished.set")) {
 
             $patchEchoVR.text = "Preparing WebDriver..."
             $patchEchoVR.Refresh()
@@ -82,7 +82,7 @@ function questPatcher {
                         message = "Firefox closed`n$($error[0])`n$($error[1])"
                     } | ConvertTo-Json
                     Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
-                    [System.Windows.Forms.MessageBox]::show("You closed the browser window without logging in. Please try again.`n`nThe account information entered is only ever used to download the game. If you wish not to enter your account information you will need to use anther method to get Echo Relay on Quest.", "Echo Relay Server Browser","OK", "Error")
+                    [System.Windows.Forms.MessageBox]::show("You closed the browser window without logging in. Please try again.`n`nThe account information entered is only ever used to download the game. If you wish not to enter your account information you will need to use anther method to get Echo Relay on Quest.", "Echo Navigator","OK", "Error")
                     $patchEchoVR.text = "Try again"
                     $installProgress.Visible = $false
                     $patchEchoVR.enabled = $true
@@ -104,11 +104,11 @@ function questPatcher {
                 param($cookie)
                 $webClient = New-Object System.Net.WebClient
                 $webClient.Headers.Add([System.Net.HttpRequestHeader]::Cookie, $cookie.ToString())
-                $webClient.DownloadFile("https://securecdn.oculus.com/binaries/download/?id=6528312897208382", "$env:appdata\Echo Relay Server Browser\main.4987566.com.readyatdawn.r15.obb")
+                $webClient.DownloadFile("https://securecdn.oculus.com/binaries/download/?id=6528312897208382", "$env:appdata\EchoNavigator\main.4987566.com.readyatdawn.r15.obb")
             } -ArgumentList $cookie
             $installProgress.Value = 0
             while ($job.state -ne "Completed") {
-                $installProgress.Value = (((Get-Item "$env:appdata\echo relay server browser\main.4987566.com.readyatdawn.r15.obb").length / 946094131) * 100)
+                $installProgress.Value = (((Get-Item "$env:appdata\EchoNavigator\main.4987566.com.readyatdawn.r15.obb").length / 946094131) * 100)
                 start-sleep -Milliseconds 100
             }
             remove-job $job
@@ -118,11 +118,11 @@ function questPatcher {
                 param($cookie)
                 $webClient = New-Object System.Net.WebClient
                 $webClient.Headers.Add([System.Net.HttpRequestHeader]::Cookie, $cookie.ToString())
-                $webClient.DownloadFile("https://securecdn.oculus.com/binaries/download/?id=6528386917200980", "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store.apk")
+                $webClient.DownloadFile("https://securecdn.oculus.com/binaries/download/?id=6528386917200980", "$env:appdata\EchoNavigator\r15_goldmaster_store.apk")
             } -ArgumentList $cookie
             $installProgress.Value = 0
             while ($job.state -ne "Completed") {
-                $installProgress.Value = (((Get-Item "$env:appdata\echo relay server browser\r15_goldmaster_store.apk").length / 96177060) * 100)
+                $installProgress.Value = (((Get-Item "$env:appdata\EchoNavigator\r15_goldmaster_store.apk").length / 96177060) * 100)
                 start-sleep -Milliseconds 100
             }
             remove-job $job
@@ -132,7 +132,7 @@ function questPatcher {
             start-sleep -s 3
             $installProgress.Visible = $false
             $installProgress.Refresh()
-            if ((Get-FileHash "$env:appdata\Echo Relay Server Browser\main.4987566.com.readyatdawn.r15.obb" MD5).hash -ne "5CE4C24C4316B77CD4F5C68A4B20A5F6" -or (Get-FileHash "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store.apk" MD5).hash -ne "C14C0F68ADB62A4C5DEAEF46D046F872") {
+            if ((Get-FileHash "$env:appdata\EchoNavigator\main.4987566.com.readyatdawn.r15.obb" MD5).hash -ne "5CE4C24C4316B77CD4F5C68A4B20A5F6" -or (Get-FileHash "$env:appdata\EchoNavigator\r15_goldmaster_store.apk" MD5).hash -ne "C14C0F68ADB62A4C5DEAEF46D046F872") {
                 $jsonData = @{
                     action = "Telemetry"
                     message = "Downloaded files failed verification`n$($error[0])`n$($error[1])"
@@ -141,15 +141,15 @@ function questPatcher {
                 $patchEchoVR.text = "Try again"
                 $installProgress.Visible = $false
                 $patchEchoVR.enabled = $true
-                [System.Windows.Forms.MessageBox]::show("The download failed, please try again", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
+                [System.Windows.Forms.MessageBox]::show("The download failed, please try again", "Echo Navigator", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
                 return
             }
 
             $patchEchoVR.text = "Installing dependencies..."
-            Invoke-WebRequest "https://dl.google.com/android/repository/platform-tools-latest-windows.zip" -OutFile "$env:appdata\Echo Relay Server Browser\platform-tools.zip"
-            Expand-Archive -Path "$env:appdata\Echo Relay Server Browser\platform-tools.zip" -DestinationPath "$env:appdata\Echo Relay Server Browser\adb\"
+            Invoke-WebRequest "https://dl.google.com/android/repository/platform-tools-latest-windows.zip" -OutFile "$env:appdata\EchoNavigator\platform-tools.zip"
+            Expand-Archive -Path "$env:appdata\EchoNavigator\platform-tools.zip" -DestinationPath "$env:appdata\EchoNavigator\adb\"
 
-            Invoke-WebRequest "https://github.com/C-Luddy/EchoRewind/releases/download/V.1.0.1/EchoRewind.exe" -OutFile "$env:appdata\Echo Relay Server Browser\EchoRewind.exe"
+            Invoke-WebRequest "https://github.com/C-Luddy/EchoRewind/releases/download/V.1.0.1/EchoRewind.exe" -OutFile "$env:appdata\EchoNavigator\EchoRewind.exe"
             $javaCommandError = $false
             try {
                 & java -version
@@ -157,8 +157,8 @@ function questPatcher {
                 $javaCommandError = $true
             }
             while ($javaCommandError) {
-                Invoke-WebRequest $database.javadl -OutFile "$env:appdata\Echo Relay Server Browser\javainstall.exe"
-                start-process "$env:appdata\Echo Relay Server Browser\javainstall.exe" -ArgumentList "/s" -verb RunAs -Wait
+                Invoke-WebRequest $database.javadl -OutFile "$env:appdata\EchoNavigator\javainstall.exe"
+                start-process "$env:appdata\EchoNavigator\javainstall.exe" -ArgumentList "/s" -verb RunAs -Wait
                 start-sleep -s 5
                 $javaCommandError = $false
                 $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User") 
@@ -173,7 +173,7 @@ function questPatcher {
                         message = "Java install failed`n$($error[0])`n$($error[1])"
                     } | ConvertTo-Json
                     Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
-                    $noJava = [System.Windows.Forms.MessageBox]::show("Java is required to patch Echo VR. Please accept the admin prompt after pressing retry.`n`nNo prompt? Try installing Java manually, then press retry.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
+                    $noJava = [System.Windows.Forms.MessageBox]::show("Java is required to patch Echo VR. Please accept the admin prompt after pressing retry.`n`nNo prompt? Try installing Java manually, then press retry.", "Echo Navigator", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
                     if ($noJava -eq "Cancel") {
                         $patchEchoVR.text = "Try again"
                         $installProgress.Visible = $false
@@ -182,11 +182,11 @@ function questPatcher {
                     }
                 }
             }
-            "setup completed" | set-content "$env:appdata\Echo Relay Server Browser\setUpFinished.set"
+            "setup completed" | set-content "$env:appdata\EchoNavigator\setUpFinished.set"
         }
         $patchEchoVR.text = "Patching..."
         $patchEchoVR.Refresh()
-        $adb = "$env:appdata\Echo Relay Server Browser\adb\platform-tools\adb.exe"
+        $adb = "$env:appdata\EchoNavigator\adb\platform-tools\adb.exe"
         while (1) {
             $devices = & $adb devices
             $devices = $devices -split "`n"
@@ -196,7 +196,7 @@ function questPatcher {
                     message = "One or more devices detected`n$($error[0])`n$($error[1])"
                 } | ConvertTo-Json
                 Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
-                $noDevice = [System.Windows.Forms.MessageBox]::show("More than one device detected, make sure only your Quest is connected to your PC. If you have any other Android devices connected is it a possibility that the game will be installed onto the wrong device. Please unplug any devices that you do not need before pressing retry.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
+                $noDevice = [System.Windows.Forms.MessageBox]::show("More than one device detected, make sure only your Quest is connected to your PC. If you have any other Android devices connected is it a possibility that the game will be installed onto the wrong device. Please unplug any devices that you do not need before pressing retry.", "Echo Navigator", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
                 if ($noDevice -eq "Cancel") {
                     $patchEchoVR.text = "Try again"
                     $installProgress.Visible = $false
@@ -211,7 +211,7 @@ function questPatcher {
             $devices = & $adb devices
             $devices = $devices -split "`n"
             if ($devices.count -lt 3) {
-                $noDevice = [System.Windows.Forms.MessageBox]::show("No device detected, make sure your Quest is connected to your PC and developer mode and debug mode are enabled (Google: How to enable developer mode on quest).`n`nIf these things have been done check your headset for a USB debugging message.`n`nIf it still is not working try restarting the headset.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
+                $noDevice = [System.Windows.Forms.MessageBox]::show("No device detected, make sure your Quest is connected to your PC and developer mode and debug mode are enabled (Google: How to enable developer mode on quest).`n`nIf these things have been done check your headset for a USB debugging message.`n`nIf it still is not working try restarting the headset.", "Echo Navigator", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
                 if ($noDevice -eq "Cancel") {
                     $patchEchoVR.text = "Try again"
                     $installProgress.Visible = $false
@@ -225,7 +225,7 @@ function questPatcher {
         while (1) {
             $devices = & $adb devices
             if ($devices[1] -like "*unauthorized") {
-                $noDevice = [System.Windows.Forms.MessageBox]::show("This computer is unauthorized. Please accept the prompt in your headset then press retry.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Warning)
+                $noDevice = [System.Windows.Forms.MessageBox]::show("This computer is unauthorized. Please accept the prompt in your headset then press retry.", "Echo Navigator", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Warning)
                 if ($noDevice -eq "Cancel") {
                     $patchEchoVR.text = "Try again"
                     $installProgress.Visible = $false
@@ -236,37 +236,37 @@ function questPatcher {
                 break
             }
         }
-        remove-item "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk"
+        remove-item "$env:appdata\EchoNavigator\r15_goldmaster_store_patched.apk"
         & $adb uninstall com.readyatdawn.r15
-        & $adb push "$env:appdata\Echo Relay Server Browser\main.4987566.com.readyatdawn.r15.obb" "/sdcard/Android/obb/com.readyatdawn.r15/main.4987566.com.readyatdawn.r15.obb"
-        $exePath = "$env:appdata\Echo Relay Server Browser\EchoRewind.exe"
-        $apkPath = "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store.apk"
+        & $adb push "$env:appdata\EchoNavigator\main.4987566.com.readyatdawn.r15.obb" "/sdcard/Android/obb/com.readyatdawn.r15/main.4987566.com.readyatdawn.r15.obb"
+        $exePath = "$env:appdata\EchoNavigator\EchoRewind.exe"
+        $apkPath = "$env:appdata\EchoNavigator\r15_goldmaster_store.apk"
         $arguments = "`"$apkPath`""
-        Rename-Item "$env:appdata\Echo Relay Server Browser\config.json" "$env:appdata\Echo Relay Server Browser\configbak.json"
-        Rename-Item "$env:appdata\Echo Relay Server Browser\gameConfig.json" "$env:appdata\Echo Relay Server Browser\config.json"
+        Rename-Item "$env:appdata\EchoNavigator\config.json" "$env:appdata\EchoNavigator\configbak.json"
+        Rename-Item "$env:appdata\EchoNavigator\gameConfig.json" "$env:appdata\EchoNavigator\config.json"
         Start-Process -FilePath $exePath -ArgumentList $arguments
-        while (!(test-path "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk") -and (Get-Process EchoRewind -ErrorAction SilentlyContinue)) {
+        while (!(test-path "$env:appdata\EchoNavigator\r15_goldmaster_store_patched.apk") -and (Get-Process EchoRewind -ErrorAction SilentlyContinue)) {
             start-sleep -Milliseconds 100
         }
         start-sleep -s 1
-        if (!(Test-Path "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk")) {
+        if (!(Test-Path "$env:appdata\EchoNavigator\r15_goldmaster_store_patched.apk")) {
             $jsonData = @{
                 action = "Telemetry"
                 message = "Patched APK not found`n$($error[0])`n$($error[1])"
             } | ConvertTo-Json
             Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
-            [System.Windows.Forms.MessageBox]::show("Echo Rewind exited but no patched APK could be found. Please try again.", "Echo Relay Server Browser", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Error)
+            [System.Windows.Forms.MessageBox]::show("Echo Rewind exited but no patched APK could be found. Please try again.", "Echo Navigator", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Error)
             $patchEchoVR.text = "Try again"
             $installProgress.Visible = $false
             $patchEchoVR.enabled = $true
-            Remove-Item "$env:appdata\Echo Relay Server Browser\config.json"
-            Rename-Item "$env:appdata\Echo Relay Server Browser\config.json.bak" "$env:appdata\Echo Relay Server Browser\config.json"
+            Remove-Item "$env:appdata\EchoNavigator\config.json"
+            Rename-Item "$env:appdata\EchoNavigator\config.json.bak" "$env:appdata\EchoNavigator\config.json"
             return
         }
         taskkill /f /im EchoRewind.exe
-        Remove-Item "$env:appdata\Echo Relay Server Browser\config.json"
-        Rename-Item "$env:appdata\Echo Relay Server Browser\configbak.json" "$env:appdata\Echo Relay Server Browser\config.json"
-        & $adb install "$env:appdata\Echo Relay Server Browser\r15_goldmaster_store_patched.apk"
+        Remove-Item "$env:appdata\EchoNavigator\config.json"
+        Rename-Item "$env:appdata\EchoNavigator\configbak.json" "$env:appdata\EchoNavigator\config.json"
+        & $adb install "$env:appdata\EchoNavigator\r15_goldmaster_store_patched.apk"
         $questPatcherMenu.Close()
         $global:gamePatched = $true
         $jsonData = @{
@@ -279,14 +279,14 @@ function questPatcher {
 
     $questPatcherMenu.showDialog()
 
-    remove-item "$env:appdata\Echo Relay Server Browser\gameConfig.json"
-    $global:config | convertto-json | set-content "$env:appdata\Echo Relay Server Browser\config.json"
+    remove-item "$env:appdata\EchoNavigator\gameConfig.json"
+    $global:config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
 }
 
 function joinServer {
     if ($global:config.$($database.online[$global:rowIndex].ip) -eq $null) {
         $usernamePicker = New-Object System.Windows.Forms.Form
-        $usernamePicker.Text = "Echo Relay Server Browser"
+        $usernamePicker.Text = "Echo Navigator"
         $usernamePicker.Size = New-Object System.Drawing.Size(280, 150)
         $usernamePicker.StartPosition = "CenterScreen"
         $usernamePicker.FormBorderStyle = "FixedDialog"
@@ -295,7 +295,7 @@ function joinServer {
         if ($config.quest -ne $null) {
             $usernamePicker.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
         } else {
-            $usernamePicker.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe")
+            $usernamePicker.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\EchoNavigator.exe")
         }
 
         $usernameLabel = New-Object System.Windows.Forms.Label
@@ -328,7 +328,7 @@ function joinServer {
             $usernameInput.Dispose()
             $usernameLabel.Dispose()
             $global:config | Add-Member -Name $($database.online[$global:rowIndex].ip) -Type NoteProperty -Value $username
-            $global:config | convertto-json | set-content "$env:appdata\Echo Relay Server Browser\config.json"
+            $global:config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
         })
         $usernamePicker.Controls.Add($usernameButton)
 
@@ -336,7 +336,7 @@ function joinServer {
     }
 
     if ($global:config.$($database.online[$global:rowIndex].ip) -eq $null) {
-        [system.windows.forms.messagebox]::Show("You must enter a username", "Echo Relay Server Browser", "OK", "Warning")
+        [system.windows.forms.messagebox]::Show("You must enter a username", "Echo Navigator", "OK", "Warning")
         return
     }
 
@@ -349,23 +349,23 @@ function joinServer {
     $gameConfig | Add-Member -Name 'transactionservice_host' -Type NoteProperty -Value "ws://$($database.online[$global:RowIndex].ip):$($database.online[$global:RowIndex].port)/transaction"
     $gameConfig | Add-Member -Name 'publisher_lock' -Type NoteProperty -Value 'rad15_live'
     if ($config.quest) {
-        $gameConfig | ConvertTo-Json | set-content "$env:appdata\Echo Relay Server Browser\gameConfig.json"
+        $gameConfig | ConvertTo-Json | set-content "$env:appdata\EchoNavigator\gameConfig.json"
         questPatcher
         if ($global:gamePatched) {
-            [system.windows.forms.messagebox]::Show("You will now load into $($database.online[$global:rowIndex].name) when you start Echo VR", "Echo Relay Server Browser", "OK", "Information")
+            [system.windows.forms.messagebox]::Show("You will now load into $($database.online[$global:rowIndex].name) when you start Echo VR", "Echo Navigator", "OK", "Information")
         }
     } else {
         $gameConfig | convertto-json | set-content "$($global:config.gamePath)\_local\config.json"
     }
     if ($selectPlay.enabled -eq $true) {
-        [system.windows.forms.messagebox]::Show("You will now load into $($database.online[$global:rowIndex].name) when you start Echo VR", "Echo Relay Server Browser", "OK", "Information")
+        [system.windows.forms.messagebox]::Show("You will now load into $($database.online[$global:rowIndex].name) when you start Echo VR", "Echo Navigator", "OK", "Information")
     }
 }
 
 function clientJoinServer {
     if ($global:config.$($config.servers[$global:rowIndex].ip) -eq $null) {
         $usernamePicker = New-Object System.Windows.Forms.Form
-        $usernamePicker.Text = "Echo Relay Server Browser"
+        $usernamePicker.Text = "Echo Navigator"
         $usernamePicker.Size = New-Object System.Drawing.Size(280, 150)
         $usernamePicker.StartPosition = "CenterScreen"
         $usernamePicker.FormBorderStyle = "FixedDialog"
@@ -374,7 +374,7 @@ function clientJoinServer {
         if ($config.quest -ne $null) {
             $usernamePicker.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
         } else {
-            $usernamePicker.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe")
+            $usernamePicker.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\EchoNavigator.exe")
         }
 
 
@@ -408,7 +408,7 @@ function clientJoinServer {
             $usernameInput.Dispose()
             $usernameLabel.Dispose()
             $global:config | Add-Member -Name $($global:config.servers[$global:rowIndex].ip) -Type NoteProperty -Value $username
-            $global:config | convertto-json | set-content "$env:appdata\Echo Relay Server Browser\config.json"
+            $global:config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
         })
         $usernamePicker.Controls.Add($usernameButton)
 
@@ -416,7 +416,7 @@ function clientJoinServer {
     }
 
     if ($global:config.$($global:config.servers[$global:rowIndex].ip) -eq $null) {
-        [system.windows.forms.messagebox]::Show("You must enter a username", "Echo Relay Server Browser", "OK", "Warning")
+        [system.windows.forms.messagebox]::Show("You must enter a username", "Echo Navigator", "OK", "Warning")
         return
     }
 
@@ -429,28 +429,28 @@ function clientJoinServer {
     $gameConfig | Add-Member -Name 'transactionservice_host' -Type NoteProperty -Value "ws://$($global:config.servers[$global:RowIndex].ip):$($global:config.servers[$global:RowIndex].port)/transaction"
     $gameConfig | Add-Member -Name 'publisher_lock' -Type NoteProperty -Value 'rad15_live'
     if ($config.quest) {
-        $gameConfig | ConvertTo-Json | set-content "$env:appdata\Echo Relay Server Browser\gameConfig.json"
+        $gameConfig | ConvertTo-Json | set-content "$env:appdata\EchoNavigator\gameConfig.json"
         questPatcher
         if ($global:gamePatched) {
-            [system.windows.forms.messagebox]::Show("You will now load into $($config.servers[$global:rowIndex].name) when you start Echo VR", "Echo Relay Server Browser", "OK", "Information")
+            [system.windows.forms.messagebox]::Show("You will now load into $($config.servers[$global:rowIndex].name) when you start Echo VR", "Echo Navigator", "OK", "Information")
         }
     } else {
         $gameConfig | convertto-json | set-content "$($global:config.gamePath)\_local\config.json"
     }
     if ($selectPlay.enabled -eq $true) {
-        [system.windows.forms.messagebox]::Show("You will now load into $($config.servers[$global:rowIndex].name) when you start Echo VR", "Echo Relay Server Browser", "OK", "Information")
+        [system.windows.forms.messagebox]::Show("You will now load into $($config.servers[$global:rowIndex].name) when you start Echo VR", "Echo Navigator", "OK", "Information")
     }
 }
 
 function addOnlineServer {
 
     if ($database.api -eq $null) {
-        [System.Windows.Forms.MessageBox]::Show("The API is not online right now, check back later.", "Echo Relay Server Browser", "OK", "Information")
+        [System.Windows.Forms.MessageBox]::Show("The API is not online right now, check back later.", "Echo Navigator", "OK", "Information")
         return
     }
 
     $addServer = New-Object System.Windows.Forms.Form
-    $addServer.Text = "Echo Relay Server Browser"
+    $addServer.Text = "Echo Navigator"
     $addServer.Size = New-Object System.Drawing.Size(330, 500)
     $addServer.StartPosition = "CenterScreen"
     $addServer.FormBorderStyle = "FixedDialog"
@@ -458,7 +458,7 @@ function addOnlineServer {
     if ($config.quest -ne $null) {
         $addServer.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
     } else {
-        $addServer.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe")
+        $addServer.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\EchoNavigator.exe")
     }
 
     $serverNameLabel = New-Object System.Windows.Forms.Label
@@ -546,7 +546,7 @@ function addOnlineServer {
     $serverButton.Text = "Add Server"
     $serverButton.add_click({
         if ($psversiontable.psversion.major -eq 7) {
-            [system.windows.forms.messagebox]::Show("PowerShell 7 is not supported", "Echo Relay Server Browser", "OK", "Error")
+            [system.windows.forms.messagebox]::Show("PowerShell 7 is not supported", "Echo Navigator", "OK", "Error")
             return
         }
         $serverButton.Enabled = $false
@@ -567,12 +567,12 @@ function addOnlineServer {
 
         try {
             Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData
-            [system.windows.forms.messagebox]::Show("Server added successfully, it might take 5 minutes before it can be found in the server list.", "Echo Relay Server Browser", "OK", "Information")
+            [system.windows.forms.messagebox]::Show("Server added successfully, it might take 5 minutes before it can be found in the server list.", "Echo Navigator", "OK", "Information")
             $addServer.Close()
         }
         catch {
             $errorMessage = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream()).ReadToEnd()
-            [system.windows.forms.messagebox]::Show("Failed to add server, the server replied with `"$errorMessage`"", "Echo Relay Server Browser", "OK", "Error")
+            [system.windows.forms.messagebox]::Show("Failed to add server, the server replied with `"$errorMessage`"", "Echo Navigator", "OK", "Error")
             $serverButton.Enabled = $true
             $serverButton.text = "Add Server"
         }
@@ -605,7 +605,7 @@ function combatLoungeNotSelected {
 
         if ($global:config.'62.68.167.123' -eq $null) {
             $usernamePicker = New-Object System.Windows.Forms.Form
-            $usernamePicker.Text = "Echo Relay Server Browser"
+            $usernamePicker.Text = "Echo Navigator"
             $usernamePicker.Size = New-Object System.Drawing.Size(280, 150)
             $usernamePicker.StartPosition = "CenterScreen"
             $usernamePicker.FormBorderStyle = "FixedDialog"
@@ -640,7 +640,7 @@ function combatLoungeNotSelected {
                 $usernameInput.Dispose()
                 $usernameLabel.Dispose()
                 $global:config | Add-Member -Type NoteProperty -Name '62.68.167.123' -Value $username
-                $global:config | convertto-json | set-content "$env:appdata\Echo Relay Server Browser\config.json"
+                $global:config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
             })
             $usernamePicker.Controls.Add($usernameButton)
 
@@ -648,7 +648,7 @@ function combatLoungeNotSelected {
         }
 
         if ($global:config.'62.68.167.123' -eq $null) {
-            [system.windows.forms.messagebox]::Show("You must enter a username", "Echo Relay Server Browser", "OK", "Warning")
+            [system.windows.forms.messagebox]::Show("You must enter a username", "Echo Navigator", "OK", "Warning")
             return
         }
 
@@ -1730,30 +1730,30 @@ $ProgressPreference = 'SilentlyContinue'
 [reflection.assembly]::LoadWithPartialName("System.Windows.Forms") | Out-Null
 [system.windows.forms.application]::enablevisualstyles()
 
-$file = Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/servers.json" -UseBasicParsing
+$file = Invoke-WebRequest "https://aldin101.github.io/EchoNavigatorAPI/servers.json" -UseBasicParsing
 $database = $file.content | ConvertFrom-Json
-$global:config = Get-Content "$env:appdata\Echo Relay Server Browser\config.json" | ConvertFrom-Json
+$global:config = Get-Content "$env:appdata\EchoNavigator\config.json" | ConvertFrom-Json
 
 if ($database -eq $null) {
-    [System.Windows.Forms.MessageBox]::Show("Failed to download online resources. Check your internet connection and try again.", "Echo Relay Server Browser", "OK", "Error")
+    [System.Windows.Forms.MessageBox]::Show("Failed to download online resources. Check your internet connection and try again.", "Echo Navigator", "OK", "Error")
     exit
 }
 
 if ($config.username -eq "" -or $config.username -eq $null) {
-    [System.Windows.Forms.MessageBox]::Show("Configuration files are corrupt, please reinstall.", "Echo Relay Server Browser", "OK", "Error")
+    [System.Windows.Forms.MessageBox]::Show("Configuration files are corrupt, please reinstall.", "Echo Navigator", "OK", "Error")
     exit
 }
 
-if ((get-item -path "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe").VersionInfo.FileVersion -ne $database.currentVersion -and (get-item -path $($global:config.quest)).VersionInfo.FileVersion -ne $database.currentVersion) {
-    taskkill /f /im "Echo Relay Server Browser.exe"
+if ((get-item -path "$($global:config.gamePath)\bin\win10\EchoNavigator.exe").VersionInfo.FileVersion -ne $database.currentVersion -and (get-item -path $($global:config.quest)).VersionInfo.FileVersion -ne $database.currentVersion) {
+    taskkill /f /im "EchoNavigator.exe"
     if ($config.quest) {
-        remove-item "$env:appdata\Echo Relay Server Browser\Echo Relay Server Browser.exe"
-        Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/Echo%20Relay%20Server%20Browser.exe" -OutFile "$env:appdata\Echo Relay Server Browser\Echo Relay Server Browser.exe"
-        start-process "$env:appdata\Echo Relay Server Browser\Echo Relay Server Browser.exe"
+        remove-item "$env:appdata\EchoNavigator\EchoNavigator.exe"
+        Invoke-WebRequest "https://aldin101.github.io/EchoNavigatorAPI/EchoNavigator.exe" -OutFile "$env:appdata\EchoNavigator\EchoNavigator.exe"
+        start-process "$env:appdata\EchoNavigator\EchoNavigator.exe"
     } else {
-        remove-item "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe"
-        Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/Echo%20Relay%20Server%20Browser.exe" -OutFile "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe"
-        start-process "$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe"
+        remove-item "$($global:config.gamePath)\bin\win10\EchoNavigator.exe"
+        Invoke-WebRequest "https://aldin101.github.io/EchoNavigatorAPI/EchoNavigator.exe" -OutFile "$($global:config.gamePath)\bin\win10\EchoNavigator.exe"
+        start-process "$($global:config.gamePath)\bin\win10\EchoNavigator.exe"
     }
     exit
 }
@@ -1761,7 +1761,7 @@ if ((get-item -path "$($global:config.gamePath)\bin\win10\Echo Relay Server Brow
 $global:clientselected = $false
 
 $menu = New-Object System.Windows.Forms.Form
-$menu.Text = "Echo Relay Server Browser"
+$menu.Text = "Echo Navigator"
 $menu.Size = New-Object System.Drawing.Size(1280, 720)
 $menu.StartPosition = "CenterScreen"
 $menu.FormBorderStyle = "FixedDialog"
@@ -1769,7 +1769,7 @@ $menu.MaximizeBox = $false
 if ($config.quest -ne $null) {
     $menu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
 } else {
-    $menu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe")
+    $menu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\EchoNavigator.exe")
 }
 
 
@@ -1787,14 +1787,14 @@ $tabs.add_SelectedIndexChanged({
             $menuDetails.Dispose()
         }
         $global:config.tab = 0
-        $global:config | convertto-json | set-content "$env:appdata\Echo Relay Server Browser\config.json"
+        $global:config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
         if ($config.quest -ne $null) {
             $questLabel.BringToFront()
         }
     }
     if ($tabs.SelectedTab -eq $otherServers) {
         $global:config.tab = 1
-        $global:config | convertto-json | set-content "$env:appdata\Echo Relay Server Browser\config.json"
+        $global:config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
     }
 })
 $menu.Controls.Add($tabs)
@@ -1814,7 +1814,7 @@ $tabs.Controls.Add($otherServers)
 
 if ($global:config.tab -eq $null) {
     $global:config | Add-Member -Type NoteProperty -Name 'tab' -Value 1
-    $global:config | convertto-json | set-content "$env:appdata\Echo Relay Server Browser\config.json"
+    $global:config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
 }
 
 $tabs.SelectedIndex = $global:config.tab
@@ -1901,7 +1901,7 @@ $combatLoungeList.Add_KeyDown({
         $combatLoungeList.Rows[$e.RowIndex].Selected = $true
         $global:rowIndex = $e.RowIndex
         $global:clientselected = $true
-        $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to join $($combatGames.gameServers[$global:RowIndex].gameMode)?", "Echo Relay Server Browser", "YesNo", "Question")
+        $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to join $($combatGames.gameServers[$global:RowIndex].gameMode)?", "Echo Navigator", "YesNo", "Question")
         if ($choice -eq "Yes") {
             Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-join $($combatGames.gameServer[$global:RowIndex].sessionID)" -Wait
         }
@@ -1914,7 +1914,7 @@ $combatLoungeList.Add_CellDoubleClick({
     $combatLoungeList.Rows[$e.RowIndex].Selected = $true
     $global:rowIndex = $e.RowIndex
     $global:clientselected = $true
-    $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to join $($combatGames.gameServers[$global:RowIndex].gameMode)?", "Echo Relay Server Browser", "YesNo", "Question")
+    $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to join $($combatGames.gameServers[$global:RowIndex].gameMode)?", "Echo Navigator", "YesNo", "Question")
     if ($choice -eq "Yes") {
         Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-join $($combatGames.gameServer[$global:RowIndex].sessionID)" -Wait
     }
@@ -2158,12 +2158,12 @@ $reportServer.Text = "Report Server"
 $reportServer.add_Click({
 
     if ($database.api -eq $null) {
-        [System.Windows.Forms.MessageBox]::Show("The API is not online right now, check back later.", "Echo Relay Server Browser", "OK", "Information")
+        [System.Windows.Forms.MessageBox]::Show("The API is not online right now, check back later.", "Echo Navigator", "OK", "Information")
         return
     }
 
     $reportServer = New-Object System.Windows.Forms.Form
-    $reportServer.Text = "Echo Relay Server Browser"
+    $reportServer.Text = "Echo Navigator"
     $reportServer.Size = New-Object System.Drawing.Size(330, 290)
     $reportServer.StartPosition = "CenterScreen"
     $reportServer.FormBorderStyle = "FixedDialog"
@@ -2172,7 +2172,7 @@ $reportServer.add_Click({
     if ($config.quest -ne $null) {
         $reportServer.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
     } else {
-        $reportServer.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe")
+        $reportServer.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\EchoNavigator.exe")
     }
 
     $reportReasonLabel = New-Object System.Windows.Forms.Label
@@ -2209,7 +2209,7 @@ $reportServer.add_Click({
 
     $reportButton.add_click({
         if ($psversiontable.psversion.major -eq 7) {
-            [system.windows.forms.messagebox]::Show("PowerShell 7 is not supported", "Echo Relay Server Browser", "OK", "Error")
+            [system.windows.forms.messagebox]::Show("PowerShell 7 is not supported", "Echo Navigator", "OK", "Error")
             return
         }
 
@@ -2229,12 +2229,12 @@ $reportServer.add_Click({
 
         try {
             Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData
-            [system.windows.forms.messagebox]::Show("Server reported`n`nWe care about your feedback and will deal with your report as fast as we can.", "Echo Relay Server Browser", "OK", "Information")
+            [system.windows.forms.messagebox]::Show("Server reported`n`nWe care about your feedback and will deal with your report as fast as we can.", "Echo Navigator", "OK", "Information")
             $reportServer.Close()
         }
         catch {
             $errorMessage = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream()).ReadToEnd()
-            [system.windows.forms.messagebox]::Show("The report failed, the server replied with `"$errorMessage`"", "Echo Relay Server Browser", "OK", "Error")
+            [system.windows.forms.messagebox]::Show("The report failed, the server replied with `"$errorMessage`"", "Echo Navigator", "OK", "Error")
             $reportButton.Enabled = $true
             $reportButton.text = "Report Server"
         }
@@ -2253,7 +2253,7 @@ $serverProperties = New-Object System.Windows.Forms.ToolStripMenuItem
 $serverProperties.Text = "Server Properties"
 $serverProperties.add_Click({
     $serverPropertiesWindow = New-Object System.Windows.Forms.Form
-    $serverPropertiesWindow.Text = "Echo Relay Server Browser"
+    $serverPropertiesWindow.Text = "Echo Navigator"
     $serverPropertiesWindow.Size = New-Object System.Drawing.Size(600, 290)
     $serverPropertiesWindow.StartPosition = "CenterScreen"
     $serverPropertiesWindow.FormBorderStyle = "FixedDialog"
@@ -2262,7 +2262,7 @@ $serverProperties.add_Click({
     if ($config.quest -ne $null) {
         $serverPropertiesWindow.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
     } else {
-        $serverPropertiesWindow.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe")
+        $serverPropertiesWindow.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\EchoNavigator.exe")
     }
 
 
@@ -2324,7 +2324,7 @@ $serverList.Add_KeyDown({
         $serverImage.ImageLocation = $database.online[$rowIndex].image
         $global:clientselected = $false
         $clientServerList.ClearSelection()
-        $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to select $($database.online[$global:rowIndex].name)?", "Echo Relay Server Browser", "YesNo", "Question")
+        $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to select $($database.online[$global:rowIndex].name)?", "Echo Navigator", "YesNo", "Question")
         if ($choice -eq "Yes") {
             joinServer
         }
@@ -2337,7 +2337,7 @@ $serverList.Add_CellDoubleClick({
     $global:rowIndex = $e.RowIndex
     $global:clientselected = $false
     $clientServerList.ClearSelection()
-    $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to select $($database.online[$global:rowIndex].name)?", "Echo Relay Server Browser", "YesNo", "Question")
+    $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to select $($database.online[$global:rowIndex].name)?", "Echo Navigator", "YesNo", "Question")
     if ($choice -eq "Yes") {
         joinServer
     }
@@ -2354,7 +2354,7 @@ $refresh.add_click({
     $refresh.Enabled = $false
     $refresh.text = "Refreshing..."
     $refresh.Update()
-    $file = Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/servers.json" -UseBasicParsing
+    $file = Invoke-WebRequest "https://aldin101.github.io/EchoNavigatorAPI/servers.json" -UseBasicParsing
     $newList = $file.content | ConvertFrom-Json
     $database.online = $newList.online
     $database.offline = $newList.offline
@@ -2405,7 +2405,7 @@ $showOfflineServers.add_CheckedChanged({
             ++$i
         }
     } else {
-        $file = Invoke-WebRequest "https://aldin101.github.io/echo-relay-server-browser/servers.json" -UseBasicParsing
+        $file = Invoke-WebRequest "https://aldin101.github.io/EchoNavigatorAPI/servers.json" -UseBasicParsing
         $online = $file.content | ConvertFrom-Json
         $database.online = $online.online
         $serverList.RowCount = $database.online.Count
@@ -2477,7 +2477,7 @@ $clientServerList.Add_CellDoubleClick({
     $global:rowIndex = $e.RowIndex
     $global:clientselected = $true
     $serverList.ClearSelection()
-    $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to select $($global:config.servers[$global:rowIndex].name)?", "Echo Relay Server Browser", "YesNo", "Question")
+    $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to select $($global:config.servers[$global:rowIndex].name)?", "Echo Navigator", "YesNo", "Question")
     if ($choice -eq "Yes") {
         clientJoinServer
     }
@@ -2494,7 +2494,7 @@ $clientServerList.Add_KeyDown({
         $serverImage.ImageLocation = $null
         $global:clientselected = $true
         $serverList.ClearSelection()
-        $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to select $($global:config.servers[$global:rowIndex].name)?", "Echo Relay Server Browser", "YesNo", "Question")
+        $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to select $($global:config.servers[$global:rowIndex].name)?", "Echo Navigator", "YesNo", "Question")
         if ($choice -eq "Yes") {
             clientJoinServer
         }
@@ -2564,7 +2564,7 @@ $clientProperties = New-Object System.Windows.Forms.ToolStripMenuItem
 $clientProperties.Text = "Server Properties"
 $clientProperties.add_Click({
     $serverPropertiesWindow = New-Object System.Windows.Forms.Form
-    $serverPropertiesWindow.Text = "Echo Relay Server Browser"
+    $serverPropertiesWindow.Text = "Echo Navigator"
     $serverPropertiesWindow.Size = New-Object System.Drawing.Size(600, 290)
     $serverPropertiesWindow.StartPosition = "CenterScreen"
     $serverPropertiesWindow.FormBorderStyle = "FixedDialog"
@@ -2573,7 +2573,7 @@ $clientProperties.add_Click({
     if ($config.quest -ne $null) {
         $serverPropertiesWindow.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
     } else {
-        $serverPropertiesWindow.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe")
+        $serverPropertiesWindow.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\EchoNavigator.exe")
     }
 
 
@@ -2604,7 +2604,7 @@ $clientRemoveServer.add_Click({
     $servers = [System.Collections.ArrayList]($global:config.servers)
     $servers.RemoveAt($global:rowIndex)
     $global:config.servers = $servers.toArray()
-    $global:config | convertto-json | set-content "$env:appdata\Echo Relay Server Browser\config.json"
+    $global:config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
     $clientServerList.RowCount = $global:config.servers.Count
     $i=0
     foreach ($server in $global:config.servers) {
@@ -2629,7 +2629,7 @@ $addServer.tabIndex = 2
 $addServer.Font = New-Object System.Drawing.Font("Arial", 12)
 $addServer.add_Click({
     $addServerMenu = New-Object System.Windows.Forms.Form
-    $addServerMenu.Text = "Echo Relay Server Browser"
+    $addServerMenu.Text = "Echo Navigator"
     $addServerMenu.Size = New-Object System.Drawing.Size(330, 290)
     $addServerMenu.StartPosition = "CenterScreen"
     $addServerMenu.FormBorderStyle = "FixedDialog"
@@ -2638,7 +2638,7 @@ $addServer.add_Click({
     if ($config.quest -ne $null) {
         $addServerMenu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
     } else {
-        $addServerMenu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\Echo Relay Server Browser.exe")
+        $addServerMenu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\EchoNavigator.exe")
     }
 
 
@@ -2695,8 +2695,8 @@ $addServer.add_Click({
         $servers = [System.Collections.ArrayList]($global:config.servers)
         $servers.add($server)
         $global:config.servers = $servers.toArray()
-        $global:config | convertto-json | set-content "$env:appdata\Echo Relay Server Browser\config.json"
-        [system.windows.forms.messagebox]::Show("Server added", "Echo Relay Server Browser", "OK", "Information")
+        $global:config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
+        [system.windows.forms.messagebox]::Show("Server added", "Echo Navigator", "OK", "Information")
         $addServerMenu.Close()
         $addServerMenu.Dispose()
         $addServerButton.Dispose()
@@ -2732,4 +2732,4 @@ if ($global:gameMode) {
     $gameRunTimer.Stop()
 }
 
-$config | convertto-json | set-content "$env:appdata\Echo Relay Server Browser\config.json"
+$config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
