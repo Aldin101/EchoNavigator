@@ -35,6 +35,9 @@ function Read-FolderBrowserDialog([string]$Message, [string]$InitialDirectory) {
 
 function downgrade {
 
+    [system.windows.forms.messagebox]::show("Downgrading is currently unavailable do to Meta changing how they handle authentication. I am working to resolve this issue.", "Echo Relay Installer", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Error)
+    return
+
     $downgradeMenu = new-object System.Windows.Forms.Form
     $downgradeMenu.text = "Downgrader"
     $downgradeMenu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($fileLocation1)
