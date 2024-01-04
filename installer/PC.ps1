@@ -195,13 +195,9 @@ function downgrade {
         remove-item "$env:appdata\EchoNavigator\token"
         $frl = UriCallback $tokenFile
 
-        $downgradeButton.text = "Downloading..."
+        $downgradeButton.text = "Downloading Manifest..."
         $downgradeButton.Refresh()
         $folderPicker.Visible = $false
-        $segmentLabel.Visible = $true
-        $segmentProgress.Visible = $true
-        $sizeLabel.Visible = $true
-        $sizeProgress.Visible = $true
         $segmentProgress.Value = 0
         $segmentProgress.Refresh()
         try {
@@ -217,11 +213,41 @@ function downgrade {
         remove-item "$env:temp\manifest.zip"
         remove-item "$env:temp\manifest" -recurse -force
         $segmentCount = 0
-        for ($i=0; $i -lt $($manifest.files | get-member).name.count; $i++) {
-            $segmentCount = $segmentCount + $manifest.files.$($($manifest.files | get-member).name[$i]).segments.count
-            $totalSize = $totalSize + $manifest.files.$($($manifest.files | get-member).name[$i]).size
+        $totalSize = 0
+        $downgradeButton.text = "Calculating Size..."
+        $downgradeButton.Refresh()
+        $fileNames = $manifest.files | Get-Member -MemberType NoteProperty | ForEach-Object { $_.Name }
+        foreach ($fileName in $fileNames) {
+            $file = $manifest.files.$fileName
+            $segmentCount += $file.segments.count
+            $totalSize += $file.size
         }
+
+        if ($totalSize -gt (Get-PSDrive $global:gamePath[0]).Free) {
+            [System.Windows.Forms.MessageBox]::show("You do not have enough free space to download the game. Please free up some space on your $($global:gamePath[0]) drive and try again.", "Echo Navigator Downgrader","OK", "Error")
+            $downgradeButton.text = "Try again"
+            $downgradeButton.enabled = $true
+            return
+        }
+
+        if ($totalSize -gt ((Get-PSDrive $global:gamePath[0]).Free + 5GB)) {
+            $choice = [System.Windows.Forms.MessageBox]::show("While you appear to have sufficient free space to download the game, Windows storage reservations may reduce the actual available space. It's recommended to free up additional space before proceeding with the download. Would you like to attempt the download regardless?", "Echo Navigator Downgrader", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Warning)
+            if ($choice -eq "No") {
+                $downgradeButton.text = "Try again"
+                $downgradeButton.enabled = $true
+                return
+            }
+        }
+
         $segmentsDownloaded = 0
+        $segmentLabel.Visible = $true
+        $segmentProgress.Visible = $true
+        $sizeLabel.Visible = $true
+        $sizeProgress.Visible = $true
+        $downgradeButton.text = "Downloading..."
+        $downgradeMenu.Refresh()
+        Add-Type -AssemblyName System.Net.Http
+        $client = [System.Net.Http.HttpClient]::new()
         for ($i=0; $i -lt $($manifest.files | get-member).name.count; $i++) {
             $folderName = $($($manifest.files | get-member).name[$i])
             $folderName = $folderName -split "\\"
