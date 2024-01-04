@@ -1,4 +1,69 @@
 $ProgressPreference = 'SilentlyContinue'
+
+function chooseFolder {
+    $locations = Get-ChildItem "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries\*"
+    $locationList = [System.Collections.ArrayList]@()
+    foreach ($location in $locations) {
+        $locationList.Add($(Get-ItemProperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries\$($location.PSChildName)" -Name OriginalPath | select -ExpandProperty OriginalPath))
+    }
+    $i=0
+    foreach ($location in $locationList) {
+        if (test-path "$location\Software\ready-at-dawn-echo-arena\bin\win10\echovr.exe") {
+            break
+        }
+        $i++
+    }
+
+    $pickMenu = new-object System.Windows.Forms.Form
+    $pickMenu.text = "Echo Navigator Installer"
+    $pickMenu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($fileLocation1)
+    $pickMenu.Size = New-Object Drawing.Size @(320, 270)
+    $pickMenu.StartPosition = "CenterScreen"
+    $pickMenu.FormBorderStyle = "FixedDialog"
+    $pickMenu.MaximizeBox = $false
+    $pickMenu.ShowInTaskbar = $false
+
+    $pickLabel = New-Object System.Windows.Forms.Label
+    $pickLabel.Location = New-Object System.Drawing.Size(10,10)
+    $pickLabel.Size = New-Object System.Drawing.Size(280,20)
+    $pickLabel.Text = "Where would you like to install Echo VR?"
+    $pickLabel.TextAlign = "MiddleCenter"
+    $pickLabel.Font = "Microsoft Sans Serif,10"
+    $pickMenu.Controls.Add($pickLabel)
+
+    $pickList = New-Object System.Windows.Forms.ListBox
+    $pickList.Location = New-Object System.Drawing.Size(10,30)
+    $pickList.Size = New-Object System.Drawing.Size(280,100)
+    $pickList.Font = "Microsoft Sans Serif,10"
+    $pickList.DataSource = $locationList
+    $pickList.SelectedIndex = $i
+    $pickMenu.Controls.Add($pickList)
+
+    $customPath = New-Object System.Windows.Forms.Button
+    $customPath.Location = New-Object System.Drawing.Size(10,140)
+    $customPath.Size = New-Object System.Drawing.Size(280,30)
+    $customPath.Text = "Custom Path"
+    $customPath.Font = "Microsoft Sans Serif,10"
+    $customPath.Add_Click({
+        $global:gamePath = Read-FolderBrowserDialog -Message "Where would you like to install Echo VR?"
+        $pickMenu.Close()
+    })
+    $pickMenu.Controls.Add($customPath)
+
+    $pickButton = New-Object System.Windows.Forms.Button
+    $pickButton.Location = New-Object System.Drawing.Size(10,180)
+    $pickButton.Size = New-Object System.Drawing.Size(280,30)
+    $pickButton.Text = "Select"
+    $pickButton.Font = "Microsoft Sans Serif,10"
+    $pickButton.Add_Click({
+        $global:gamePath = "$($pickList.SelectedItem)\Software\ready-at-dawn-echo-arena"
+        $pickMenu.Close()
+    })
+    $pickMenu.Controls.Add($pickButton)
+
+    $pickMenu.ShowDialog()
+}
+
 function Decompress-ZlibFile {
     param(
         [Parameter(Mandatory=$true)]
@@ -33,20 +98,6 @@ function Read-FolderBrowserDialog([string]$Message, [string]$InitialDirectory) {
     if ($folder) { return $folder.Self.Path } else { return 'C:\Program Files\Oculus\Software' }
 }
 
-function OculusTemplate {
-    $c = @{
-        "uri" = $oculusUri
-        "options" = @{
-            "access_token" = if ($userToken -ne "") { $userToken } else { $oculusStoreToken }
-        }
-    }
-    return $c
-}
-
-$GraphQLClient = @{
-    "OculusTemplate" = ${function:OculusTemplate}
-}
-
 function StartLogin {
     $payload = @{
         "access_token" = "FRL|512466987071624|01d4a1f7fd0682aea7ee8ae987704d63"
@@ -54,7 +105,7 @@ function StartLogin {
     $loginResponse = Invoke-RestMethod -Method Post -Uri "https://meta.graph.meta.com/webview_tokens_query" -Body (ConvertTo-Json $payload) -ContentType "application/json"
     $etoken = $loginResponse.native_sso_etoken
     $global:token = $loginResponse.native_sso_token
-    return "https://auth.meta.com/native_sso/confirm?native_app_id=512466987071624&native_sso_etoken=$script:etoken&utm_source=skyline_splash"
+    return "https://auth.meta.com/native_sso/confirm?native_app_id=512466987071624&native_sso_etoken=$etoken&utm_source=skyline_splash"
 }
 
 function GetToken {
@@ -65,30 +116,16 @@ function GetToken {
     }
     $response = Invoke-RestMethod -Method Post -Uri "https://meta.graph.meta.com/webview_blobs_decrypt" -Body (ConvertTo-Json $payload) -ContentType "application/json"
     $firstToken = $response.access_token
-    $c = $GraphQLClient.OculusTemplate
-    $c.options.access_token = $firstToken
-    $c.options.doc_id = "5787825127910775"
-    $c.options.variables = "{`"app_id`":`"1582076955407037`"}"
-    $response = Invoke-RestMethod -Method Post -Uri "https://meta.graph.meta.com/graphql" -Body (ConvertTo-Json $c.options) -ContentType "application/json"
-    $p = ConvertFrom-Json $response
-    return $p.data.xfr_create_profile_token.profile_tokens[0].access_token
-}
-
-function DoPostRequest ($uri, $requestBody) {
-    $client = New-Object System.Net.Http.HttpClient
-    $content = New-Object System.Net.Http.StringContent($requestBody, [System.Text.Encoding]::UTF8, "application/json")
-    try {
-        $response = $client.PostAsync($uri, $content).Result
-        $responseString = $response.Content.ReadAsStringAsync().Result
-        if ($response.IsSuccessStatusCode) {
-            # Handle success
-        } else {
-            # Handle failure
+    $c = @{
+        "uri" = $oculusUri
+        "options" = @{
+            "access_token" = if ($firstToken -ne "") { $firstToken } else { "OC|752908224809889|" }
+            "doc_id" = "5787825127910775"
+            "variables" = "{`"app_id`":`"1582076955407037`"}"
         }
-    } catch {
-        Write-Error "Exception: $_"
     }
-    return $responseString
+    $response = Invoke-RestMethod -Method Post -Uri "https://meta.graph.meta.com/graphql" -Body (ConvertTo-Json $c.options) -ContentType "application/json"
+    return $response.data.xfr_create_profile_token.profile_tokens[0].access_token
 }
 
 function UriCallback {
@@ -97,7 +134,6 @@ function UriCallback {
     )
 
     $parameters = $response.Replace("oculus://", "").Split('?')[1].Split('&')
-    $global:token = $parameters[0].Split('=')[1]
     $global:blob = $parameters[1].Split('=')[1]
     return GetToken
 }
@@ -155,6 +191,14 @@ function downgrade {
     $sizeProgress.Visible = $false
     $downgradeMenu.Controls.Add($sizeProgress)
 
+    $timeRemainingLabel = New-Object System.Windows.Forms.Label
+    $timeRemainingLabel.Location = New-Object System.Drawing.Size(10, 110)
+    $timeRemainingLabel.Size = New-Object System.Drawing.Size(200,20)
+    $timeRemainingLabel.Text = "Time Till Cancel Option: 1:00"
+    $timeRemainingLabel.Font = "Microsoft Sans Serif,10"
+    $timeRemainingLabel.Visible = $false
+    $downgradeMenu.Controls.Add($timeRemainingLabel)
+
 
     $downgradeButton = New-Object System.Windows.Forms.Button
     $downgradeButton.Location = New-Object System.Drawing.Size(10,40)
@@ -162,17 +206,25 @@ function downgrade {
     $downgradeButton.Text = "Downgrade"
     $downgradeButton.Font = "Microsoft Sans Serif,10"
     $downgradeButton.Add_Click({
+
+        if ($global:gamePath -eq $null -or $global:gamePath -eq "") {
+            chooseFolder
+        }
+
         $downgradeButton.enabled = $false
         $folderPicker.enabled = $false
 
         $downgradeButton.text = "Waiting for login..."
         $downgradeButton.Refresh()
-        start-sleep -s 2
-
-        Start-Process "$(StartLogin)"
 
         $registryPath = "HKCU\SOFTWARE\Classes\oculus"
         $backupPath = "$env:appdata\EchoNavigator\oculus.reg"
+
+        if (Test-Path $backupPath) {
+            reg import $backupPath
+            Remove-Item $backupPath
+        }
+
         reg export $registryPath $backupPath
 
 
@@ -180,19 +232,47 @@ function downgrade {
         Set-ItemProperty -Path "HKCU:\Software\Classes\Oculus" -Name "URL Protocol" -Value ""
         Set-ItemProperty -Path "HKCU:\Software\Classes\Oculus" -Name "(Default)" -Value "URL:Oculus Protocol"
         New-Item -Path "HKCU:\Software\Classes\Oculus\shell\open\command"
-        Set-ItemProperty -Path "HKCU:\Software\Classes\Oculus\shell\open\command" -Name "(Default)" -Value "`"powershell.exe`" -executionPolicy bypass -file $("$env:appdata\EchoNavigator\setToken.ps1") `%1"
+        Set-ItemProperty -Path "HKCU:\Software\Classes\Oculus\shell\open\command" -Name "(Default)" -Value "`"powershell.exe`" -executionPolicy bypass -windowStyle hidden -file $("$env:appdata\EchoNavigator\setToken.ps1") `%1"
 
-        while (!(test-path "$env:appdata\EchoNavigator\token")) {
-            start-sleep -s 1
-        }
+        'param($keys)' | Out-File -FilePath "$env:appdata\EchoNavigator\setToken.ps1"
+        '$keys | Out-File -FilePath "$env:appdata\EchoNavigator\token"' | Out-File -FilePath "$env:appdata\EchoNavigator\setToken.ps1" -Append
+        '[reflection.assembly]::LoadWithPartialName( "System.Windows.Forms")' | Out-File -FilePath "$env:appdata\EchoNavigator\setToken.ps1" -Append
+        '[System.Windows.Forms.Application]::EnableVisualStyles()' | Out-File -FilePath "$env:appdata\EchoNavigator\setToken.ps1" -Append
+        '[System.Windows.Forms.MessageBox]::show("You have successfully logged in. You can close your browser and return to Echo Navigator", "Echo Navigator Downgrader","OK", "Information")' | Out-File -FilePath "$env:appdata\EchoNavigator\setToken.ps1" -Append
 
-        if (Test-Path $backupPath) {
-            reg import $backupPath
-            Remove-Item $backupPath
+        Start-Process "$(StartLogin)"
+
+        while (1) {
+            $startTime = Get-Date
+            while (!(test-path "$env:appdata\EchoNavigator\token") -and ((Get-Date) -lt ($startTime.AddMinutes(1)))) {
+                start-sleep -Milliseconds 100
+                $timeRemainingLabel.Visible = $true
+                $timeRemainingLabel.Text = "Time Till Cancel Option: $((($startTime.AddMinutes(1)) - (Get-Date)).Minutes):$((($startTime.AddMinutes(1)) - (Get-Date)).Seconds)"
+            }
+
+            if (!(test-path "$env:appdata\EchoNavigator\token")) {
+                $choice = [System.Windows.Forms.MessageBox]::show("Looks like you have been logging in for a while, would you like to cancel the login?", "Echo Navigator Downgrader","YesNo", "Question")
+                if ($choice -eq "Yes") {
+                    if (Test-Path $backupPath) {
+                        reg import $backupPath
+                        Remove-Item $backupPath
+                    }
+                    $downgradeButton.text = "Try again"
+                    $downgradeButton.enabled = $true
+                    $folderPicker.enabled = $true
+                    $timeRemainingLabel.Visible = $false
+                    return
+                }
+            } else {
+                break
+            }
         }
+        $timeRemainingLabel.Visible = $false
+        $downgradeButton.text = "Logging in..."
 
         $tokenFile = get-content "$env:appdata\EchoNavigator\token"
         remove-item "$env:appdata\EchoNavigator\token"
+        remove-item "$env:appdata\EchoNavigator\setToken.ps1"
         $frl = UriCallback $tokenFile
 
         $downgradeButton.text = "Downloading Manifest..."
@@ -203,7 +283,7 @@ function downgrade {
         try {
             Invoke-WebRequest -uri "https://securecdn.oculus.com/binaries/download/?id=6323983201049540&access_token=$frl&get_manifest=1" -OutFile "$env:temp\manifest.zip"
         } catch {
-            [System.Windows.Forms.MessageBox]::show("Failed to start download. This is usually caused by you not owning Echo VR on the account to logged in with, or having no internet.", "Echo Navigator Server Browser","OK", "Error")
+            [System.Windows.Forms.MessageBox]::show("Failed to start download. This is usually caused by you not owning Echo VR on the account you logged in with, or are disconnected from the internet.", "Echo Navigator Server Browser","OK", "Error")
             $downgradeButton.text = "Try again"
             $downgradeButton.enabled = $true
             return
@@ -525,8 +605,6 @@ function install {
 $menu = new-object System.Windows.Forms.Form
 
 $menu.text = "Echo Navigator Installer"
-$fileLocation = Get-CimInstance Win32_Process -Filter "name = 'Echo Relay Installer.exe'" -ErrorAction SilentlyContinue
-$fileLocation1 = $fileLocation.CommandLine -replace '"', ""
 $menu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($fileLocation1)
 $menu.Size = New-Object Drawing.Size @(600, 400)
 $menu.StartPosition = "CenterScreen"
