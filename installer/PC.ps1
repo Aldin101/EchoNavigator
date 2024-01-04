@@ -33,6 +33,75 @@ function Read-FolderBrowserDialog([string]$Message, [string]$InitialDirectory) {
     if ($folder) { return $folder.Self.Path } else { return 'C:\Program Files\Oculus\Software' }
 }
 
+function OculusTemplate {
+    $c = @{
+        "uri" = $oculusUri
+        "options" = @{
+            "access_token" = if ($userToken -ne "") { $userToken } else { $oculusStoreToken }
+        }
+    }
+    return $c
+}
+
+$GraphQLClient = @{
+    "OculusTemplate" = ${function:OculusTemplate}
+}
+
+function StartLogin {
+    $payload = @{
+        "access_token" = "FRL|512466987071624|01d4a1f7fd0682aea7ee8ae987704d63"
+    }
+    $loginResponse = Invoke-RestMethod -Method Post -Uri "https://meta.graph.meta.com/webview_tokens_query" -Body (ConvertTo-Json $payload) -ContentType "application/json"
+    $etoken = $loginResponse.native_sso_etoken
+    $global:token = $loginResponse.native_sso_token
+    return "https://auth.meta.com/native_sso/confirm?native_app_id=512466987071624&native_sso_etoken=$script:etoken&utm_source=skyline_splash"
+}
+
+function GetToken {
+    $payload = @{
+        "access_token" = "FRL|512466987071624|01d4a1f7fd0682aea7ee8ae987704d63"
+        "blob" = $global:blob
+        "request_token" = $global:token
+    }
+    $response = Invoke-RestMethod -Method Post -Uri "https://meta.graph.meta.com/webview_blobs_decrypt" -Body (ConvertTo-Json $payload) -ContentType "application/json"
+    $firstToken = $response.access_token
+    $c = $GraphQLClient.OculusTemplate
+    $c.options.access_token = $firstToken
+    $c.options.doc_id = "5787825127910775"
+    $c.options.variables = "{`"app_id`":`"1582076955407037`"}"
+    $response = Invoke-RestMethod -Method Post -Uri "https://meta.graph.meta.com/graphql" -Body (ConvertTo-Json $c.options) -ContentType "application/json"
+    $p = ConvertFrom-Json $response
+    return $p.data.xfr_create_profile_token.profile_tokens[0].access_token
+}
+
+function DoPostRequest ($uri, $requestBody) {
+    $client = New-Object System.Net.Http.HttpClient
+    $content = New-Object System.Net.Http.StringContent($requestBody, [System.Text.Encoding]::UTF8, "application/json")
+    try {
+        $response = $client.PostAsync($uri, $content).Result
+        $responseString = $response.Content.ReadAsStringAsync().Result
+        if ($response.IsSuccessStatusCode) {
+            # Handle success
+        } else {
+            # Handle failure
+        }
+    } catch {
+        Write-Error "Exception: $_"
+    }
+    return $responseString
+}
+
+function UriCallback {
+    param (
+        $response
+    )
+
+    $parameters = $response.Replace("oculus://", "").Split('?')[1].Split('&')
+    $global:token = $parameters[0].Split('=')[1]
+    $global:blob = $parameters[1].Split('=')[1]
+    return GetToken
+}
+
 function downgrade {
 
     $downgradeMenu = new-object System.Windows.Forms.Form
@@ -95,56 +164,36 @@ function downgrade {
     $downgradeButton.Add_Click({
         $downgradeButton.enabled = $false
         $folderPicker.enabled = $false
-        $patchEchoVR.text = "Please Enter Token"
-        $patchEchoVR.Refresh()
 
-        [System.Windows.Forms.MessageBox]::Show("Browser authentication can not longer be performed, this means that you will need to manually obtain and enter your token. A guide on obtaining your token will appear after pressing OK.", "Echo Navigator", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Information)
-        start-process "https://computerelite.github.io/tools/Oculus/ObtainTokenNew.html"
+        $downgradeButton.text = "Waiting for login..."
+        $downgradeButton.Refresh()
+        start-sleep -s 2
 
-        $tokenEntry = New-Object System.Windows.Forms.Form
-        $tokenEntry.Text = "Echo Navigator"
-        $tokenEntry.Size = New-Object System.Drawing.Size(300,200)
-        $tokenEntry.StartPosition = "CenterScreen"
-        $tokenEntry.FormBorderStyle = "FixedDialog"
-        $tokenEntry.MaximizeBox = $false
-        $tokenEntry.showInTaskbar = $false
-        $tokenEntry.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
+        Start-Process "$(StartLogin)"
 
-        $tokenLabel = New-Object System.Windows.Forms.Label
-        $tokenLabel.Size = New-Object System.Drawing.Size(300, 20)
-        $tokenLabel.Location = New-Object System.Drawing.Point(-5, 5)
-        $tokenLabel.Text = "Enter your token"
-        $tokenLabel.Font = New-Object System.Drawing.Font("Arial", 12)
-        $tokenLabel.TextAlign = "MiddleCenter"
-        $tokenEntry.Controls.Add($tokenLabel)
+        $registryPath = "HKCU\SOFTWARE\Classes\oculus"
+        $backupPath = "$env:appdata\EchoNavigator\oculus.reg"
+        reg export $registryPath $backupPath
 
-        $tokenInput = New-Object System.Windows.Forms.TextBox
-        $tokenInput.Size = New-Object System.Drawing.Size(250, 20)
-        $tokenInput.Location = New-Object System.Drawing.Point(17, 30)
-        $tokenInput.Font = New-Object System.Drawing.Font("Arial", 12)
-        $tokenEntry.Controls.Add($tokenInput)
 
-        $pasteIntoBoxButton = New-Object System.Windows.Forms.Button
-        $pasteIntoBoxButton.Size = New-Object System.Drawing.Size(250, 35)
-        $pasteIntoBoxButton.Location = New-Object System.Drawing.Point(17, 60)
-        $pasteIntoBoxButton.Text = "Paste from clipboard"
-        $pasteIntoBoxButton.add_click({
-            $tokenInput.Text = Get-Clipboard -Raw
-        })
-        $tokenEntry.Controls.Add($pasteIntoBoxButton)
+        New-Item -Path "HKCU:\Software\Classes\Oculus"
+        Set-ItemProperty -Path "HKCU:\Software\Classes\Oculus" -Name "URL Protocol" -Value ""
+        Set-ItemProperty -Path "HKCU:\Software\Classes\Oculus" -Name "(Default)" -Value "URL:Oculus Protocol"
+        New-Item -Path "HKCU:\Software\Classes\Oculus\shell\open\command"
+        Set-ItemProperty -Path "HKCU:\Software\Classes\Oculus\shell\open\command" -Name "(Default)" -Value "`"powershell.exe`" -executionPolicy bypass -file $("$env:appdata\EchoNavigator\setToken.ps1") `%1"
 
-        $tokenButton = New-Object System.Windows.Forms.Button
-        $tokenButton.Size = New-Object System.Drawing.Size(250, 35)
-        $tokenButton.Location = New-Object System.Drawing.Point(17, 100)
-        $tokenButton.Text = "Continue"
-        $tokenButton.add_click({
-            $global:token = $tokenInput.Text
-            $tokenEntry.Close()
-        })
-        $tokenEntry.Controls.Add($tokenButton)
+        while (!(test-path "$env:appdata\EchoNavigator\token")) {
+            start-sleep -s 1
+        }
 
-        $tokenEntry.showDialog()
+        if (Test-Path $backupPath) {
+            reg import $backupPath
+            Remove-Item $backupPath
+        }
 
+        $tokenFile = get-content "$env:appdata\EchoNavigator\token"
+        remove-item "$env:appdata\EchoNavigator\token"
+        $frl = UriCallback $tokenFile
 
         $downgradeButton.text = "Downloading..."
         $downgradeButton.Refresh()
@@ -156,7 +205,7 @@ function downgrade {
         $segmentProgress.Value = 0
         $segmentProgress.Refresh()
         try {
-            Invoke-WebRequest -uri "https://securecdn.oculus.com/binaries/download/?id=6323983201049540&access_token=$token&get_manifest=1" -OutFile "$env:temp\manifest.zip"
+            Invoke-WebRequest -uri "https://securecdn.oculus.com/binaries/download/?id=6323983201049540&access_token=$frl&get_manifest=1" -OutFile "$env:temp\manifest.zip"
         } catch {
             [System.Windows.Forms.MessageBox]::show("Failed to start download. This is usually caused by you not owning Echo VR on the account to logged in with, or having no internet.", "Echo Navigator Server Browser","OK", "Error")
             $downgradeButton.text = "Try again"
@@ -183,7 +232,7 @@ function downgrade {
             $bufferSize = 10KB
             foreach ($segment in $manifest.files.$($($manifest.files | get-member).name[$i]).segments) {
                 $targetStream = New-Object -TypeName System.IO.MemoryStream
-                $uri = New-Object "System.Uri" "https://securecdn.oculus.com/binaries/segment/?access_token=$token&binary_id=6323983201049540&segment_sha256=$($segment[1])"
+                $uri = New-Object "System.Uri" "https://securecdn.oculus.com/binaries/segment/?access_token=$frl&binary_id=6323983201049540&segment_sha256=$($segment[1])"
                 $client = New-Object System.Net.Http.HttpClient
                 $response = $client.GetAsync($uri).Result
                 $responseStream = $response.Content.ReadAsStreamAsync().Result
@@ -219,7 +268,7 @@ function downgrade {
                 $segmentsDownloaded = 0
                 foreach ($segment in $manifest.files.$($($manifest.files | get-member).name[$i]).segments) {
                     $targetStream = New-Object -TypeName System.IO.MemoryStream
-                    $uri = New-Object "System.Uri" "https://securecdn.oculus.com/binaries/segment/?access_token=$token&binary_id=6323983201049540&segment_sha256=$($segment[1])"
+                    $uri = New-Object "System.Uri" "https://securecdn.oculus.com/binaries/segment/?access_token=$frl&binary_id=6323983201049540&segment_sha256=$($segment[1])"
                     $client = New-Object System.Net.Http.HttpClient
                     $response = $client.GetAsync($uri).Result
                     $responseStream = $response.Content.ReadAsStreamAsync().Result
@@ -253,7 +302,7 @@ function downgrade {
         }
         $segmentProgress.Visible = $false
         $folderPicker.Visible = $true
-        $token = $null
+        $frl = $null
 
         rmdir "$global:gamepath\..\evr.downloading\Equals" -recurse -force
         rmdir "$global:gamepath\..\evr.downloading\GetHashCode" -recurse -force
