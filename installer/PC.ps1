@@ -139,7 +139,6 @@ function UriCallback {
 }
 
 function downgrade {
-
     $downgradeMenu = new-object System.Windows.Forms.Form
     $downgradeMenu.text = "Downgrader"
     $downgradeMenu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($fileLocation1)
@@ -218,7 +217,7 @@ function downgrade {
         $downgradeButton.Refresh()
 
         $registryPath = "HKCU\SOFTWARE\Classes\oculus"
-        $backupPath = "$env:appdata\EchoNavigator\oculus.reg"
+        $backupPath = "$env:temp\oculus.reg"
 
         if (Test-Path $backupPath) {
             reg import $backupPath
@@ -232,25 +231,25 @@ function downgrade {
         Set-ItemProperty -Path "HKCU:\Software\Classes\Oculus" -Name "URL Protocol" -Value ""
         Set-ItemProperty -Path "HKCU:\Software\Classes\Oculus" -Name "(Default)" -Value "URL:Oculus Protocol"
         New-Item -Path "HKCU:\Software\Classes\Oculus\shell\open\command"
-        Set-ItemProperty -Path "HKCU:\Software\Classes\Oculus\shell\open\command" -Name "(Default)" -Value "`"powershell.exe`" -executionPolicy bypass -windowStyle hidden -file $("$env:appdata\EchoNavigator\setToken.ps1") `%1"
+        Set-ItemProperty -Path "HKCU:\Software\Classes\Oculus\shell\open\command" -Name "(Default)" -Value "`"powershell.exe`" -executionPolicy bypass -windowStyle hidden -file $("$env:temp\setToken.ps1") `%1"
 
-        'param($keys)' | Out-File -FilePath "$env:appdata\EchoNavigator\setToken.ps1"
-        '$keys | Out-File -FilePath "$env:appdata\EchoNavigator\token"' | Out-File -FilePath "$env:appdata\EchoNavigator\setToken.ps1" -Append
-        '[reflection.assembly]::LoadWithPartialName( "System.Windows.Forms")' | Out-File -FilePath "$env:appdata\EchoNavigator\setToken.ps1" -Append
-        '[System.Windows.Forms.Application]::EnableVisualStyles()' | Out-File -FilePath "$env:appdata\EchoNavigator\setToken.ps1" -Append
-        '[System.Windows.Forms.MessageBox]::show("You have successfully logged in. You can close your browser and return to Echo Navigator", "Echo Navigator Downgrader","OK", "Information")' | Out-File -FilePath "$env:appdata\EchoNavigator\setToken.ps1" -Append
+        'param($keys)' | Out-File -FilePath "$env:temp\setToken.ps1"
+        '$keys | Out-File -FilePath "$env:temp\token"' | Out-File -FilePath "$env:temp\setToken.ps1" -Append
+        '[reflection.assembly]::LoadWithPartialName( "System.Windows.Forms")' | Out-File -FilePath "$env:temp\setToken.ps1" -Append
+        '[System.Windows.Forms.Application]::EnableVisualStyles()' | Out-File -FilePath "$env:temp\setToken.ps1" -Append
+        '[System.Windows.Forms.MessageBox]::show("You have successfully logged in. You can close your browser and return to Echo Navigator", "Echo Navigator Downgrader","OK", "Information")' | Out-File -FilePath "$env:temp\setToken.ps1" -Append
 
         Start-Process "$(StartLogin)"
 
         while (1) {
             $startTime = Get-Date
-            while (!(test-path "$env:appdata\EchoNavigator\token") -and ((Get-Date) -lt ($startTime.AddMinutes(1)))) {
+            while (!(test-path "$env:temp\token") -and ((Get-Date) -lt ($startTime.AddMinutes(1)))) {
                 start-sleep -Milliseconds 100
                 $timeRemainingLabel.Visible = $true
                 $timeRemainingLabel.Text = "Time Till Cancel Option: $((($startTime.AddMinutes(1)) - (Get-Date)).Minutes):$((($startTime.AddMinutes(1)) - (Get-Date)).Seconds)"
             }
 
-            if (!(test-path "$env:appdata\EchoNavigator\token")) {
+            if (!(test-path "$env:temp\token")) {
                 $choice = [System.Windows.Forms.MessageBox]::show("Looks like you have been logging in for a while, would you like to cancel the login?", "Echo Navigator Downgrader","YesNo", "Question")
                 if ($choice -eq "Yes") {
                     if (Test-Path $backupPath) {
@@ -270,9 +269,9 @@ function downgrade {
         $timeRemainingLabel.Visible = $false
         $downgradeButton.text = "Logging in..."
 
-        $tokenFile = get-content "$env:appdata\EchoNavigator\token"
-        remove-item "$env:appdata\EchoNavigator\token"
-        remove-item "$env:appdata\EchoNavigator\setToken.ps1"
+        $tokenFile = get-content "$env:temp\token"
+        remove-item "$env:temp\token"
+        remove-item "$env:temp\setToken.ps1"
         $frl = UriCallback $tokenFile
 
         $downgradeButton.text = "Downloading Manifest..."
