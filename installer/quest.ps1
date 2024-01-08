@@ -50,7 +50,7 @@ function install {
     $config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
     Invoke-WebRequest "https://aldin101.github.io/EchoNavigatorAPI/EchoNavigator.exe" -OutFile "$env:appdata\EchoNavigator\EchoNavigator.exe"
     $WshShell = New-Object -comObject WScript.Shell
-    $Shortcut = $WshShell.CreateShortcut("$env:USERPROFILE\Desktop\EchoNavigator.lnk")
+    $Shortcut = $WshShell.CreateShortcut("$env:USERPROFILE\Desktop\Echo Navigator.lnk")
     $Shortcut.TargetPath = "$env:appdata\EchoNavigator\EchoNavigator.exe"
     $Shortcut.Save()
     [system.windows.forms.messagebox]::Show("Echo Navigator installed!`n`nSelect a server to get started!", "Echo Navigator Installer", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Information)
