@@ -753,6 +753,20 @@ if ((get-item -path "$($global:config.gamePath)\bin\win10\EchoNavigator.exe").Ve
     exit
 }
 
+if ($config.quest) {
+    if ((get-item -path $($global:config.quest)).VersionInfo.FileVersion -ne $database.currentVersion) {
+        remove-item "$env:appdata\EchoNavigator\EchoNavigator.exe"
+        Invoke-WebRequest "https://aldin101.github.io/EchoNavigatorAPI/EchoNavigator.exe" -OutFile "$env:appdata\EchoNavigator\EchoNavigator.exe"
+        start-process "$env:appdata\EchoNavigator\EchoNavigator.exe"
+    }
+} else {
+    if ((get-item -path "$($global:config.gamePath)\bin\win10\EchoNavigator.exe").VersionInfo.FileVersion -ne $database.currentVersion) {
+        remove-item "$($global:config.gamePath)\bin\win10\EchoNavigator.exe"
+        Invoke-WebRequest "https://aldin101.github.io/EchoNavigatorAPI/EchoNavigator.exe" -OutFile "$($global:config.gamePath)\bin\win10\EchoNavigator.exe"
+        start-process "$($global:config.gamePath)\bin\win10\EchoNavigator.exe"
+    }
+}
+
 $global:clientselected = $false
 
 $menu = New-Object System.Windows.Forms.Form
