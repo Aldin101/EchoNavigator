@@ -75,13 +75,14 @@ function questPatcher {
     $timeRemainingLabel.Text = "Time Till Cancel Option: 1:00"
     $timeRemainingLabel.Font = "Microsoft Sans Serif,10"
     $timeRemainingLabel.Visible = $false
-    $downgradeMenu.Controls.Add($timeRemainingLabel)
+    $questPatcherMenu.Controls.Add($timeRemainingLabel)
 
     $global:patchEchoVR = New-Object System.Windows.Forms.Button
     $patchEchoVR.Size = New-Object System.Drawing.Size(200, 35)
     $patchEchoVR.Location = New-Object System.Drawing.Point(10, 60)
     $patchEchoVR.Text = "Patch Echo VR"
     $patchEchoVR.add_click({
+        $resetPatcher.visible = $false
         $patchEchoVR.Enabled = $false
         if (!(test-path "$env:appdata\EchoNavigator\setUpFinished.set")) {
 
@@ -133,6 +134,7 @@ function questPatcher {
                         $patchEchoVR.text = "Try again"
                         $patchEchoVR.enabled = $true
                         $timeRemainingLabel.Visible = $false
+                        $resetPatcher.visible = $true
                         return
                     }
                 } else {
@@ -195,6 +197,7 @@ function questPatcher {
                 $patchEchoVR.text = "Try again"
                 $installProgress.Visible = $false
                 $patchEchoVR.enabled = $true
+                $resetPatcher.visible = $true
                 [System.Windows.Forms.MessageBox]::show("The download failed, please try again", "Echo Navigator", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
                 return
             }
@@ -205,6 +208,7 @@ function questPatcher {
 
             Invoke-WebRequest "https://github.com/EchoTools/EchoRewind/releases/download/V.1.0.2/EchoRewind.exe" -OutFile "$env:appdata\EchoNavigator\EchoRewind.exe"
             "setup completed" | set-content "$env:appdata\EchoNavigator\setUpFinished.set"
+            $resetPatcher.enabled = $true
         }
         $patchEchoVR.text = "Patching..."
         $patchEchoVR.Refresh()
@@ -223,6 +227,7 @@ function questPatcher {
                     $patchEchoVR.text = "Try again"
                     $installProgress.Visible = $false
                     $patchEchoVR.enabled = $true
+                    $resetPatcher.visible = $true
                     return
                 }
             } else {
@@ -238,6 +243,7 @@ function questPatcher {
                     $patchEchoVR.text = "Try again"
                     $installProgress.Visible = $false
                     $patchEchoVR.enabled = $true
+                    $resetPatcher.visible = $true
                     return
                 }
             } else {
@@ -252,6 +258,7 @@ function questPatcher {
                     $patchEchoVR.text = "Try again"
                     $installProgress.Visible = $false
                     $patchEchoVR.enabled = $true
+                    $resetPatcher.visible = $true
                     return
                 }
             } else {
@@ -260,7 +267,6 @@ function questPatcher {
         }
         remove-item "$env:appdata\EchoNavigator\r15_goldmaster_store_patched.apk"
         & $adb uninstall com.readyatdawn.r15
-        & $adb push "$env:appdata\EchoNavigator\main.4987566.com.readyatdawn.r15.obb" "/sdcard/Android/obb/com.readyatdawn.r15/main.4987566.com.readyatdawn.r15.obb"
         $exePath = "$env:appdata\EchoNavigator\EchoRewind.exe"
         $apkPath = "$env:appdata\EchoNavigator\r15_goldmaster_store.apk"
         $arguments = "`"$apkPath`""
@@ -281,6 +287,7 @@ function questPatcher {
             $patchEchoVR.text = "Try again"
             $installProgress.Visible = $false
             $patchEchoVR.enabled = $true
+            $resetPatcher.visible = $true
             Remove-Item "$env:appdata\EchoNavigator\config.json"
             Rename-Item "$env:appdata\EchoNavigator\config.json.bak" "$env:appdata\EchoNavigator\config.json"
             return
@@ -289,6 +296,7 @@ function questPatcher {
         Remove-Item "$env:appdata\EchoNavigator\config.json"
         Rename-Item "$env:appdata\EchoNavigator\configbak.json" "$env:appdata\EchoNavigator\config.json"
         & $adb install "$env:appdata\EchoNavigator\r15_goldmaster_store_patched.apk"
+        & $adb push "$env:appdata\EchoNavigator\main.4987566.com.readyatdawn.r15.obb" "/sdcard/Android/obb/com.readyatdawn.r15/main.4987566.com.readyatdawn.r15.obb"
         $questPatcherMenu.Close()
         $global:gamePatched = $true
         $jsonData = @{
@@ -298,6 +306,21 @@ function questPatcher {
         Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
     })
     $questPatcherMenu.Controls.Add($patchEchoVR)
+
+    $global:resetPatcher = New-Object System.Windows.Forms.Button
+    $resetPatcher.Size = New-Object System.Drawing.Size(200, 35)
+    $resetPatcher.Location = New-Object System.Drawing.Point(10, 105)
+    $resetPatcher.Text = "Reset Quest Patcher"
+    $resetPatcher.add_click({
+        Remove-Item "$env:appdata\EchoNavigator\setUpFinished.set"
+        $resetPatcher.enabled = $false
+    })
+    if (test-path "$env:appdata\EchoNavigator\setUpFinished.set") {
+        $resetPatcher.enabled = $true
+    } else {
+        $resetPatcher.enabled = $false
+    }
+    $questPatcherMenu.Controls.Add($resetPatcher)
 
     $questPatcherMenu.showDialog()
 
@@ -853,7 +876,7 @@ if ($config.quest -ne $null) {
 $currentServer = Get-Content "$($global:config.gamePath)\_Local\config.json" | ConvertFrom-Json
 if ($currentServer.apiservice_host -ne "http://62.68.167.123:1234/api") {combatLoungeNotSelected}
 
-$combatGames = Invoke-WebRequest "http://51.75.140.182:3000/api/listGameServers/62.68.167.123"
+$combatGames = Invoke-WebRequest "http://51.75.140.182:3000/api/listGameServers/62.68.167.123" -UseBasicParsing
 $combatGames = $combatGames.content | ConvertFrom-Json
 
 # $combatGames = get-content .\testdata.json | ConvertFrom-Json
@@ -945,11 +968,11 @@ foreach ($gameServer in $combatGames.gameServers) {
     }
     $combatLoungeList.Rows[$i].Cells[2].value = $(pingServer $gameServer.sessionIp)[1]
     if ($combatLoungeList.Rows[$i].Cells[2].value -gt 1000) {
-        $PingServer = Test-Connection -count 1 -ComputerName $gameServer.sessionIP -TimeoutSeconds 1
-        if ($PingServer.Latency -eq 0){
-            $combatLoungeList.Rows[$i].Cells[2].value = "Error"
-        } else {
+        try {
+            $PingServer = Test-Connection -count 1 -ComputerName $gameServer.sessionIP
             $combatLoungeList.Rows[$i].Cells[2].value = $PingServer.Latency
+        } catch {
+            $combatLoungeList.Rows[$i].Cells[2].value = "Error"
         }
     }
     ++$i
@@ -966,7 +989,7 @@ $refreshCombatLounge.add_click({
     $refreshCombatLounge.text = "Refreshing..."
     $refreshCombatLounge.Font = New-Object System.Drawing.Font("Arial", 8)
 
-    $combatGames = Invoke-WebRequest "http://51.75.140.182:3000/api/listGameServers/62.68.167.123"
+    $combatGames = Invoke-WebRequest "http://51.75.140.182:3000/api/listGameServers/62.68.167.123" -UseBasicParsing
     $global:combatGames = $combatGames.content | ConvertFrom-Json
 
     $i=0
@@ -1771,6 +1794,10 @@ $addServer.add_Click({
 })
 
 $otherServers.Controls.Add($addServer)
+
+while ($startdelaystopwatch.Elapsed.TotalSeconds -lt 3) {
+    start-sleep 1
+}
 
 $menu.showDialog()
 if ($global:gameMode) {
