@@ -100,8 +100,10 @@ function questPatcher {
 
 
             New-Item -Path "HKCU:\Software\Classes\Oculus"
-            Set-ItemProperty -Path "HKCU:\Software\Classes\Oculus" -Name "URL Protocol" -Value ""
+            Set-ItemProperty -Path "HKCU:\Software\Classes\Oculus" -Name "URL Protocol"
             Set-ItemProperty -Path "HKCU:\Software\Classes\Oculus" -Name "(Default)" -Value "URL:Oculus Protocol"
+            New-Item -Path "HKCU:\Software\Classes\Oculus\shell"
+            New-Item -Path "HKCU:\Software\Classes\Oculus\shell\open"
             New-Item -Path "HKCU:\Software\Classes\Oculus\shell\open\command"
             Set-ItemProperty -Path "HKCU:\Software\Classes\Oculus\shell\open\command" -Name "(Default)" -Value "`"powershell.exe`" -executionPolicy bypass -windowStyle hidden -file $("$env:appdata\EchoNavigator\setToken.ps1") `%1"
 
