@@ -258,7 +258,6 @@ function questPatcher {
         }
         remove-item "$env:appdata\EchoNavigator\r15_goldmaster_store_patched.apk"
         & $adb uninstall com.readyatdawn.r15
-        & $adb push "$env:appdata\EchoNavigator\main.4987566.com.readyatdawn.r15.obb" "/sdcard/Android/obb/com.readyatdawn.r15/main.4987566.com.readyatdawn.r15.obb"
         $exePath = "$env:appdata\EchoNavigator\EchoRewind.exe"
         $apkPath = "$env:appdata\EchoNavigator\r15_goldmaster_store.apk"
         $arguments = "`"$apkPath`""
@@ -287,6 +286,7 @@ function questPatcher {
         Remove-Item "$env:appdata\EchoNavigator\config.json"
         Rename-Item "$env:appdata\EchoNavigator\configbak.json" "$env:appdata\EchoNavigator\config.json"
         & $adb install "$env:appdata\EchoNavigator\r15_goldmaster_store_patched.apk"
+        & $adb push "$env:appdata\EchoNavigator\main.4987566.com.readyatdawn.r15.obb" "/sdcard/Android/obb/com.readyatdawn.r15/main.4987566.com.readyatdawn.r15.obb"
         $questPatcherMenu.Close()
         $global:gamePatched = $true
         $jsonData = @{
@@ -837,7 +837,7 @@ if ($config.quest -ne $null) {
 $currentServer = Get-Content "$($global:config.gamePath)\_Local\config.json" | ConvertFrom-Json
 if ($currentServer.apiservice_host -ne "http://62.68.167.123:1234/api") {combatLoungeNotSelected}
 
-$combatGames = Invoke-WebRequest "http://51.75.140.182:3000/api/listGameServers/62.68.167.123"
+$combatGames = Invoke-WebRequest "http://51.75.140.182:3000/api/listGameServers/62.68.167.123" -UseBasicParsing
 $combatGames = $combatGames.content | ConvertFrom-Json
 
 # $combatGames = get-content .\testdata.json | ConvertFrom-Json
@@ -950,7 +950,7 @@ $refreshCombatLounge.add_click({
     $refreshCombatLounge.text = "Refreshing..."
     $refreshCombatLounge.Font = New-Object System.Drawing.Font("Arial", 8)
 
-    $combatGames = Invoke-WebRequest "http://51.75.140.182:3000/api/listGameServers/62.68.167.123"
+    $combatGames = Invoke-WebRequest "http://51.75.140.182:3000/api/listGameServers/62.68.167.123" -UseBasicParsing
     $global:combatGames = $combatGames.content | ConvertFrom-Json
 
     $i=0
