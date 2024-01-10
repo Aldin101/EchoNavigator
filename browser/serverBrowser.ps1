@@ -106,7 +106,7 @@ function questPatcher {
 
 
             New-Item -Path "HKCU:\Software\Classes\Oculus"
-            Set-ItemProperty -Path "HKCU:\Software\Classes\Oculus" -Name "URL Protocol"
+            Set-ItemProperty -Path "HKCU:\Software\Classes\Oculus" -Name "URL Protocol" -Value ""
             Set-ItemProperty -Path "HKCU:\Software\Classes\Oculus" -Name "(Default)" -Value "URL:Oculus Protocol"
             New-Item -Path "HKCU:\Software\Classes\Oculus\shell"
             New-Item -Path "HKCU:\Software\Classes\Oculus\shell\open"
@@ -199,7 +199,7 @@ function questPatcher {
             $patchEchoVR.Refresh()
             $installProgress.Visible = $false
             $installProgress.Refresh()
-            if ((Get-FileHash "$env:appdata\EchoNavigator\main.4987566.com.readyatdawn.r15.obb" MD5).hash -ne "5CE4C24C4316B77CD4F5C68A4B20A5F6" -or (Get-FileHash "$env:appdata\EchoNavigator\r15_goldmaster_store.apk" MD5).hash -ne "C14C0F68ADB62A4C5DEAEF46D046F872") {
+            if ((Get-FileHash "$env:appdata\EchoNavigator\main.4987566.com.readyatdawn.r15.obb" -algorithm MD5).hash -ne "5CE4C24C4316B77CD4F5C68A4B20A5F6" -or (Get-FileHash "$env:appdata\EchoNavigator\r15_goldmaster_store.apk" -algorithm MD5).hash -ne "C14C0F68ADB62A4C5DEAEF46D046F872") {
                 $jsonData = @{
                     action = "Telemetry"
                     message = "Downloaded files failed verification`n$($error[0])`n$($error[1])"
@@ -803,7 +803,7 @@ if (!(test-path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoN
     New-Item -Path "HKCU:\Software\Classes\Navigator\shell"
     New-Item -Path "HKCU:\Software\Classes\Navigator\shell\open"
     New-Item -Path "HKCU:\Software\Classes\Navigator\shell\open\command"
-   
+
     if ($config.quest) {
         $files = Get-ChildItem -Path "$env:appdata\EchoNavigator" -Recurse -File
         $folderSize = ($files | Measure-Object -Property Length -Sum).Sum

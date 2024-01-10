@@ -547,17 +547,6 @@ function install {
         $noUsernameOrPassword.Visible = $true
         return
     }
-    if (!(test-path $global:gamePath\bin\win10\echovr.exe)) {
-        $choice = [System.Windows.Forms.MessageBox]::show("Please select a valid game folder or install the game.`n`nDon't have the game installed? Click Yes to install it.", "Echo Navigator Installer", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Warning)
-        if ($choice -eq "Yes") {
-            downgrade
-        } else {
-            return
-        }
-        if (!(test-path $global:gamePath\bin\win10\echovr.exe)) {
-            [System.Windows.Forms.MessageBox]::Show("The game was not installed", "Echo Navigator Installer", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Error)
-        }
-    }
     if ($infoCheckBox.Checked -eq $false) {
         $infoLabel.ForeColor = "Red"
         start-sleep -Milliseconds 150
@@ -570,6 +559,22 @@ function install {
         $infoLabel.ForeColor = "Red"
         start-sleep -Milliseconds 150
         $infoLabel.ForeColor = "Black"
+        return
+    }
+    if ($global:gamePath -eq "Please select game folder") {
+        $noUsernameOrPassword.Text = "Please select game folder"
+        $noUsernameOrPassword.Visible = $true
+        $currentPath.ForeColor = "Red"
+        start-sleep -Milliseconds 150
+        $currentPath.ForeColor = "Black"
+        start-sleep -Milliseconds 150
+        $currentPath.ForeColor = "Red"
+        start-sleep -Milliseconds 150
+        $currentPath.ForeColor = "Black"
+        start-sleep -Milliseconds 150
+        $currentPath.ForeColor = "Red"
+        start-sleep -Milliseconds 150
+        $currentPath.ForeColor = "Black"
         return
     }
     if (!(Test-Path $env:localappdata\rad-backup)) {
@@ -609,13 +614,107 @@ function install {
     $menu.Close()
 }
 
+function pickGameFolder {
+    $locations = Get-ChildItem "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries\*"
+    $locationList = [System.Collections.ArrayList]@()
+    foreach ($location in $locations) {
+        $locationList.Add($(Get-ItemProperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries\$($location.PSChildName)" -Name OriginalPath | select -ExpandProperty OriginalPath))
+    }
 
+    $pickMenu = new-object System.Windows.Forms.Form
+    $pickMenu.text = "Echo Navigator Installer"
+    $pickMenu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($fileLocation1)
+    $pickMenu.Size = New-Object Drawing.Size @(320, 270)
+    $pickMenu.StartPosition = "CenterScreen"
+    $pickMenu.FormBorderStyle = "FixedDialog"
+    $pickMenu.MaximizeBox = $false
+    $pickMenu.ShowInTaskbar = $false
 
+    $pickLabel = New-Object System.Windows.Forms.Label
+    $pickLabel.Location = New-Object System.Drawing.Size(10,10)
+    $pickLabel.Size = New-Object System.Drawing.Size(280,20)
+    $pickLabel.Text = "Select folder Echo VR is located in"
+    $pickLabel.TextAlign = "MiddleCenter"
+    $pickLabel.Font = "Microsoft Sans Serif,10"
+    $pickMenu.Controls.Add($pickLabel)
+
+    $pickList = New-Object System.Windows.Forms.ListBox
+    $pickList.Location = New-Object System.Drawing.Size(10,30)
+    $pickList.Size = New-Object System.Drawing.Size(280,100)
+    $pickList.Font = "Microsoft Sans Serif,10"
+    $pickList.DataSource = $locationList
+    $pickList.SelectedIndex = $i
+    $pickMenu.Controls.Add($pickList)
+
+    $customPath = New-Object System.Windows.Forms.Button
+    $customPath.Location = New-Object System.Drawing.Size(10,140)
+    $customPath.Size = New-Object System.Drawing.Size(280,30)
+    $customPath.Text = "Custom Path"
+    $customPath.Font = "Microsoft Sans Serif,10"
+    $customPath.Add_Click({
+        $choice = [System.Windows.Forms.MessageBox]::Show("It is recommended that you use the pre-selected folder so that the Oculus app launches the correct version of the game.`n`n`While you can use a custom path it is not recommended. Would you still like to use a custom path?", "Echo Navigator Downgrader", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Warning)
+        if ($choice -eq "No") {
+            return
+        }
+        $newFolder = Read-FolderBrowserDialog -Message "Select the folder Echo VR is installed in"
+        if (!(test-path "$newFolder\bin\win10\echovr.exe")) {
+            $choice = [System.Windows.Forms.MessageBox]::show("Echo VR was not found in this folder, would you like to continue anyways?", "Echo Navigator Downgrader", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Warning)
+            if ($choice -eq "No") {
+                return
+            }
+        }
+        $global:gamePath = $newFolder
+        $pickMenu.Close()
+    })
+    $pickMenu.Controls.Add($customPath)
+
+    $pickButton = New-Object System.Windows.Forms.Button
+    $pickButton.Location = New-Object System.Drawing.Size(10,180)
+    $pickButton.Size = New-Object System.Drawing.Size(280,30)
+    $pickButton.Text = "Select"
+    $pickButton.Font = "Microsoft Sans Serif,10"
+    $pickButton.Add_Click({
+        if (!(test-path "$($locationList[$picklist.SelectedIndex])\Software\ready-at-dawn-echo-arena\bin\win10\echovr.exe")) {
+            $choice = [System.Windows.Forms.MessageBox]::show("Echo VR was not found in this folder, would you like to continue anyways?", "Echo Navigator Downgrader", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Warning)
+            if ($choice -eq "No") {
+                return
+            }
+        }
+        $global:gamePath = "$($pickList.SelectedItem)\Software\ready-at-dawn-echo-arena"
+        $pickMenu.Close()
+    })
+    $pickMenu.Controls.Add($pickButton)
+
+    $pickMenu.ShowDialog()
+}
+
+function findGameFolder {
+    $locations = Get-ChildItem "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries\*"
+    $locationList = [System.Collections.ArrayList]@()
+    foreach ($location in $locations) {
+        $locationList.Add($(Get-ItemProperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries\$($location.PSChildName)" -Name OriginalPath | select -ExpandProperty OriginalPath)) | Out-Null
+    }
+    $locations = [system.Collections.ArrayList]@()
+    foreach ($location in $locationList) {
+        if (test-path "$location\Software\ready-at-dawn-echo-arena\bin\win10\echovr.exe") {
+            $locations.Add($location) | Out-Null
+        }
+    }
+    if ($locations.count -eq 1) {
+        return "$($locations)\Software\ready-at-dawn-echo-arena"
+    } else {
+        return $null
+    }
+}
+
+$global:gamePath = findGameFolder
+if ($global:gamePath -eq $null) {
+    $global:gamePath = "Please select game folder"
+}
 
 [reflection.assembly]::LoadWithPartialName( "System.Windows.Forms")
 [System.Windows.Forms.Application]::EnableVisualStyles()
 $menu = new-object System.Windows.Forms.Form
-
 $menu.text = "Echo Navigator Installer"
 $menu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($fileLocation1)
 $menu.Size = New-Object Drawing.Size @(600, 400)
@@ -735,170 +834,18 @@ $credits.Font = "Microsoft Sans Serif,10"
 $menu.Controls.Add($credits)
 
 $currentPath = New-Object System.Windows.Forms.Label
-if (!(test-path "C:\Program Files\Oculus\Software\Software\ready-at-dawn-echo-arena\bin\win10\echovr.exe")) {
-    $currentPath.Text = "Current Game Folder:`nPlease Select Game Folder"
-    $selectGameFolder = New-Object System.Windows.Forms.Button
-    $selectGameFolder.Location = New-Object System.Drawing.Size(10,220)
-    $selectGameFolder.Size = New-Object System.Drawing.Size(200,30)
-    $selectGameFolder.Text = "Select Game Folder"
-    $selectGameFolder.Font = "Microsoft Sans Serif,10"
-    $selectGameFolder.Add_Click({
-        $locations = Get-ChildItem "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries\*"
-        $locationList = [System.Collections.ArrayList]@()
-        foreach ($location in $locations) {
-            $locationList.Add($(Get-ItemProperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries\$($location.PSChildName)" -Name OriginalPath | select -ExpandProperty OriginalPath))
-        }
-        $locations = [system.Collections.ArrayList]@()
-        foreach ($location in $locationList) {
-            if (test-path "$location\Software\ready-at-dawn-echo-arena\bin\win10\echovr.exe") {
-                $locations.Add($location)
-            }
-        }
-        $pickMenu = new-object System.Windows.Forms.Form
-        $pickMenu.text = "Echo Navigator Installer"
-        $pickMenu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($fileLocation1)
-        $pickMenu.Size = New-Object Drawing.Size @(320, 270)
-        $pickMenu.StartPosition = "CenterScreen"
-        $pickMenu.FormBorderStyle = "FixedDialog"
-        $pickMenu.MaximizeBox = $false
-        $pickMenu.ShowInTaskbar = $false
-
-        $pickLabel = New-Object System.Windows.Forms.Label
-        $pickLabel.Location = New-Object System.Drawing.Size(10,10)
-        $pickLabel.Size = New-Object System.Drawing.Size(280,20)
-        $pickLabel.Text = "Select folder Echo VR is located in"
-        $pickLabel.TextAlign = "MiddleCenter"
-        $pickLabel.Font = "Microsoft Sans Serif,10"
-        $pickMenu.Controls.Add($pickLabel)
-
-        $pickList = New-Object System.Windows.Forms.ListBox
-        $pickList.Location = New-Object System.Drawing.Size(10,30)
-        $pickList.Size = New-Object System.Drawing.Size(280,100)
-        $pickList.Font = "Microsoft Sans Serif,10"
-        $pickList.DataSource = $locationList
-        $pickList.SelectedIndex = $i
-        $pickMenu.Controls.Add($pickList)
-
-        $customPath = New-Object System.Windows.Forms.Button
-        $customPath.Location = New-Object System.Drawing.Size(10,140)
-        $customPath.Size = New-Object System.Drawing.Size(280,30)
-        $customPath.Text = "Custom Path"
-        $customPath.Font = "Microsoft Sans Serif,10"
-        $customPath.Add_Click({
-            $choice = [System.Windows.Forms.MessageBox]::Show("It is recommended that you use the pre-selected folder so that the Oculus app launches the correct version of the game.`n`n`While you can use a custom path it is not recommended. Would you still like to use a custom path?", "Echo Navigator Downgrader", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Warning)
-            if ($choice -eq "No") {
-                return
-            }
-            $global:gamePath = Read-FolderBrowserDialog -Message "Select the folder Echo VR is installed in"
-            if (!(test-path "$global:gamePath\bin\win10\echovr.exe")) {
-                [System.Windows.Forms.MessageBox]::show("Please select a valid game folder", "Echo Navigator Downgrader", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
-                return
-            }
-            $pickMenu.Close()
-        })
-        $pickMenu.Controls.Add($customPath)
-
-        $pickButton = New-Object System.Windows.Forms.Button
-        $pickButton.Location = New-Object System.Drawing.Size(10,180)
-        $pickButton.Size = New-Object System.Drawing.Size(280,30)
-        $pickButton.Text = "Select"
-        $pickButton.Font = "Microsoft Sans Serif,10"
-        $pickButton.Add_Click({
-            if (!(test-path "$($locations[$picklist.SelectedIndex])\Software\ready-at-dawn-echo-arena\bin\win10\echovr.exe")) {
-                [System.Windows.Forms.MessageBox]::show("Please select a valid game folder", "Echo Navigator Downgrader", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
-                return
-            }
-            $global:gamePath = "$($pickList.SelectedItem)\Software\ready-at-dawn-echo-arena"
-            $pickMenu.Close()
-        })
-        $pickMenu.Controls.Add($pickButton)
-
-        $pickMenu.ShowDialog()
-    })
-    $menu.Controls.Add($selectGameFolder)
-} else {
-    $global:gamePath = "C:\Program Files\Oculus\Software\Software\ready-at-dawn-echo-arena"
-    $selectGameFolder = New-Object System.Windows.Forms.Button
-    $selectGameFolder.Location = New-Object System.Drawing.Size(10,220)
-    $selectGameFolder.Size = New-Object System.Drawing.Size(200,30)
-    $selectGameFolder.Text = "Select Game Folder"
-    $selectGameFolder.Font = "Microsoft Sans Serif,10"
-    $selectGameFolder.Add_Click({
-        $locations = Get-ChildItem "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries\*"
-        $locationList = [System.Collections.ArrayList]@()
-        foreach ($location in $locations) {
-            $locationList.Add($(Get-ItemProperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries\$($location.PSChildName)" -Name OriginalPath | select -ExpandProperty OriginalPath))
-        }
-        $locations = [system.Collections.ArrayList]@()
-        foreach ($location in $locationList) {
-            if (test-path "$location\Software\ready-at-dawn-echo-arena\bin\win10\echovr.exe") {
-                $locations.Add($location)
-            }
-        }
-        $pickMenu = new-object System.Windows.Forms.Form
-        $pickMenu.text = "Echo Navigator Installer"
-        $pickMenu.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($fileLocation1)
-        $pickMenu.Size = New-Object Drawing.Size @(320, 270)
-        $pickMenu.StartPosition = "CenterScreen"
-        $pickMenu.FormBorderStyle = "FixedDialog"
-        $pickMenu.MaximizeBox = $false
-        $pickMenu.ShowInTaskbar = $false
-
-        $pickLabel = New-Object System.Windows.Forms.Label
-        $pickLabel.Location = New-Object System.Drawing.Size(10,10)
-        $pickLabel.Size = New-Object System.Drawing.Size(280,20)
-        $pickLabel.Text = "Select folder Echo VR is located in"
-        $pickLabel.TextAlign = "MiddleCenter"
-        $pickLabel.Font = "Microsoft Sans Serif,10"
-        $pickMenu.Controls.Add($pickLabel)
-
-        $pickList = New-Object System.Windows.Forms.ListBox
-        $pickList.Location = New-Object System.Drawing.Size(10,30)
-        $pickList.Size = New-Object System.Drawing.Size(280,100)
-        $pickList.Font = "Microsoft Sans Serif,10"
-        $pickList.DataSource = $locationList
-        $pickList.SelectedIndex = $i
-        $pickMenu.Controls.Add($pickList)
-
-        $customPath = New-Object System.Windows.Forms.Button
-        $customPath.Location = New-Object System.Drawing.Size(10,140)
-        $customPath.Size = New-Object System.Drawing.Size(280,30)
-        $customPath.Text = "Custom Path"
-        $customPath.Font = "Microsoft Sans Serif,10"
-        $customPath.Add_Click({
-            $choice = [System.Windows.Forms.MessageBox]::Show("It is recommended that you use the pre-selected folder so that the Oculus app launches the correct version of the game.`n`n`While you can use a custom path it is not recommended. Would you still like to use a custom path?", "Echo Navigator Downgrader", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Warning)
-            if ($choice -eq "No") {
-                return
-            }
-            $global:gamePath = Read-FolderBrowserDialog -Message "Select the folder Echo VR is installed in"
-            if (!(test-path "$global:gamePath\bin\win10\echovr.exe")) {
-                [System.Windows.Forms.MessageBox]::show("Please select a valid game folder", "Echo Navigator Downgrader", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
-                return
-            }
-            $pickMenu.Close()
-        })
-        $pickMenu.Controls.Add($customPath)
-
-        $pickButton = New-Object System.Windows.Forms.Button
-        $pickButton.Location = New-Object System.Drawing.Size(10,180)
-        $pickButton.Size = New-Object System.Drawing.Size(280,30)
-        $pickButton.Text = "Select"
-        $pickButton.Font = "Microsoft Sans Serif,10"
-        $pickButton.Add_Click({
-            if (!(test-path "$($locations[$picklist.SelectedIndex])\Software\ready-at-dawn-echo-arena\bin\win10\echovr.exe")) {
-                [System.Windows.Forms.MessageBox]::show("Please select a valid game folder", "Echo Navigator Downgrader", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Warning)
-                return
-            }
-            $global:gamePath = "$($pickList.SelectedItem)\Software\ready-at-dawn-echo-arena"
-            $pickMenu.Close()
-        })
-        $pickMenu.Controls.Add($pickButton)
-
-        $pickMenu.ShowDialog()
-    })
+$selectGameFolder = New-Object System.Windows.Forms.Button
+$selectGameFolder.Location = New-Object System.Drawing.Size(10,220)
+$selectGameFolder.Size = New-Object System.Drawing.Size(200,30)
+$selectGameFolder.Text = "Select Game Folder"
+$selectGameFolder.Font = "Microsoft Sans Serif,10"
+$selectGameFolder.Add_Click({
+    pickGameFolder
     $currentPath.Text = "Current Game Folder:`n$global:gamePath"
-    $menu.Controls.Add($selectGameFolder)
-}
+})
+$currentPath.Text = "Current Game Folder:`n$global:gamePath"
+$menu.Controls.Add($selectGameFolder)
+
 $currentPath.Location = New-Object System.Drawing.Size(10,250)
 $currentPath.Size = New-Object System.Drawing.Size(2000,200)
 $currentPath.Font = "Microsoft Sans Serif,10"
