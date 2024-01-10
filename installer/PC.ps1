@@ -268,6 +268,12 @@ function downgrade {
                 break
             }
         }
+
+        if (Test-Path $backupPath) {
+            reg import $backupPath
+            Remove-Item $backupPath
+        }
+
         $timeRemainingLabel.Visible = $false
         $downgradeButton.text = "Logging in..."
 
@@ -415,6 +421,7 @@ function downgrade {
         rmdir "$global:gamepath\..\evr.downloading\GetHashCode" -recurse -force
         rmdir "$global:gamepath\..\evr.downloading\GetType" -recurse -force
         rmdir "$global:gamepath\..\evr.downloading\ToString" -recurse -force
+        New-Item "$global:gamepath\..\evr.downloading\_local" -ItemType Directory -Force
         $downgradeButton.text = "Finished!"
         $downgradeButton.Refresh()
         $choice = [System.Windows.Forms.MessageBox]::show("Would you like to delete your old install?", "Echo Navigator Downgrader", [system.windows.forms.messageboxbuttons]::YesNo, [system.windows.forms.messageboxicon]::Question)
@@ -593,6 +600,10 @@ function install {
     $Shortcut = $WshShell.CreateShortcut("$env:USERPROFILE\Desktop\Echo Navigator.lnk")
     $Shortcut.TargetPath = "$global:gamePath\bin\win10\EchoNavigator.exe"
     $Shortcut.Save()
+    if (Test-Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator") {
+        Remove-Item HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Recurse -Force
+        Remove-Item HKCU:\Software\Classes\EchoNavigator -Recurse -Force
+    }
     [system.windows.forms.messagebox]::Show("Echo Navigator installed!`n`nSelect a server to get started!", "Echo Navigator Installer", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Information)
     start-process "$global:gamePath\bin\win10\EchoNavigator.exe"
     $menu.Close()

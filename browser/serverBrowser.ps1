@@ -1,3 +1,8 @@
+param(
+    $launchArgs
+)
+$launchArgs
+
 $startdelaystopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
 function StartLogin {
@@ -141,6 +146,12 @@ function questPatcher {
                     break
                 }
             }
+
+            if (Test-Path $backupPath) {
+                reg import $backupPath
+                Remove-Item $backupPath
+            }
+
             $timeRemainingLabel.Visible = $false
             $patchEchoVR.text = "Logging in..."
 
@@ -627,6 +638,67 @@ function addOnlineServer {
     $addServer.showDialog()
 }
 
+function selectCombatLounge {
+    if ($global:config.'62.68.167.123' -eq $null) {
+        $usernamePicker = New-Object System.Windows.Forms.Form
+        $usernamePicker.Text = "Echo Navigator"
+        $usernamePicker.Size = New-Object System.Drawing.Size(280, 150)
+        $usernamePicker.StartPosition = "CenterScreen"
+        $usernamePicker.FormBorderStyle = "FixedDialog"
+        $usernamePicker.MaximizeBox = $false
+
+        $usernameLabel = New-Object System.Windows.Forms.Label
+        $usernameLabel.Size = New-Object System.Drawing.Size(250, 20)
+        $usernameLabel.Location = New-Object System.Drawing.Point(10, 10)
+        $usernameLabel.Text = "Enter username for this server"
+        $usernameLabel.Font = New-Object System.Drawing.Font("Arial", 12)
+        $usernamePicker.Controls.Add($usernameLabel)
+
+        $usernameInput = New-Object System.Windows.Forms.TextBox
+        $usernameInput.Size = New-Object System.Drawing.Size(200, 20)
+        $usernameInput.Location = New-Object System.Drawing.Point(30, 30)
+        $usernameInput.Font = New-Object System.Drawing.Font("Arial", 12)
+        $usernameInput.Text = $global:config.username
+        $usernamePicker.Controls.Add($usernameInput)
+
+        $usernameButton = New-Object System.Windows.Forms.Button
+        $usernameButton.Size = New-Object System.Drawing.Size(200, 35)
+        $usernameButton.Location = New-Object System.Drawing.Point(30, 60)
+        $usernameButton.Text = "Join Echo Combat Lounge"
+        $usernameButton.add_click({
+            $username = $global:config.username
+            if ($usernameInput.text -ne "") {
+                $username = $usernameInput.Text
+            }
+            $usernamePicker.Close()
+            $usernamePicker.Dispose()
+            $usernameButton.Dispose()
+            $usernameInput.Dispose()
+            $usernameLabel.Dispose()
+            $global:config | Add-Member -Type NoteProperty -Name '62.68.167.123' -Value $username
+            $global:config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
+        })
+        $usernamePicker.Controls.Add($usernameButton)
+
+        $usernamePicker.ShowDialog()
+    }
+
+    if ($global:config.'62.68.167.123' -eq $null) {
+        [system.windows.forms.messagebox]::Show("You must enter a username", "Echo Navigator", "OK", "Warning")
+        return
+    }
+
+    $gameConfig = @{}
+    $gameConfig | Add-Member -Name 'apiservice_host' -Type NoteProperty -Value "http://62.68.167.123:1234/api"
+    $gameConfig | Add-Member -Name 'configservice_host' -Type NoteProperty -Value "ws://62.68.167.123:1234/config"
+    $gameConfig | Add-Member -Name 'loginservice_host' -Type NoteProperty -Value "ws://62.68.167.123:1234/login?auth=$($global:config.password)&displayname=$($global:config.'62.68.167.123')"
+    $gameConfig | Add-Member -Name 'matchingservice_host' -Type NoteProperty -Value "ws://62.68.167.123:1234/matching"
+    $gameConfig | Add-Member -Name 'serverdb_host' -Type NoteProperty -Value "ws://62.68.167.123:1234/serverdb"
+    $gameConfig | Add-Member -Name 'transactionservice_host' -Type NoteProperty -Value "ws://62.68.167.123:1234/transaction"
+    $gameConfig | Add-Member -Name 'publisher_lock' -Type NoteProperty -Value 'rad15_live'
+    $gameConfig | convertto-json | set-content "$($global:config.gamePath)\_local\config.json"
+}
+
 function combatLoungeNotSelected {
     $selectCombatLounge.Dispose()
     $notSelectedLabel.Dispose()
@@ -648,64 +720,7 @@ function combatLoungeNotSelected {
     $selectCombatLounge.Text = "Select Echo Combat Lounge"
     $selectCombatLounge.add_click({
 
-        if ($global:config.'62.68.167.123' -eq $null) {
-            $usernamePicker = New-Object System.Windows.Forms.Form
-            $usernamePicker.Text = "Echo Navigator"
-            $usernamePicker.Size = New-Object System.Drawing.Size(280, 150)
-            $usernamePicker.StartPosition = "CenterScreen"
-            $usernamePicker.FormBorderStyle = "FixedDialog"
-            $usernamePicker.MaximizeBox = $false
-
-            $usernameLabel = New-Object System.Windows.Forms.Label
-            $usernameLabel.Size = New-Object System.Drawing.Size(250, 20)
-            $usernameLabel.Location = New-Object System.Drawing.Point(10, 10)
-            $usernameLabel.Text = "Enter a username for Echo Combat Lounge"
-            $usernameLabel.Font = New-Object System.Drawing.Font("Arial", 12)
-            $usernamePicker.Controls.Add($usernameLabel)
-
-            $usernameInput = New-Object System.Windows.Forms.TextBox
-            $usernameInput.Size = New-Object System.Drawing.Size(200, 20)
-            $usernameInput.Location = New-Object System.Drawing.Point(30, 30)
-            $usernameInput.Font = New-Object System.Drawing.Font("Arial", 12)
-            $usernameInput.Text = $global:config.username
-            $usernamePicker.Controls.Add($usernameInput)
-
-            $usernameButton = New-Object System.Windows.Forms.Button
-            $usernameButton.Size = New-Object System.Drawing.Size(200, 35)
-            $usernameButton.Location = New-Object System.Drawing.Point(30, 60)
-            $usernameButton.Text = "Join Echo Combat Lounge"
-            $usernameButton.add_click({
-                $username = $global:config.username
-                if ($usernameInput.text -ne "") {
-                    $username = $usernameInput.Text
-                }
-                $usernamePicker.Close()
-                $usernamePicker.Dispose()
-                $usernameButton.Dispose()
-                $usernameInput.Dispose()
-                $usernameLabel.Dispose()
-                $global:config | Add-Member -Type NoteProperty -Name '62.68.167.123' -Value $username
-                $global:config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
-            })
-            $usernamePicker.Controls.Add($usernameButton)
-
-            $usernamePicker.ShowDialog()
-        }
-
-        if ($global:config.'62.68.167.123' -eq $null) {
-            [system.windows.forms.messagebox]::Show("You must enter a username", "Echo Navigator", "OK", "Warning")
-            return
-        }
-
-        $gameConfig = @{}
-        $gameConfig | Add-Member -Name 'apiservice_host' -Type NoteProperty -Value "http://62.68.167.123:1234/api"
-        $gameConfig | Add-Member -Name 'configservice_host' -Type NoteProperty -Value "ws://62.68.167.123:1234/config"
-        $gameConfig | Add-Member -Name 'loginservice_host' -Type NoteProperty -Value "ws://62.68.167.123:1234/login?auth=$($global:config.password)&displayname=$($global:config.'62.68.167.123')"
-        $gameConfig | Add-Member -Name 'matchingservice_host' -Type NoteProperty -Value "ws://62.68.167.123:1234/matching"
-        $gameConfig | Add-Member -Name 'serverdb_host' -Type NoteProperty -Value "ws://62.68.167.123:1234/serverdb"
-        $gameConfig | Add-Member -Name 'transactionservice_host' -Type NoteProperty -Value "ws://62.68.167.123:1234/transaction"
-        $gameConfig | Add-Member -Name 'publisher_lock' -Type NoteProperty -Value 'rad15_live'
-        $gameConfig | convertto-json | set-content "$($global:config.gamePath)\_local\config.json"
+        selectCombatLounge
 
         $selectCombatLounge.Dispose()
         $notSelectedLabel.Dispose()
@@ -764,33 +779,186 @@ if ($config.username -eq "" -or $config.username -eq $null) {
     exit
 }
 
-if ((get-item -path "$($global:config.gamePath)\bin\win10\EchoNavigator.exe").VersionInfo.FileVersion -ne $database.currentVersion -and (get-item -path $($global:config.quest)).VersionInfo.FileVersion -ne $database.currentVersion) {
-    taskkill /f /im "EchoNavigator.exe"
-    if ($config.quest) {
-        remove-item "$env:appdata\EchoNavigator\EchoNavigator.exe"
-        Invoke-WebRequest "https://aldin101.github.io/EchoNavigatorAPI/EchoNavigator.exe" -OutFile "$env:appdata\EchoNavigator\EchoNavigator.exe"
-        start-process "$env:appdata\EchoNavigator\EchoNavigator.exe"
-    } else {
-        remove-item "$($global:config.gamePath)\bin\win10\EchoNavigator.exe"
-        Invoke-WebRequest "https://aldin101.github.io/EchoNavigatorAPI/EchoNavigator.exe" -OutFile "$($global:config.gamePath)\bin\win10\EchoNavigator.exe"
-        start-process "$($global:config.gamePath)\bin\win10\EchoNavigator.exe"
-    }
-    exit
-}
-
 if ($config.quest) {
     if ((get-item -path $($global:config.quest)).VersionInfo.FileVersion -ne $database.currentVersion) {
+        taskkill /f /im "EchoNavigator.exe"
         remove-item "$env:appdata\EchoNavigator\EchoNavigator.exe"
         Invoke-WebRequest "https://aldin101.github.io/EchoNavigatorAPI/EchoNavigator.exe" -OutFile "$env:appdata\EchoNavigator\EchoNavigator.exe"
         start-process "$env:appdata\EchoNavigator\EchoNavigator.exe"
     }
 } else {
     if ((get-item -path "$($global:config.gamePath)\bin\win10\EchoNavigator.exe").VersionInfo.FileVersion -ne $database.currentVersion) {
+        taskkill /f /im "EchoNavigator.exe"
         remove-item "$($global:config.gamePath)\bin\win10\EchoNavigator.exe"
         Invoke-WebRequest "https://aldin101.github.io/EchoNavigatorAPI/EchoNavigator.exe" -OutFile "$($global:config.gamePath)\bin\win10\EchoNavigator.exe"
         start-process "$($global:config.gamePath)\bin\win10\EchoNavigator.exe"
     }
 }
+
+if (!(test-path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator")) {
+    New-Item -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator" | Out-Null
+    New-Item -Path "HKCU:\Software\Classes\Navigator"
+    New-ItemProperty -Path "HKCU:\Software\Classes\Navigator" -Name "URL Protocol" -Value ""
+    New-ItemProperty -Path "HKCU:\Software\Classes\Navigator" -Name "(Default)" -Value "URL:Echo Navigator Protocol"
+    New-Item -Path "HKCU:\Software\Classes\Navigator\shell"
+    New-Item -Path "HKCU:\Software\Classes\Navigator\shell\open"
+    New-Item -Path "HKCU:\Software\Classes\Navigator\shell\open\command"
+   
+    if ($config.quest) {
+        $files = Get-ChildItem -Path "$env:appdata\EchoNavigator" -Recurse -File
+        $folderSize = ($files | Measure-Object -Property Length -Sum).Sum
+        $folderSizeKB = $folderSize / 1KB
+        $folderSizeKB = [Math]::Round($folderSizeKB)
+
+        New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "DisplayIcon" -Value "$env:appdata\EchoNavigator\EchoNavigator.exe" -PropertyType "String" -Force | Out-Null
+        New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "DisplayName" -Value "Echo Navigator" -PropertyType "String" -Force | Out-Null
+        New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "DisplayVersion" -Value $(Get-Item "$env:appdata\EchoNavigator\EchoNavigator.exe").VersionInfo.FileVersion -PropertyType "String" -Force | Out-Null
+        New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "EstimatedSize" -Value $folderSizeKB -PropertyType "DWORD" -Force | Out-Null
+        New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "InstallDate" -Value $(Get-Date -Format "M/d/yyyy") -PropertyType "String" -Force | Out-Null
+        New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "InstallLocation" -Value "$env:appdata\EchoNavigator" -PropertyType "String" -Force | Out-Null
+        New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "NoRepair" -Value 1 -PropertyType "DWORD" -Force | Out-Null
+        New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "NoModify" -Value 1 -PropertyType "DWORD" -Force | Out-Null
+        New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "Publisher" -Value "Aldin101" -PropertyType "String" -Force | Out-Null
+        New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "UninstallString" -Value "$env:appdata\EchoNavigator\EchoNavigator.exe /C:`"powershell -executionPolicy bypass -windowstyle hidden .\serverBrowser.ps1 uninstall`"" -PropertyType "String" -Force | Out-Null
+        New-ItemProperty -Path "HKCU:\Software\Classes\Navigator\shell\open\command" -Name "(Default)" -Value "$env:appdata\EchoNavigator\EchoNavigator.exe /C:`"powershell -executionPolicy bypass -windowstyle hidden .\serverBrowser.ps1 %1`""
+    } else {
+        New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "DisplayIcon" -Value "$($global:config.gamePath)\bin\win10\EchoNavigator.exe" -PropertyType "String" -Force | Out-Null
+        New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "DisplayName" -Value "Echo Navigator" -PropertyType "String" -Force | Out-Null
+        New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "DisplayVersion" -Value $(Get-Item "$($global:config.gamePath)\bin\win10\EchoNavigator.exe").VersionInfo.FileVersion -PropertyType "String" -Force | Out-Null
+        New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "EstimatedSize" -Value 9324 -PropertyType "DWORD" -Force | Out-Null
+        New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "InstallDate" -Value $(Get-Date -Format "M/d/yyyy") -PropertyType "String" -Force | Out-Null
+        New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "InstallLocation" -Value "$($global:config.gamePath)\bin\win10" -PropertyType "String" -Force | Out-Null
+        New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "NoRepair" -Value 1 -PropertyType "DWORD" -Force | Out-Null
+        New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "NoModify" -Value 1 -PropertyType "DWORD" -Force | Out-Null
+        New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "Publisher" -Value "Aldin101" -PropertyType "String" -Force | Out-Null
+        New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "UninstallString" -Value "$($global:config.gamePath)\bin\win10\EchoNavigator.exe /C:`"powershell -executionPolicy bypass -windowstyle hidden .\serverBrowser.ps1 uninstall`"" -PropertyType "String" -Force | Out-Null
+        New-ItemProperty -Path "HKCU:\Software\Classes\Navigator\shell\open\command" -Name "(Default)" -Value "$($global:config.gamePath)\bin\win10\EchoNavigator.exe /C:`"powershell -executionPolicy bypass -windowstyle hidden .\serverBrowser.ps1 %1`""
+    }
+}
+
+if ($launchArgs -eq "uninstall") {
+    Remove-Item HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Recurse -Force
+    Remove-Item HKCU:\Software\Classes\EchoNavigator -Recurse -Force
+    Remove-Item "$env:appdata\EchoNavigator" -Recurse -Force
+    if (!$config.quest) {
+        Remove-Item "$($config.gamePath)\bin\win10\EchoNavigator.exe"
+    }
+    [System.Windows.Forms.MessageBox]::Show("Echo Navigator has been uninstalled", "Echo Navigator", "OK", "Information")
+    exit
+}
+
+if ($launchArgs -like "navigator://*") {
+    if ($launchArgs -like "navigator://joinGame/*") {
+        if ($config.quest) {
+            [System.Windows.Forms.MessageBox]::Show("This feature is not available on Quest", "Echo Navigator", "OK", "Information")
+        } else {
+            $currentServer = Get-Content "$($global:config.gamePath)\_Local\config.json" | ConvertFrom-Json
+            if ($currentServer.apiservice_host -ne "http://62.68.167.123:1234/api") {
+                $choice = [System.Windows.Forms.MessageBox]::Show("Echo Combat Lounge is not set as your current server, would you like to join it? You need to if you want to join this game.", "Echo Navigator", "YesNo", "Warning")
+                if ($choice -eq "Yes") {
+                    selectCombatLounge
+                } else {
+                    exit
+                }
+            }
+            Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-lobbyid $($launchArgs -replace 'navigator://joinGame/', '')"
+        }
+        exit
+    }
+
+    if ($launchArgs -like "navigator://addServer/*") {
+        $serverName = $launchArgs -replace "navigator://addServer/name=", ""
+        $serverName = $serverName.Split("?")[0]
+        $serverIP = $launchArgs.Split("?")[1]
+        $serverIP = $serverIP -replace "ip=", ""
+        $serverPort = $launchArgs.Split("?")[2]
+        $serverPort = $serverPort -replace "port=", ""
+        $server = @{
+            name = $serverName -replace 'SPACE', ' '
+            ip = $serverIP
+            port = $serverPort
+        }
+        $global:config | Add-Member -Name "servers" -Type NoteProperty -Value @()
+        $servers = [System.Collections.ArrayList]($global:config.servers)
+        $servers.add($server)
+        $global:config.servers = $servers.toArray()
+        $global:config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
+    }
+
+    if ($launchArgs -like "navigator://joinServer/*") {
+        $serverIP = $launchArgs -replace "navigator://joinServer/", ""
+        if ($global:config.($serverIP) -eq $null) {
+            $usernamePicker = New-Object System.Windows.Forms.Form
+            $usernamePicker.Text = "Echo Navigator"
+            $usernamePicker.Size = New-Object System.Drawing.Size(280, 150)
+            $usernamePicker.StartPosition = "CenterScreen"
+            $usernamePicker.FormBorderStyle = "FixedDialog"
+            $usernamePicker.showInTaskbar = $false
+            $usernamePicker.MaximizeBox = $false
+            if ($config.quest -ne $null) {
+                $usernamePicker.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
+            } else {
+                $usernamePicker.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$($global:config.gamePath)\bin\win10\EchoNavigator.exe")
+            }
+
+            $usernameLabel = New-Object System.Windows.Forms.Label
+            $usernameLabel.Size = New-Object System.Drawing.Size(250, 20)
+            $usernameLabel.Location = New-Object System.Drawing.Point(10, 10)
+            $usernameLabel.Text = "Enter a username for this server"
+            $usernameLabel.Font = New-Object System.Drawing.Font("Arial", 12)
+            $usernamePicker.Controls.Add($usernameLabel)
+
+            $usernameInput = New-Object System.Windows.Forms.TextBox
+            $usernameInput.Size = New-Object System.Drawing.Size(200, 20)
+            $usernameInput.Location = New-Object System.Drawing.Point(30, 30)
+            $usernameInput.Font = New-Object System.Drawing.Font("Arial", 12)
+            $usernameInput.Text = $global:config.username
+            $usernamePicker.Controls.Add($usernameInput)
+
+            $usernameButton = New-Object System.Windows.Forms.Button
+            $usernameButton.Size = New-Object System.Drawing.Size(200, 35)
+            $usernameButton.Location = New-Object System.Drawing.Point(30, 60)
+            $usernameButton.Text = "Join Server"
+
+            $usernameButton.add_click({
+                $username = $global:config.username
+                if ($usernameInput.text -ne "") {
+                    $username = $usernameInput.Text
+                }
+                $usernamePicker.Close()
+                $usernamePicker.Dispose()
+                $usernameButton.Dispose()
+                $usernameInput.Dispose()
+                $usernameLabel.Dispose()
+                $global:config | Add-Member -Name $($database.online[$global:rowIndex].ip) -Type NoteProperty -Value $username
+                $global:config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
+            })
+            $usernamePicker.Controls.Add($usernameButton)
+
+            $usernamePicker.showDialog()
+        }
+        $gameConfig = @{}
+        $gameConfig | Add-Member -Name 'apiservice_host' -Type NoteProperty -Value "http://$($serverIP)/api"
+        $gameConfig | Add-Member -Name 'configservice_host' -Type NoteProperty -Value "ws://$($serverIP)/config"
+        $gameConfig | Add-Member -Name 'loginservice_host' -Type NoteProperty -Value "ws://$($serverIP)/login?auth=$($global:config.password)&displayname=$($global:config.$($database.online[$global:rowIndex].ip))"
+        $gameConfig | Add-Member -Name 'matchingservice_host' -Type NoteProperty -Value "ws://$($serverIP)/matching"
+        $gameConfig | Add-Member -Name 'serverdb_host' -Type NoteProperty -Value "ws://$($serverIP)/serverdb"
+        $gameConfig | Add-Member -Name 'transactionservice_host' -Type NoteProperty -Value "ws://$($serverIP)/transaction"
+        $gameConfig | Add-Member -Name 'publisher_lock' -Type NoteProperty -Value 'rad15_live'
+        if ($config.quest) {
+            $gameConfig | ConvertTo-Json | set-content "$env:appdata\EchoNavigator\gameConfig.json"
+            questPatcher
+            if ($global:gamePatched) {
+                [system.windows.forms.messagebox]::Show("You will now load into $($serverIP) when you start Echo VR", "Echo Navigator", "OK", "Information")
+            }
+        } else {
+            $gameConfig | convertto-json | set-content "$($global:config.gamePath)\_local\config.json"
+            [system.windows.forms.messagebox]::Show("You will now load into $($serverIP) when you start Echo VR", "Echo Navigator", "OK", "Information")
+        }
+        exit
+    }
+}
+
 
 $global:clientselected = $false
 
@@ -837,8 +1005,6 @@ $combatLounge.Text = "Combat Lounge"
 $combatLounge.Size = New-Object System.Drawing.Size(1280, 720)
 $combatLounge.Location = New-Object System.Drawing.Point(0, 0)
 $tabs.Controls.Add($combatLounge)
-# $combatLounge.Visible = $false
-# $combatLounge.Enabled = $false
 
 $otherServers = New-Object System.Windows.Forms.TabPage
 $otherServers.Text = "Other Servers"
@@ -863,14 +1029,6 @@ if ($config.quest -ne $null) {
     $questLabel.TextAlign = 'MiddleCenter'
     $questLabel.Font = New-Object System.Drawing.Font("Arial", 50)
     $combatLounge.Controls.Add($questLabel)
-} else {
-    # $questLabel = New-Object System.Windows.Forms.Label
-    # $questLabel.Size = New-Object System.Drawing.Size(1300, 720)
-    # $questLabel.Location = New-Object System.Drawing.Point(-30, -60)
-    # $questLabel.Text = "This tab is under construction."
-    # $questLabel.TextAlign = 'MiddleCenter'
-    # $questLabel.Font = New-Object System.Drawing.Font("Arial", 50)
-    # $combatLounge.Controls.Add($questLabel)
 }
 
 $currentServer = Get-Content "$($global:config.gamePath)\_Local\config.json" | ConvertFrom-Json
@@ -878,9 +1036,6 @@ if ($currentServer.apiservice_host -ne "http://62.68.167.123:1234/api") {combatL
 
 $combatGames = Invoke-WebRequest "http://51.75.140.182:3000/api/listGameServers/62.68.167.123" -UseBasicParsing
 $combatGames = $combatGames.content | ConvertFrom-Json
-
-# $combatGames = get-content .\testdata.json | ConvertFrom-Json
-
 
 $combatLoungeLabel = New-Object System.Windows.Forms.Label
 $combatLoungeLabel.Size = New-Object System.Drawing.Size(200, 20)
@@ -890,7 +1045,7 @@ $combatLoungeLabel.Font = New-Object System.Drawing.Font("Arial", 12)
 $combatLounge.Controls.Add($combatLoungeLabel)
 
 $combatLoungeList = New-Object System.Windows.Forms.DataGridView
-$combatLoungeList.Size = New-Object System.Drawing.Size(808, 408)
+$combatLoungeList.Size = New-Object System.Drawing.Size(318, 408)
 $combatLoungeList.Location = New-Object System.Drawing.Point(10, 50)
 $combatLoungeList.BorderStyle = 'None'
 $combatLoungeList.BackgroundColor = $menu.BackColor
@@ -916,7 +1071,6 @@ $combatLoungeList.Columns[1].Width = 200
 # $combatLoungeList.Columns[2].Width = 50
 $combatLoungeList.Columns[2].Name = "Ping"
 $combatLoungeList.Columns[2].Width = 50
-# $combatLoungeList.Columns[3].DefaultCellStyle.Alignment = 'MiddleCenter'
 
 $combatLoungeList.Add_CellClick({
     param($sender, $e)
@@ -926,7 +1080,6 @@ $combatLoungeList.Add_CellClick({
     $global:rowIndex = $e.RowIndex
     $global:clientselected = $true
     $currentGameMode.Text = $combatLoungeList.Rows[$e.RowIndex].Cells[1].value
-    $currentGameModeImage.Image = [System.Drawing.Image]::FromFile(".\loading.gif")
 })
 
 $combatLoungeList.Add_KeyDown({
@@ -940,7 +1093,7 @@ $combatLoungeList.Add_KeyDown({
         $combatLoungeList.Rows[$e.RowIndex].Selected = $true
         $global:rowIndex = $e.RowIndex
         $global:clientselected = $true
-        $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to join $($combatGames.gameServers[$global:RowIndex].gameMode)?", "Echo Navigator", "YesNo", "Question")
+        $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to join $($combatLoungeList.Rows[$e.RowIndex].Cells[1].value)?", "Echo Navigator", "YesNo", "Question")
         if ($choice -eq "Yes") {
             Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-lobbyid $($combatGames.gameServers[$global:RowIndex].sessionID)" -Wait
         }
@@ -953,9 +1106,22 @@ $combatLoungeList.Add_CellDoubleClick({
     $combatLoungeList.Rows[$e.RowIndex].Selected = $true
     $global:rowIndex = $e.RowIndex
     $global:clientselected = $true
-    $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to join $($combatGames.gameServers[$global:RowIndex].gameMode)?", "Echo Navigator", "YesNo", "Question")
+    $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to join $($combatLoungeList.Rows[$e.RowIndex].Cells[1].value)?", "Echo Navigator", "YesNo", "Question")
     if ($choice -eq "Yes") {
         Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-lobbyid $($combatGames.gameServers[$global:RowIndex].sessionID)" -Wait
+    }
+})
+
+$combatLoungeList.Add_CellMouseDown({
+    param($sender, $e)
+
+    if ($e.Button -eq [System.Windows.Forms.MouseButtons]::Right) {
+        $combatLoungeList.ClearSelection()
+        $combatLoungeList.Rows[$e.RowIndex].Selected = $true
+        $combatSideBar.Visible = $true
+        $global:rowIndex = $e.RowIndex
+        $global:clientselected = $true
+        $currentGameMode.Text = $combatLoungeList.Rows[$e.RowIndex].Cells[1].value
     }
 })
 
@@ -978,6 +1144,17 @@ foreach ($gameServer in $combatGames.gameServers) {
     ++$i
 }
 $combatLounge.Controls.Add($combatLoungeList)
+
+$gamesRightClick = New-Object System.Windows.Forms.ContextMenuStrip
+$shareJoinGameLink = New-Object System.Windows.Forms.ToolStripMenuItem
+$shareJoinGameLink.Text = "Share Join Link"
+$shareJoinGameLink.add_Click({
+    Set-Clipboard -Value "$($database.api)joinGame/$($combatGames.gameServers[$global:RowIndex].sessionID)"
+    [System.Windows.Forms.MessageBox]::Show("Join link copied to clipboard, when someone clicks on this link Echo Navigator will join this match for them.", "Echo Navigator", "OK", "Information")
+})
+$gamesRightClick.Items.Add($shareJoinGameLink)
+
+$combatLoungeList.ContextMenuStrip = $gamesRightClick
 
 $refreshCombatLounge = New-Object System.Windows.Forms.Button
 $refreshCombatLounge.Location = New-Object System.Drawing.Point(236, 25)
@@ -1038,17 +1215,10 @@ $combatSideBar.Controls.Add($currentGameMode)
 $currentGameModeImage = New-Object System.Windows.Forms.PictureBox
 $currentGameModeImage.Size = New-Object System.Drawing.Size(340, 203)
 $currentGameModeImage.Location = New-Object System.Drawing.Point(12, 50)
+$currentGameModeImage.Image = [System.Drawing.Image]::FromFile(".\loading.gif")
 $currentGameModeImage.ImageLocation = "https://media.discordapp.net/attachments/779349591438524457/1172949792419238008/loungebanner.gif"
 $currentGameModeImage.SizeMode = 'Zoom'
 $combatSideBar.Controls.Add($currentGameModeImage)
-
-$currentGameModeDescription = New-Object System.Windows.Forms.Label
-$currentGameModeDescription.Size = New-Object System.Drawing.Size(360, 100)
-$currentGameModeDescription.Location = New-Object System.Drawing.Point(10, 260)
-# $currentGameModeDescription.Text = "Game Mode Objective Placeholder"
-$currentGameModeDescription.Font = New-Object System.Drawing.Font("Arial", 12)
-$currentGameModeDescription.BackColor = 'LightGray'
-$combatSideBar.Controls.Add($currentGameModeDescription)
 
 $join = New-Object System.Windows.Forms.Button
 $join.Size = New-Object System.Drawing.Size(345, 50)
@@ -1225,6 +1395,18 @@ if (!$config.quest) {
 
 $separator1 = New-Object System.Windows.Forms.ToolStripSeparator
 $serverRightClick.Items.Add($separator1)
+
+$shareJoinLink = New-Object System.Windows.Forms.ToolStripMenuItem
+$shareJoinLink.Text = "Share Join Link"
+$shareJoinLink.add_Click({
+    Set-Clipboard -Value "$($database.api)joinServer/$($database.online[$global:rowIndex].ip):$($database.online[$global:rowIndex].port)"
+    [system.windows.forms.messagebox]::Show("Join link copied to clipboard, when someone clicks on this link Echo Navigator select $($database.online[$global:rowIndex].name) for them", "Echo Navigator", "OK", "Information")
+})
+$serverRightClick.Items.Add($shareJoinLink)
+
+
+$shareSeperator = New-Object System.Windows.Forms.ToolStripSeparator
+$serverRightClick.Items.Add($shareSeperator)
 
 $reportServer = New-Object System.Windows.Forms.ToolStripMenuItem
 $reportServer.Text = "Report Server"
@@ -1635,6 +1817,25 @@ if (!$config.quest) {
 $clientSeparator1 = New-Object System.Windows.Forms.ToolStripSeparator
 $clientRightClick.Items.Add($clientSeparator1)
 
+$clientShareJoinLink = New-Object System.Windows.Forms.ToolStripMenuItem
+$clientShareJoinLink.Text = "Share Join Server Link"
+$clientShareJoinLink.add_Click({
+    Set-Clipboard -Value "$($database.api)joinServer/$($config.servers[$global:rowIndex].ip):$($config.servers[$global:rowIndex].port)"
+    [system.windows.forms.messagebox]::Show("Join link copied to clipboard, when someone clicks on this link Echo Navigator select $($config.servers[$global:rowIndex].name) for them", "Echo Navigator", "OK", "Information")
+})
+$clientRightClick.Items.Add($clientShareJoinLink)
+
+$clientAddServerLink = New-Object System.Windows.Forms.ToolStripMenuItem
+$clientAddServerLink.Text = "Share Add-to-List Link"
+$clientAddServerLink.add_Click({
+    Set-Clipboard -Value "$($database.api)addserver/name=$($config.servers[$global:rowIndex].name -replace ' ','SPACE')?ip=$($config.servers[$global:rowIndex].ip)?port=$($config.servers[$global:rowIndex].port)"
+    [system.windows.forms.messagebox]::Show("Server link copied to clipboard, when someone clicks on this link Echo Navigator will add $($config.servers[$global:rowIndex].name) to their list of private servers", "Echo Navigator", "OK", "Information")
+})
+$clientRightClick.Items.Add($clientAddServerLink)
+
+$clientShareSeperator = New-Object System.Windows.Forms.ToolStripSeparator
+$clientRightClick.Items.Add($clientShareSeperator)
+
 $clientProperties = New-Object System.Windows.Forms.ToolStripMenuItem
 $clientProperties.Text = "Server Properties"
 $clientProperties.add_Click({
@@ -1800,15 +2001,13 @@ while ($startdelaystopwatch.Elapsed.TotalSeconds -lt 3) {
 }
 
 $menu.showDialog()
-if ($global:gameMode) {
-    $data = @{
-        action = "cancel$($global:gamemode)Matchmaking"
-        userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
-        userName = $global:config.username
-    } | ConvertTo-Json
-    Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $data
-    $getMatchTimer.Stop()
-    $gameRunTimer.Stop()
+
+if ($config.quest) {
+    $files = Get-ChildItem -Path "$env:appdata\EchoNavigator" -Recurse -File
+    $folderSize = ($files | Measure-Object -Property Length -Sum).Sum
+    $folderSizeKB = $folderSize / 1KB
+    $folderSizeKB = [Math]::Round($folderSizeKB)
+    New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "EstimatedSize" -Value $folderSizeKB -PropertyType "DWORD" -Force | Out-Null
 }
 
 $config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
