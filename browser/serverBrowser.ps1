@@ -785,6 +785,7 @@ if ($config.quest) {
         remove-item "$env:appdata\EchoNavigator\EchoNavigator.exe"
         Invoke-WebRequest "https://aldin101.github.io/EchoNavigatorAPI/EchoNavigator.exe" -OutFile "$env:appdata\EchoNavigator\EchoNavigator.exe"
         start-process "$env:appdata\EchoNavigator\EchoNavigator.exe"
+        exit
     }
 } else {
     if ((get-item -path "$($global:config.gamePath)\bin\win10\EchoNavigator.exe").VersionInfo.FileVersion -ne $database.currentVersion) {
@@ -792,6 +793,7 @@ if ($config.quest) {
         remove-item "$($global:config.gamePath)\bin\win10\EchoNavigator.exe"
         Invoke-WebRequest "https://aldin101.github.io/EchoNavigatorAPI/EchoNavigator.exe" -OutFile "$($global:config.gamePath)\bin\win10\EchoNavigator.exe"
         start-process "$($global:config.gamePath)\bin\win10\EchoNavigator.exe"
+        exit
     }
 }
 
