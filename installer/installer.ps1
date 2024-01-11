@@ -2,7 +2,7 @@ $ProgressPreference = 'SilentlyContinue'
 [reflection.assembly]::LoadWithPartialName( "System.Windows.Forms")
 [System.Windows.Forms.Application]::EnableVisualStyles()
 $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
-start-sleep -Seconds 3
+
 $fileLocation = Get-CimInstance Win32_Process -Filter "name = 'Echo Navigator Installer.exe'" -ErrorAction SilentlyContinue
 if ($fileLocation -eq $null) {
     $fileLocation = Get-CimInstance Win32_Process -Filter "name = 'EchoNavigatorInstaller.exe'" -ErrorAction SilentlyContinue

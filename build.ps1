@@ -12,12 +12,12 @@ $quest | convertto-json | set-content .\installer\quest.json
 
 New-Item -ItemType Directory -Force -Path .\package
 Copy-Item .\installer\installer.ps1 .\package\installer.ps1
-Compress-Archive -Path .\package\* -DestinationPath .\installer.zip
+Compress-Archive -Path .\package\* -DestinationPath .\installer.zip -Force
 
 remove-item -Path .\package\installer.ps1
 
 Copy-Item .\browser\serverBrowser.ps1 .\package\serverBrowser.ps1
 Copy-Item .\browser\loading.gif .\package\loading.gif
-Compress-Archive -Path .\package\* -DestinationPath .\browser.zip
+Compress-Archive -Path .\package\* -DestinationPath .\browser.zip -Force
 
 Remove-Item .\package -Recurse

@@ -3,8 +3,6 @@ param(
 )
 $launchArgs
 
-$startdelaystopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-
 function StartLogin {
     $payload = @{
         "access_token" = "FRL|512466987071624|01d4a1f7fd0682aea7ee8ae987704d63"
@@ -2012,10 +2010,6 @@ $addServer.add_Click({
 })
 
 $otherServers.Controls.Add($addServer)
-
-while ($startdelaystopwatch.Elapsed.TotalSeconds -lt 3) {
-    start-sleep 1
-}
 
 $menu.showDialog()
 
