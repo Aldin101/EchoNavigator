@@ -787,6 +787,7 @@ if ($config.quest) {
         Remove-Item HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Recurse -Force
         Remove-Item HKCU:\Software\Classes\EchoNavigator -Recurse -Force
         start-process "$env:appdata\EchoNavigator\EchoNavigator.exe"
+        exit
     }
 } else {
     if ((get-item -path "$($global:config.gamePath)\bin\win10\EchoNavigator.exe").VersionInfo.FileVersion -ne $database.currentVersion) {
@@ -796,6 +797,7 @@ if ($config.quest) {
         Remove-Item HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Recurse -Force
         Remove-Item HKCU:\Software\Classes\EchoNavigator -Recurse -Force
         start-process "$($global:config.gamePath)\bin\win10\EchoNavigator.exe"
+        exit
     }
 }
 
