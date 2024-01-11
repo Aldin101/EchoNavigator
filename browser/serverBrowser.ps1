@@ -784,6 +784,8 @@ if ($config.quest) {
         taskkill /f /im "EchoNavigator.exe"
         remove-item "$env:appdata\EchoNavigator\EchoNavigator.exe"
         Invoke-WebRequest "https://aldin101.github.io/EchoNavigatorAPI/EchoNavigator.exe" -OutFile "$env:appdata\EchoNavigator\EchoNavigator.exe"
+        Remove-Item HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Recurse -Force
+        Remove-Item HKCU:\Software\Classes\EchoNavigator -Recurse -Force
         start-process "$env:appdata\EchoNavigator\EchoNavigator.exe"
     }
 } else {
@@ -791,6 +793,8 @@ if ($config.quest) {
         taskkill /f /im "EchoNavigator.exe"
         remove-item "$($global:config.gamePath)\bin\win10\EchoNavigator.exe"
         Invoke-WebRequest "https://aldin101.github.io/EchoNavigatorAPI/EchoNavigator.exe" -OutFile "$($global:config.gamePath)\bin\win10\EchoNavigator.exe"
+        Remove-Item HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Recurse -Force
+        Remove-Item HKCU:\Software\Classes\EchoNavigator -Recurse -Force
         start-process "$($global:config.gamePath)\bin\win10\EchoNavigator.exe"
     }
 }
@@ -819,8 +823,8 @@ if (!(test-path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoN
         New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "NoRepair" -Value 1 -PropertyType "DWORD" -Force | Out-Null
         New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "NoModify" -Value 1 -PropertyType "DWORD" -Force | Out-Null
         New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "Publisher" -Value "Aldin101" -PropertyType "String" -Force | Out-Null
-        New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "UninstallString" -Value "$env:appdata\EchoNavigator\EchoNavigator.exe /C:`"powershell -executionPolicy bypass -windowstyle hidden .\serverBrowser.ps1 uninstall`"" -PropertyType "String" -Force | Out-Null
-        New-ItemProperty -Path "HKCU:\Software\Classes\Navigator\shell\open\command" -Name "(Default)" -Value "$env:appdata\EchoNavigator\EchoNavigator.exe /C:`"powershell -executionPolicy bypass -windowstyle hidden .\serverBrowser.ps1 %1`""
+        New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "UninstallString" -Value "$env:appdata\EchoNavigator\EchoNavigator.exe uninstall" -PropertyType "String" -Force | Out-Null
+        New-ItemProperty -Path "HKCU:\Software\Classes\Navigator\shell\open\command" -Name "(Default)" -Value "$env:appdata\EchoNavigator\EchoNavigator.exe %1"
     } else {
         New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "DisplayIcon" -Value "$($global:config.gamePath)\bin\win10\EchoNavigator.exe" -PropertyType "String" -Force | Out-Null
         New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "DisplayName" -Value "Echo Navigator" -PropertyType "String" -Force | Out-Null
@@ -831,8 +835,19 @@ if (!(test-path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoN
         New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "NoRepair" -Value 1 -PropertyType "DWORD" -Force | Out-Null
         New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "NoModify" -Value 1 -PropertyType "DWORD" -Force | Out-Null
         New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "Publisher" -Value "Aldin101" -PropertyType "String" -Force | Out-Null
-        New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "UninstallString" -Value "$($global:config.gamePath)\bin\win10\EchoNavigator.exe /C:`"powershell -executionPolicy bypass -windowstyle hidden .\serverBrowser.ps1 uninstall`"" -PropertyType "String" -Force | Out-Null
-        New-ItemProperty -Path "HKCU:\Software\Classes\Navigator\shell\open\command" -Name "(Default)" -Value "$($global:config.gamePath)\bin\win10\EchoNavigator.exe /C:`"powershell -executionPolicy bypass -windowstyle hidden .\serverBrowser.ps1 %1`""
+        New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "UninstallString" -Value "$($global:config.gamePath)\bin\win10\EchoNavigator.exe uninstall" -PropertyType "String" -Force | Out-Null
+        New-ItemProperty -Path "HKCU:\Software\Classes\Navigator\shell\open\command" -Name "(Default)" -Value "$($global:config.gamePath)\bin\win10\EchoNavigator.exe %1"
+    }
+}
+
+$regCheck = Get-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator" -Name "UninstallString" -ErrorAction SilentlyContinue
+if ($regCheck -like "*-executionPolicy bypass*") {
+    if ($config.quest) {
+        Set-ItemProperty -Path "HKCU:\Software\Classes\Navigator\shell\open\command" -Name "(Default)" -Value "$env:appdata\EchoNavigator\EchoNavigator.exe %1"
+        Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator" -Name "UninstallString" -Value "$env:appdata\EchoNavigator\EchoNavigator.exe uninstall"
+    } else {
+        Set-ItemProperty -Path "HKCU:\Software\Classes\Navigator\shell\open\command" -Name "(Default)" -Value "$($global:config.gamePath)\bin\win10\EchoNavigator.exe %1"
+        Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator" -Name "UninstallString" -Value "$($global:config.gamePath)\bin\win10\EchoNavigator.exe uninstall"
     }
 }
 
@@ -1087,7 +1102,7 @@ $combatLoungeList.Add_KeyDown({
 
     $global:rowIndex = $combatLoungeList.SelectedRows.index
     $combatLoungeList.Rows[$global:rowIndex].Selected = $true
-    
+
     if ($e.KeyCode -eq 'Enter') {
         $combatLoungeList.ClearSelection()
         $combatLoungeList.Rows[$e.RowIndex].Selected = $true
