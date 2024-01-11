@@ -852,6 +852,7 @@ if ($regCheck -like "*-executionPolicy bypass*") {
 }
 
 if ($launchArgs -eq "uninstall") {
+    taskkill /f /im "EchoNavigator.exe"
     Remove-Item HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Recurse -Force
     Remove-Item HKCU:\Software\Classes\EchoNavigator -Recurse -Force
     Remove-Item "$env:appdata\EchoNavigator" -Recurse -Force
