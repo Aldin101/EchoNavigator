@@ -903,13 +903,13 @@ if ($launchArgs -like "navigator://*") {
 
     if ($launchArgs -like "navigator://joinServer/*") {
         $serverIP = $launchArgs -replace "navigator://joinServer/", ""
-        if ($global:config.($serverIP) -eq $null) {
+        $rawIP = $serverIP -replace ":\d+$", ""
+        if ($global:config.($rawIP) -eq $null) {
             $usernamePicker = New-Object System.Windows.Forms.Form
             $usernamePicker.Text = "Echo Navigator"
             $usernamePicker.Size = New-Object System.Drawing.Size(280, 150)
             $usernamePicker.StartPosition = "CenterScreen"
             $usernamePicker.FormBorderStyle = "FixedDialog"
-            $usernamePicker.showInTaskbar = $false
             $usernamePicker.MaximizeBox = $false
             if ($config.quest -ne $null) {
                 $usernamePicker.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($config.quest)
@@ -946,7 +946,7 @@ if ($launchArgs -like "navigator://*") {
                 $usernameButton.Dispose()
                 $usernameInput.Dispose()
                 $usernameLabel.Dispose()
-                $global:config | Add-Member -Name $($database.online[$global:rowIndex].ip) -Type NoteProperty -Value $username
+                $global:config | Add-Member -Name $rawIP -Type NoteProperty -Value $username
                 $global:config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
             })
             $usernamePicker.Controls.Add($usernameButton)
@@ -970,6 +970,70 @@ if ($launchArgs -like "navigator://*") {
         } else {
             $gameConfig | convertto-json | set-content "$($global:config.gamePath)\_local\config.json"
             [system.windows.forms.messagebox]::Show("You will now load into $($serverIP) when you start Echo VR", "Echo Navigator", "OK", "Information")
+        }
+        exit
+    }
+
+    if ($launchArgs -like "navigator://getOvrOrg*") {
+        if ($config.quest) {
+            if (!(test-path "$env:appdata\EchoNavigator\setUpFinished.set")) {
+                [System.Windows.Forms.MessageBox]::Show("You must have patched your game with Echo Navigator in order to obtain your OVR ID", "Echo Navigator", "OK", "Error")
+                exit
+            }
+            $adb = "$env:appdata\EchoNavigator\adb\platform-tools\adb.exe"
+            while (1) {
+                $devices = & $adb devices
+                $devices = $devices -split "`n"
+                if ($devices.count -gt 3) {
+                    $noDevice = [System.Windows.Forms.MessageBox]::show("More than one device detected, make sure only your Quest is connected to your PC. If you have any other Android devices connected is it a possibility that the game will be installed onto the wrong device. Please unplug any devices that you do not need before pressing retry.", "Echo Navigator", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
+                    if ($noDevice -eq "Cancel") {
+                        exit
+                    }
+                } else {
+                    break
+                }
+            }
+            while (1) {
+                $devices = & $adb devices
+                $devices = $devices -split "`n"
+                if ($devices.count -lt 3) {
+                    $noDevice = [System.Windows.Forms.MessageBox]::show("No device detected, make sure your Quest is connected to your PC and developer mode and debug mode are enabled (Google: How to enable developer mode on quest).`n`nIf these things have been done check your headset for a USB debugging message.`n`nIf it still is not working try restarting the headset.", "Echo Navigator", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Error)
+                    if ($noDevice -eq "Cancel") {
+                        exit
+                    }
+                } else {
+                    break
+                }
+            }
+            while (1) {
+                $devices = & $adb devices
+                if ($devices[1] -like "*unauthorized") {
+                    $noDevice = [System.Windows.Forms.MessageBox]::show("This computer is unauthorized. Please accept the prompt in your headset then press retry.", "Echo Navigator", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Warning)
+                    if ($noDevice -eq "Cancel") {
+                        exit
+                    }
+                } else {
+                    break
+                }
+            }
+            New-Item -Path "$env:appdata\EchoNavigator\logs" -ItemType Directory -Force
+            & $adb pull /sdcard/r14logs/ "$env:appdata\EchoNavigator\logs"
+            $logFiles = Get-ChildItem "$env:appdata\EchoNavigator\logs" -Recurse -File
+        } else {
+            $logFiles = Get-ChildItem "$($global:config.gamePath)\_local\r14logs" -Recurse -File
+        }
+        $logFiles = $logFiles | Sort-Object -Property LastWriteTime -Descending
+        $logFiles = $logFiles | Select-Object -First 1
+        $logFile = Get-Content -LiteralPath $logFiles.FullName
+
+        $ovrOrg = $logFile | Select-String -Pattern "OVR-ORG-\d+" | Select-Object -First 1 | ForEach-Object { $_.Matches } | ForEach-Object { $_.Value }
+
+        Remove-Item "$env:appdata\EchoNavigator\logs" -Recurse -Force
+
+        $choice = [System.Windows.Forms.MessageBox]::Show("Your OVR ID is $ovrOrg, would you like to copy it to your clipboard?", "Echo Navigator", "YesNo", "Information")
+
+        if ($choice -eq "Yes") {
+            $ovrOrg | Set-Clipboard
         }
         exit
     }
