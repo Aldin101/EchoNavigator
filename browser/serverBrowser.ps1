@@ -1037,14 +1037,13 @@ if ($launchArgs -like "navigator://*") {
 
 
         try {
-            Invoke-RestMethod -Method Post -Uri "https://echo-cosmetic-unlocker.deno.dev/$orvOrg" -ErrorAction SilentlyContinue
+            Invoke-RestMethod -Method Post -Uri "https://echo-cosmetic-unlocker.deno.dev/$orvOrg"
+            [System.Windows.Forms.MessageBox]::Show("Cosmetics unlocked successfully.", "Echo Navigator", "OK", "Information")
+            exit
         } catch {
             [System.Windows.Forms.MessageBox]::Show("Failed to unlock cosmetics, please try again later.", "Echo Navigator", "OK", "Error")
             exit
         }
-
-        [System.Windows.Forms.MessageBox]::Show("Cosmetics have been unlocked for $orvOrg", "Echo Navigator", "OK", "Information")
-        exit
     }
 
     if ($launchArgs -like "navigator://getOvrId*") {
