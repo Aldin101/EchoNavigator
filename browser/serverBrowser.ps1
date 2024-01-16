@@ -486,6 +486,11 @@ function clientJoinServer {
         $serverIP = "$($config.servers[$global:rowIndex].ip):$($config.servers[$global:rowIndex].port)"
     }
 
+    if ($global:config.servers[$global:RowIndex].publisherLock -eq $null) {
+        $global:config.servers[$global:RowIndex] | Add-Member -Name publisherLock -Type NoteProperty -Value "rad15_live"
+        $global:config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
+    }
+
     $gameConfig = @{}
     $gameConfig | Add-Member -Name 'apiservice_host' -Type NoteProperty -Value "http://$($serverIP)/api"
     $gameConfig | Add-Member -Name 'configservice_host' -Type NoteProperty -Value "ws://$($serverIP)/config"
