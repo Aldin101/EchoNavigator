@@ -222,6 +222,7 @@ function questPatcher {
         $patchEchoVR.text = "Patching..."
         $patchEchoVR.Refresh()
         $adb = "$env:appdata\EchoNavigator\adb\platform-tools\adb.exe"
+        Start-Process -FilePath $adb -ArgumentList "start-server" -WorkingDirectory "C:\"
         while (1) {
             $devices = & $adb devices
             $devices = $devices -split "`n"
@@ -839,7 +840,8 @@ if ($config.quest) {
         Invoke-WebRequest "https://aldin101.github.io/EchoNavigatorAPI/EchoNavigator.exe" -OutFile "$env:appdata\EchoNavigator\EchoNavigator.exe"
         Remove-Item HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Recurse -Force
         Remove-Item HKCU:\Software\Classes\EchoNavigator -Recurse -Force
-        start-process "$env:appdata\EchoNavigator\EchoNavigator.exe"
+        Set-Location C:\
+        start-process "$env:appdata\EchoNavigator\EchoNavigator.exe" -ArgumentList $launchArgs
         exit
     }
 } else {
@@ -849,7 +851,8 @@ if ($config.quest) {
         Invoke-WebRequest "https://aldin101.github.io/EchoNavigatorAPI/EchoNavigator.exe" -OutFile "$($global:config.gamePath)\bin\win10\EchoNavigator.exe"
         Remove-Item HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Recurse -Force
         Remove-Item HKCU:\Software\Classes\EchoNavigator -Recurse -Force
-        start-process "$($global:config.gamePath)\bin\win10\EchoNavigator.exe"
+        Set-Location C:\
+        start-process "$($global:config.gamePath)\bin\win10\EchoNavigator.exe" -ArgumentList $launchArgs
         exit
     }
 }

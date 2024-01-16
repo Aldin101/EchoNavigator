@@ -58,7 +58,7 @@ function install {
         Remove-Item HKCU:\Software\Classes\EchoNavigator -Recurse -Force
     }
     [system.windows.forms.messagebox]::Show("Echo Navigator installed!`n`nSelect a server to get started!", "Echo Navigator Installer", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Information)
-    start-process "$env:appdata\EchoNavigator\EchoNavigator.exe"
+    start-process "$env:appdata\EchoNavigator\EchoNavigator.exe" -WorkingDirectory "C:\"
     $menu.Close()
 }
 
