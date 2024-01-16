@@ -938,10 +938,16 @@ if ($launchArgs -like "navigator://*") {
         $serverIP = $serverIP -replace "ip=", ""
         $serverPort = $launchArgs.Split("?")[2]
         $serverPort = $serverPort -replace "port=", ""
+        $publisherLock = $launchArgs.Split("?")[3]
+        $publisherLock = $publisherLock -replace "publisherLock=", ""
+        if ($publisherLock -eq "") {
+            $publisherLock = "rad15_live"
+        }
         $server = @{
             name = $serverName -replace 'SPACE', ' '
             ip = $serverIP
             port = $serverPort
+            publisherLock = $publisherLock
         }
         $global:config | Add-Member -Name "servers" -Type NoteProperty -Value @()
         $servers = [System.Collections.ArrayList]($global:config.servers)
@@ -1629,7 +1635,13 @@ $serverRightClick.Items.Add($separator1)
 $shareJoinLink = New-Object System.Windows.Forms.ToolStripMenuItem
 $shareJoinLink.Text = "Share Join Link"
 $shareJoinLink.add_Click({
-    Set-Clipboard -Value "$($database.api)joinServer/$($database.online[$global:rowIndex].ip):$($database.online[$global:rowIndex].port)"
+    if ($database.online[$global:rowIndex].port -eq "") {
+        $serverIP = $config.servers[$global:rowIndex].ip
+    } else {
+        $serverIP = "$($config.servers[$global:rowIndex].ip):$($config.servers[$global:rowIndex].port)"
+    }
+
+    Set-Clipboard -Value "$($database.api)joinServer/$($serverIP)"
     [system.windows.forms.messagebox]::Show("Join link copied to clipboard, when someone clicks on this link Echo Navigator select $($database.online[$global:rowIndex].name) for them", "Echo Navigator", "OK", "Information")
 })
 $serverRightClick.Items.Add($shareJoinLink)
@@ -2050,7 +2062,13 @@ $clientRightClick.Items.Add($clientSeparator1)
 $clientShareJoinLink = New-Object System.Windows.Forms.ToolStripMenuItem
 $clientShareJoinLink.Text = "Share Join Server Link"
 $clientShareJoinLink.add_Click({
-    Set-Clipboard -Value "$($database.api)joinServer/$($config.servers[$global:rowIndex].ip):$($config.servers[$global:rowIndex].port)"
+    if ($config.servers[$global:rowIndex].port -eq "") {
+        $serverIP = $config.servers[$global:rowIndex].ip
+    } else {
+        $serverIP = "$($config.servers[$global:rowIndex].ip):$($config.servers[$global:rowIndex].port)"
+    }
+
+    Set-Clipboard -Value "$($database.api)joinServer/$serverIP"
     [system.windows.forms.messagebox]::Show("Join link copied to clipboard, when someone clicks on this link Echo Navigator select $($config.servers[$global:rowIndex].name) for them", "Echo Navigator", "OK", "Information")
 })
 $clientRightClick.Items.Add($clientShareJoinLink)
@@ -2058,7 +2076,7 @@ $clientRightClick.Items.Add($clientShareJoinLink)
 $clientAddServerLink = New-Object System.Windows.Forms.ToolStripMenuItem
 $clientAddServerLink.Text = "Share Add-to-List Link"
 $clientAddServerLink.add_Click({
-    Set-Clipboard -Value "$($database.api)addserver/name=$($config.servers[$global:rowIndex].name -replace ' ','SPACE')?ip=$($config.servers[$global:rowIndex].ip)?port=$($config.servers[$global:rowIndex].port)"
+    Set-Clipboard -Value "$($database.api)addserver/name=$($config.servers[$global:rowIndex].name -replace ' ','SPACE')?ip=$($config.servers[$global:rowIndex].ip)?port=$($config.servers[$global:rowIndex].port)?publisherLock=$($config.servers[$global:rowIndex].publisherLock)"
     [system.windows.forms.messagebox]::Show("Server link copied to clipboard, when someone clicks on this link Echo Navigator will add $($config.servers[$global:rowIndex].name) to their list of private servers", "Echo Navigator", "OK", "Information")
 })
 $clientRightClick.Items.Add($clientAddServerLink)
