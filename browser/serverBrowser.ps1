@@ -517,7 +517,7 @@ function addOnlineServer {
 
     $addServer = New-Object System.Windows.Forms.Form
     $addServer.Text = "Echo Navigator"
-    $addServer.Size = New-Object System.Drawing.Size(330, 500)
+    $addServer.Size = New-Object System.Drawing.Size(330, 550)
     $addServer.StartPosition = "CenterScreen"
     $addServer.FormBorderStyle = "FixedDialog"
     $addServer.MaximizeBox = $false
@@ -556,7 +556,7 @@ function addOnlineServer {
     $serverPortLabel = New-Object System.Windows.Forms.Label
     $serverPortLabel.Size = New-Object System.Drawing.Size(2500, 20)
     $serverPortLabel.Location = New-Object System.Drawing.Point(10, 110)
-    $serverPortLabel.Text = "Enter the port of the server"
+    $serverPortLabel.Text = "Enter the port of the server (optional)"
     $serverPortLabel.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServer.Controls.Add($serverPortLabel)
 
@@ -588,27 +588,41 @@ function addOnlineServer {
 
     $serverLongDescriptionInput = New-Object System.Windows.Forms.TextBox
     $serverLongDescriptionInput.Size = New-Object System.Drawing.Size(250, 100)
-    $serverLongDescriptionInput.Location = New-Object System.Drawing.Point(30, 230)
+    $serverLongDescriptionInput.Location = New-Object System.Drawing.Point(30, 235)
     $serverLongDescriptionInput.Multiline = $true
     $serverLongDescriptionInput.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServer.Controls.Add($serverLongDescriptionInput)
 
+    $serverPublisherLockLabel = New-Object System.Windows.Forms.Label
+    $serverPublisherLockLabel.Size = New-Object System.Drawing.Size(2500, 20)
+    $serverPublisherLockLabel.Location = New-Object System.Drawing.Point(10, 340)
+    $serverPublisherLockLabel.Text = "Enter the publisher lock for the server"
+    $serverPublisherLockLabel.Font = New-Object System.Drawing.Font("Arial", 12)
+    $addServer.Controls.Add($serverPublisherLockLabel)
+
+    $serverPublisherLockInput = New-Object System.Windows.Forms.TextBox
+    $serverPublisherLockInput.Size = New-Object System.Drawing.Size(250, 20)
+    $serverPublisherLockInput.Location = New-Object System.Drawing.Point(30, 360)
+    $serverPublisherLockInput.Font = New-Object System.Drawing.Font("Arial", 12)
+    $serverPublisherLockInput.Text = "r15_live"
+    $addServer.Controls.Add($serverPublisherLockInput)
+
     $serverImageLabel = New-Object System.Windows.Forms.Label
     $serverImageLabel.Size = New-Object System.Drawing.Size(2500, 20)
-    $serverImageLabel.Location = New-Object System.Drawing.Point(10, 340)
+    $serverImageLabel.Location = New-Object System.Drawing.Point(10, 390)
     $serverImageLabel.Text = "Enter a URL for the server image"
     $serverImageLabel.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServer.Controls.Add($serverImageLabel)
 
     $serverImageInput = New-Object System.Windows.Forms.TextBox
     $serverImageInput.Size = New-Object System.Drawing.Size(250, 20)
-    $serverImageInput.Location = New-Object System.Drawing.Point(30, 360)
+    $serverImageInput.Location = New-Object System.Drawing.Point(30, 410)
     $serverImageInput.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServer.Controls.Add($serverImageInput)
 
     $serverButton = New-Object System.Windows.Forms.Button
     $serverButton.Size = New-Object System.Drawing.Size(250, 35)
-    $serverButton.Location = New-Object System.Drawing.Point(30, 400)
+    $serverButton.Location = New-Object System.Drawing.Point(30, 450)
     $serverButton.Text = "Add Server"
     $serverButton.add_click({
         if ($psversiontable.psversion.major -eq 7) {
@@ -626,6 +640,7 @@ function addOnlineServer {
             port = $serverPortInput.Text
             description = $serverDescriptionInput.Text
             longDescription = $serverLongDescriptionInput.Text
+            publisherLock = $serverPublisherLockInput.Text
             imageURL = $serverImageInput.Text
             userName = $global:config.username
             userID = (get-itemproperty "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries" -Name DefaultLibrary).DefaultLibrary
@@ -755,19 +770,41 @@ function combatLoungeNotSelected {
 }
 
 function pingServer {
-    param($serverIP)
-    $port = 6792
-    $udpClient = New-Object System.Net.Sockets.UdpClient
-    $udpClient.Client.ReceiveTimeout = 1000
-    $udpClient.Connect($serverIP, $port)
-    $packet = [byte[]]@(0xB0, 0x03, 0x5A, 0x06, 0xDE, 0x79, 0x72, 0x99, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00)
-    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-    $udpClient.Send($packet, $packet.Length)
-    $remoteEndPoint = New-Object System.Net.IPEndPoint([System.Net.IPAddress]::Any, 0)
-    $response = $udpClient.Receive([ref]$remoteEndPoint)
-    $stopwatch.Stop()
-    $udpClient.Close()
-    return $stopwatch.ElapsedMilliseconds
+    $jobs = @()
+    $pingResults = @()
+
+    foreach ($gameServer in $combatGames.gameServers) {
+        $jobs += Start-Job -ScriptBlock {
+            param($serverIP)
+            $port = 6792
+            $udpClient = New-Object System.Net.Sockets.UdpClient
+            $udpClient.Client.ReceiveTimeout = 1000
+            $udpClient.Connect($serverIP, $port)
+            $packet = [byte[]]@(0xB0, 0x03, 0x5A, 0x06, 0xDE, 0x79, 0x72, 0x99, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00)
+            $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+            $udpClient.Send($packet, $packet.Length) | Out-Null
+            $remoteEndPoint = New-Object System.Net.IPEndPoint([System.Net.IPAddress]::Any, 0)
+            try {
+                $response = $udpClient.Receive([ref]$remoteEndPoint)
+            } catch {
+                $stopwatch.Stop()
+                $udpClient.Close()
+                return -1
+            }
+            $stopwatch.Stop()
+            $udpClient.Close()
+            return $stopwatch.ElapsedMilliseconds
+        } -ArgumentList $gameServer.sessionIp
+    }
+    foreach ($job in $jobs) {
+        $job | Wait-Job | Out-Null
+    }
+
+    foreach ($job in $jobs) {
+        $pingResults += Receive-Job -Job $job
+    }
+
+    return $pingResults
 }
 
 $ProgressPreference = 'SilentlyContinue'
@@ -1301,17 +1338,41 @@ foreach ($gameServer in $combatGames.gameServers) {
     if ($combatLoungeList.Rows[$i].Cells[1].value -eq "Social 2.0") {
         $combatLoungeList.Rows[$i].Cells[1].value = "Lobby"
     }
-    $combatLoungeList.Rows[$i].Cells[2].value = $(pingServer $gameServer.sessionIp)[1]
-    if ($combatLoungeList.Rows[$i].Cells[2].value -gt 1000) {
-        try {
-            $PingServer = Test-Connection -count 1 -ComputerName $gameServer.sessionIP
-            $combatLoungeList.Rows[$i].Cells[2].value = $PingServer.Latency
-        } catch {
-            $combatLoungeList.Rows[$i].Cells[2].value = "Error"
-        }
-    }
     ++$i
 }
+if (!$config.quest) {
+    $pingResults = pingServer
+    $i=0
+    foreach ($gameServer in $combatGames.gameServers) {
+        if ($pingResults[$i] -eq -1) {
+            try {
+                $serverPing = Test-Connection -count 1 -ComputerName $gameServer.sessionIP -TimeoutSeconds 1
+                $pingResults[$i] = $serverPing.Latency
+            } catch {
+                $pingResults[$i] = "Error"
+            }
+            if ($pingResults[$i] -eq 0) {
+                $pingResults[$i] = "Error"
+            }
+        }
+        $combatLoungeList.Rows[$i].Cells[2].value = $pingResults[$i]
+        ++$i
+    }
+}
+
+
+
+$combatLoungeList.Rows[$i].Cells[2].value = $(pingServer $gameServer.sessionIp)[1]
+if ($combatLoungeList.Rows[$i].Cells[2].value -gt 1000) {
+    try {
+        $PingServer = Test-Connection -count 1 -ComputerName $gameServer.sessionIP
+        $combatLoungeList.Rows[$i].Cells[2].value = $PingServer.Latency
+    } catch {
+        $combatLoungeList.Rows[$i].Cells[2].value = "Error"
+    }
+}
+
+
 $combatLounge.Controls.Add($combatLoungeList)
 
 $gamesRightClick = New-Object System.Windows.Forms.ContextMenuStrip
@@ -2075,7 +2136,7 @@ $addServer.Font = New-Object System.Drawing.Font("Arial", 12)
 $addServer.add_Click({
     $addServerMenu = New-Object System.Windows.Forms.Form
     $addServerMenu.Text = "Echo Navigator"
-    $addServerMenu.Size = New-Object System.Drawing.Size(330, 290)
+    $addServerMenu.Size = New-Object System.Drawing.Size(300, 350)
     $addServerMenu.StartPosition = "CenterScreen"
     $addServerMenu.FormBorderStyle = "FixedDialog"
     $addServerMenu.showInTaskbar = $false
@@ -2126,15 +2187,30 @@ $addServer.add_Click({
     $addServerPortInput.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServerMenu.Controls.Add($addServerPortInput)
 
+    $addServerPubliserLock = New-Object System.Windows.Forms.Label
+    $addServerPubliserLock.Size = New-Object System.Drawing.Size(2500, 20)
+    $addServerPubliserLock.Location = New-Object System.Drawing.Point(10, 160)
+    $addServerPubliserLock.Text = "Enter the publisher lock of the server"
+    $addServerPubliserLock.Font = New-Object System.Drawing.Font("Arial", 12)
+    $addServerMenu.Controls.Add($addServerPubliserLock)
+
+    $addServerPubliserLockInput = New-Object System.Windows.Forms.TextBox
+    $addServerPubliserLockInput.Size = New-Object System.Drawing.Size(250, 20)
+    $addServerPubliserLockInput.Location = New-Object System.Drawing.Point(30, 180)
+    $addServerPubliserLockInput.Font = New-Object System.Drawing.Font("Arial", 12)
+    $addServerPubliserLockInput.Text = "rad15_live"
+    $addServerMenu.Controls.Add($addServerPubliserLockInput)
+
     $addServerButton = New-Object System.Windows.Forms.Button
     $addServerButton.Size = New-Object System.Drawing.Size(250, 35)
-    $addServerButton.Location = New-Object System.Drawing.Point(30, 190)
+    $addServerButton.Location = New-Object System.Drawing.Point(30, 220)
     $addServerButton.Text = "Add Server"
     $addServerButton.add_Click({
         $server = @{
             "name" = $addServerNameInput.Text
             "ip" = $addServerIPInput.Text
             "port" = $addServerPortInput.Text
+            "publisherLock" = $addServerPubliserLockInput.Text
         }
         $global:config | Add-Member -Name "servers" -Type NoteProperty -Value @()
         $servers = [System.Collections.ArrayList]($global:config.servers)
