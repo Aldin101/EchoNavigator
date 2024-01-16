@@ -394,14 +394,20 @@ function joinServer {
         return
     }
 
+    if ($database.online[$global:rowIndex].port -eq '') {
+        $serverIP = $database.online[$global:rowIndex].ip
+    } else {
+        $serverIP = "$($database.online[$global:rowIndex].ip):$($database.online[$global:rowIndex].port)"
+    }
+
     $gameConfig = @{}
-    $gameConfig | Add-Member -Name 'apiservice_host' -Type NoteProperty -Value "http://$($database.online[$global:RowIndex].ip):$($database.online[$global:RowIndex].port)/api"
-    $gameConfig | Add-Member -Name 'configservice_host' -Type NoteProperty -Value "ws://$($database.online[$global:RowIndex].ip):$($database.online[$global:RowIndex].port)/config"
-    $gameConfig | Add-Member -Name 'loginservice_host' -Type NoteProperty -Value "ws://$($database.online[$global:RowIndex].ip):$($database.online[$global:RowIndex].port)/login?auth=$($global:config.password)&displayname=$($global:config.$($database.online[$global:rowIndex].ip))"
-    $gameConfig | Add-Member -Name 'matchingservice_host' -Type NoteProperty -Value "ws://$($database.online[$global:RowIndex].ip):$($database.online[$global:RowIndex].port)/matching"
-    $gameConfig | Add-Member -Name 'serverdb_host' -Type NoteProperty -Value "ws://$($database.online[$global:RowIndex].ip):$($database.online[$global:RowIndex].port)/serverdb"
-    $gameConfig | Add-Member -Name 'transactionservice_host' -Type NoteProperty -Value "ws://$($database.online[$global:RowIndex].ip):$($database.online[$global:RowIndex].port)/transaction"
-    $gameConfig | Add-Member -Name 'publisher_lock' -Type NoteProperty -Value 'rad15_live'
+    $gameConfig | Add-Member -Name 'apiservice_host' -Type NoteProperty -Value "http://$($serverIP)/api"
+    $gameConfig | Add-Member -Name 'configservice_host' -Type NoteProperty -Value "ws://$($serverIP)/config"
+    $gameConfig | Add-Member -Name 'loginservice_host' -Type NoteProperty -Value "ws://$($serverIP)/login?auth=$($global:config.password)&displayname=$($global:config.$($database.online[$global:rowIndex].ip))"
+    $gameConfig | Add-Member -Name 'matchingservice_host' -Type NoteProperty -Value "ws://$($serverIP)/matching"
+    $gameConfig | Add-Member -Name 'serverdb_host' -Type NoteProperty -Value "ws://$($serverIP)/serverdb"
+    $gameConfig | Add-Member -Name 'transactionservice_host' -Type NoteProperty -Value "ws://$($serverIP)/transaction"
+    $gameConfig | Add-Member -Name 'publisher_lock' -Type NoteProperty -Value $database.online[$global:RowIndex].publisherLock
     if ($config.quest) {
         $gameConfig | ConvertTo-Json | set-content "$env:appdata\EchoNavigator\gameConfig.json"
         questPatcher
@@ -474,14 +480,20 @@ function clientJoinServer {
         return
     }
 
+    if ($config.servers[$global:rowIndex].port -eq '') {
+        $serverIP = $config.servers[$global:rowIndex].ip
+    } else {
+        $serverIP = "$($config.servers[$global:rowIndex].ip):$($config.servers[$global:rowIndex].port)"
+    }
+
     $gameConfig = @{}
-    $gameConfig | Add-Member -Name 'apiservice_host' -Type NoteProperty -Value "https://$($global:config.servers[$global:RowIndex].ip):$($global:config.servers[$global:RowIndex].port)/api"
-    $gameConfig | Add-Member -Name 'configservice_host' -Type NoteProperty -Value "ws://$($global:config.servers[$global:RowIndex].ip):$($global:config.servers[$global:RowIndex].port)/config"
-    $gameConfig | Add-Member -Name 'loginservice_host' -Type NoteProperty -Value "ws://$($global:config.servers[$global:RowIndex].ip):$($global:config.servers[$global:RowIndex].port)/login?auth=$($global:config.password)&displayname=$($global:config.$($config.servers[$global:rowIndex].ip))"
-    $gameConfig | Add-Member -Name 'matchingservice_host' -Type NoteProperty -Value "ws://$($global:config.servers[$global:RowIndex].ip):$($global:config.servers[$global:RowIndex].port)/matching"
-    $gameConfig | Add-Member -Name 'serverdb_host' -Type NoteProperty -Value "ws://$($global:config.servers[$global:RowIndex].ip):$($global:config.servers[$global:RowIndex].port)/serverdb"
-    $gameConfig | Add-Member -Name 'transactionservice_host' -Type NoteProperty -Value "ws://$($global:config.servers[$global:RowIndex].ip):$($global:config.servers[$global:RowIndex].port)/transaction"
-    $gameConfig | Add-Member -Name 'publisher_lock' -Type NoteProperty -Value 'rad15_live'
+    $gameConfig | Add-Member -Name 'apiservice_host' -Type NoteProperty -Value "http://$($serverIP)/api"
+    $gameConfig | Add-Member -Name 'configservice_host' -Type NoteProperty -Value "ws://$($serverIP)/config"
+    $gameConfig | Add-Member -Name 'loginservice_host' -Type NoteProperty -Value "ws://$($serverIP)/login?auth=$($global:config.password)&displayname=$($global:config.$($database.online[$global:rowIndex].ip))"
+    $gameConfig | Add-Member -Name 'matchingservice_host' -Type NoteProperty -Value "ws://$($serverIP)/matching"
+    $gameConfig | Add-Member -Name 'serverdb_host' -Type NoteProperty -Value "ws://$($serverIP)/serverdb"
+    $gameConfig | Add-Member -Name 'transactionservice_host' -Type NoteProperty -Value "ws://$($serverIP)/transaction"
+    $gameConfig | Add-Member -Name 'publisher_lock' -Type NoteProperty -Value $global:config.servers[$global:RowIndex].publisherLock
     if ($config.quest) {
         $gameConfig | ConvertTo-Json | set-content "$env:appdata\EchoNavigator\gameConfig.json"
         questPatcher
