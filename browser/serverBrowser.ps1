@@ -2138,7 +2138,7 @@ $addServer.Font = New-Object System.Drawing.Font("Arial", 12)
 $addServer.add_Click({
     $addServerMenu = New-Object System.Windows.Forms.Form
     $addServerMenu.Text = "Echo Navigator"
-    $addServerMenu.Size = New-Object System.Drawing.Size(300, 350)
+    $addServerMenu.Size = New-Object System.Drawing.Size(325, 320)
     $addServerMenu.StartPosition = "CenterScreen"
     $addServerMenu.FormBorderStyle = "FixedDialog"
     $addServerMenu.showInTaskbar = $false
