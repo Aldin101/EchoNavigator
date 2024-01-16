@@ -770,6 +770,7 @@ function combatLoungeNotSelected {
 }
 
 function pingServer {
+    param($combatGames)
     $jobs = @()
     $pingResults = @()
 
@@ -1347,38 +1348,16 @@ foreach ($gameServer in $combatGames.gameServers) {
     ++$i
 }
 if (!$config.quest) {
-    $pingResults = pingServer
+    $pingResults = pingServer $combatGames
     $i=0
     foreach ($gameServer in $combatGames.gameServers) {
         if ($pingResults[$i] -eq -1) {
-            try {
-                $serverPing = Test-Connection -count 1 -ComputerName $gameServer.sessionIP -TimeoutSeconds 1
-                $pingResults[$i] = $serverPing.Latency
-            } catch {
-                $pingResults[$i] = "Error"
-            }
-            if ($pingResults[$i] -eq 0) {
-                $pingResults[$i] = "Error"
-            }
+            $pingResults[$i] = "Error"
         }
         $combatLoungeList.Rows[$i].Cells[2].value = $pingResults[$i]
         ++$i
     }
 }
-
-
-
-$combatLoungeList.Rows[$i].Cells[2].value = $(pingServer $gameServer.sessionIp)[1]
-if ($combatLoungeList.Rows[$i].Cells[2].value -gt 1000) {
-    try {
-        $PingServer = Test-Connection -count 1 -ComputerName $gameServer.sessionIP
-        $combatLoungeList.Rows[$i].Cells[2].value = $PingServer.Latency
-    } catch {
-        $combatLoungeList.Rows[$i].Cells[2].value = "Error"
-    }
-}
-
-
 $combatLounge.Controls.Add($combatLoungeList)
 
 $gamesRightClick = New-Object System.Windows.Forms.ContextMenuStrip
@@ -1403,27 +1382,27 @@ $refreshCombatLounge.add_click({
     $refreshCombatLounge.Font = New-Object System.Drawing.Font("Arial", 8)
 
     $combatGames = Invoke-WebRequest "http://51.75.140.182:3000/api/listGameServers/62.68.167.123" -UseBasicParsing
-    $global:combatGames = $combatGames.content | ConvertFrom-Json
+    $combatGames = $combatGames.content | ConvertFrom-Json
 
     $i=0
-    foreach ($gameServer in $global:combatGames.gameServers) {
+    foreach ($gameServer in $combatGames.gameServers) {
         $combatLoungeList.Rows[$i].Cells[0].value = "$($gameServer.playerCount)/$(if($gameServer.activePlayerLimit -eq $null){$gameServer.playerLimit}else{$gameServer.activePlayerLimit})"
         $combatLoungeList.Rows[$i].Cells[1].value = (Get-Culture).TextInfo.ToTitleCase($($gameServer.gameMode -replace '^(echo_|mpl_combat_)', '')) -replace '_',' '
         if ($combatLoungeList.Rows[$i].Cells[1].value -eq "Social 2.0") {
             $combatLoungeList.Rows[$i].Cells[1].value = "Lobby"
         }
-        $combatLoungeList.Rows[$i].Cells[2].value = $(pingServer $gameServer.sessionIp)[1]
-        if ($combatLoungeList.Rows[$i].Cells[2].value -gt 1000) {
-            $PingServer = Test-Connection -count 1 -ComputerName $gameServer.sessionIP -TimeoutSeconds 1
-            if ($PingServer.Latency -eq 0){
-                $combatLoungeList.Rows[$i].Cells[2].value = "Error"
-            } else {
-                $combatLoungeList.Rows[$i].Cells[2].value = $PingServer.Latency
-            }
-        }
         ++$i
     }
-
+    $pingResults = pingServer $combatGames
+    $i=0
+    foreach ($gameServer in $combatGames.gameServers) {
+        if ($pingResults[$i] -eq -1) {
+            $pingResults[$i] = "Error"
+        }
+        $combatLoungeList.Rows[$i].Cells[2].value = $pingResults[$i]
+        ++$i
+    }
+    $global:conbatGames = $combatGames
 
     $refreshCombatLounge.Enabled = $true
     $refreshCombatLounge.text = "Refresh"
