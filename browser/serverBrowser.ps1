@@ -339,6 +339,11 @@ function questPatcher {
 
 function joinGame {
     if ($config.quest) {
+        if ($combatGames.gameServers[$global:RowIndex].gameMode -like "*combat*") {
+            Start-Process "https://youtu.be/dQw4w9WgXcQ"
+            return
+        }
+
         try {
             $body = @{
                 session_id = $combatGames.gameServers[$global:RowIndex].sessionID
