@@ -513,6 +513,39 @@ function clientJoinServer {
     }
 }
 
+function findHeadset {
+    $searchProgress.Visible = $true
+    $searchProgress.Value = 0
+    $ipAddress = (Get-NetRoute -DestinationPrefix 0.0.0.0/0 | Sort-Object RouteMetric | Select-Object -First 1).NextHop
+
+    $subnetParts = $ipAddress -split '\.'
+    $subnetParts = $subnetParts[0..($subnetParts.Length - 2)]
+    $subnet = [string]::Join('.', $subnetParts) + '.'
+
+    $port = 6721
+    $timeout = (Test-Connection -ComputerName "google.com" -Count 1).Latency
+
+    if ($timeout -eq 0) {
+        $timeout = 200
+    }
+
+    for ($i=1; $i -le 254; $i++) {
+        $ip = $subnet + $i
+        $client = New-Object System.Net.Sockets.TcpClient
+        $asyncResult = $client.BeginConnect($ip, $port, $null, $null)
+        $success = $asyncResult.AsyncWaitHandle.WaitOne($timeout, $true)
+        if ($success) {
+            $client.EndConnect($asyncResult)
+            $global:config | Add-Member -Name "lastHeadsetIP" -Type NoteProperty -Value $ip -Force
+            Write-Output $ip
+            break
+        }
+        $client.Close()
+        $searchProgress.Value = (($i / 254) * 100)
+        $searchProgress.Refresh()
+    }
+}
+
 function addOnlineServer {
 
     if ($database.api -eq $null) {
@@ -1214,16 +1247,19 @@ $tabs.SizeMode = 'Fixed'
 $tabs.TabStop = $false
 $tabs.add_SelectedIndexChanged({
     if ($tabs.SelectedTab -eq $combatLounge) {
-        $currentServer = Get-Content "$($global:config.gamePath)\_Local\config.json" | ConvertFrom-Json
-        if ($currentServer.apiservice_host -ne "http://62.68.167.123:1234/api") {combatLoungeNotSelected} else {
-            $selectCombatLounge.Dispose()
-            $notSelectedLabel.Dispose()
-            $menuDetails.Dispose()
+        if ($config.quest -eq $null) {
+            $currentServer = Get-Content "$($global:config.gamePath)\_Local\config.json" | ConvertFrom-Json
+            if ($currentServer.apiservice_host -ne "http://62.68.167.123:1234/api") {combatLoungeNotSelected} else {
+                $selectCombatLounge.Dispose()
+                $notSelectedLabel.Dispose()
+                $menuDetails.Dispose()
+            }
         }
         $global:config.tab = 0
         $global:config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
         if ($config.quest -ne $null) {
             $questLabel.BringToFront()
+            $connectButton.BringToFront()
         }
     }
     if ($tabs.SelectedTab -eq $otherServers) {
@@ -1257,14 +1293,74 @@ if ($config.quest -ne $null) {
     $questLabel = New-Object System.Windows.Forms.Label
     $questLabel.Size = New-Object System.Drawing.Size(1300, 720)
     $questLabel.Location = New-Object System.Drawing.Point(-30, -60)
-    $questLabel.Text = "This tab is unavailable on Quest."
+    $questLabel.Text = "Headset not connected`n"
     $questLabel.TextAlign = 'MiddleCenter'
     $questLabel.Font = New-Object System.Drawing.Font("Arial", 50)
     $combatLounge.Controls.Add($questLabel)
+
+    $connectButton = New-Object System.Windows.Forms.Button
+    $connectButton.Size = New-Object System.Drawing.Size(600, 70)
+    $connectButton.Location = New-Object System.Drawing.Point(320, 350)
+    $connectButton.Text = "Connect"
+    $connectButton.Font = New-Object System.Drawing.Font("Arial", 20)
+    $connectButton.add_click({
+        if ($config.lastHeadsetIP -eq $null) {
+            [System.Windows.Forms.MessageBox]::Show("This menu will allow you to join specific matches on your headset, in order for the feature to work API access needs to be enabled in the Echo VR game settings and Echo VR needs to be open with the lobby loaded. Your PC and Quest also need to be connected to the same network.", "Echo Navigator", "OK", "Information")
+        }
+        if ($config.lastHeadsetIP) {
+            $connectButton.Enabled = $false
+            $connectButton.Text = "Connecting..."
+            $client = New-Object System.Net.Sockets.TcpClient
+            $asyncResult = $client.BeginConnect($config.lastHeadsetIP, 6721, $null, $null)
+            $success = $asyncResult.AsyncWaitHandle.WaitOne(1000, $true)
+            if ($success) {
+                $headsetIP = $config.lastHeadsetIP
+            } else {
+                $choice = [System.Windows.Forms.MessageBox]::Show("Failed to connect to headset, are you in the Echo VR lobby?", "Echo Navigator", "YesNo", "Error")
+                if ($choice -eq "No") {
+                    [System.Windows.Forms.MessageBox]::Show("Please make sure that you are in the Echo VR lobby before pressing connect.", "Echo Navigator", "OK", "Information")
+                    $connectButton.Enabled = $true
+                    $connectButton.Text = "Connect"
+                    return
+                } else {
+                    $connectButton.Text = "Finding headset...`n`n"
+                    $headsetIP = findHeadset
+                }
+            }
+        } else {
+            $connectButton.Enabled = $false
+            $connectButton.Text = "Finding headset...`n`n"
+            $headsetIP = findHeadset
+        }
+        if ($headsetIP -eq $null) {
+            [System.Windows.Forms.MessageBox]::Show("Headset not found, please make sure that you are loaded into the Echo VR lobby, API access is enabled, and that you are on the same network as your headset.", "Echo Navigator", "OK", "Error")
+            $connectButton.Enabled = $true
+            $connectButton.Text = "Connect"
+            $searchProgress.Visible = $false
+        } else {
+            [System.Windows.Forms.MessageBox]::Show("Connected!", "Echo Navigator", "OK", "Information")
+            $questLabel.Dispose()
+            $connectButton.Dispose()
+        }
+    })
+    $combatLounge.Controls.Add($connectButton)
+    $connectButton.BringToFront()
+
+    $searchProgress = New-Object System.Windows.Forms.ProgressBar
+    $searchProgress.Size = New-Object System.Drawing.Size(600, 35)
+    $searchProgress.Location = New-Object System.Drawing.Point(0,35)
+    $searchProgress.Visible = $false
+    $connectButton.Controls.Add($searchProgress)
+    $searchProgress.BringToFront()
+} else {
+    $headsetIP = 127.0.0.1
 }
 
-$currentServer = Get-Content "$($global:config.gamePath)\_Local\config.json" | ConvertFrom-Json
-if ($currentServer.apiservice_host -ne "http://62.68.167.123:1234/api") {combatLoungeNotSelected}
+if ($config.quest -eq $null) {
+    $currentServer = Get-Content "$($global:config.gamePath)\_Local\config.json" | ConvertFrom-Json
+    if ($currentServer.apiservice_host -ne "http://62.68.167.123:1234/api") {combatLoungeNotSelected}
+}
+
 
 $combatGames = Invoke-WebRequest "http://51.75.140.182:3000/api/listGameServers/62.68.167.123" -UseBasicParsing
 $combatGames = $combatGames.content | ConvertFrom-Json
@@ -1332,7 +1428,7 @@ $combatLoungeList.Add_KeyDown({
                     session_id = $combatGames.gameServers[$global:RowIndex].sessionID
                     team_idx = 3
                 } | ConvertTo-Json
-                invoke-restmethod -method post -uri http://127.0.0.1:6721/join_session -Body $body -ContentType "application/json"
+                invoke-restmethod -method post -uri http://$($headsetIP):6721/join_session -Body $body -ContentType "application/json"
             } catch {
                 if (Get-Process -Name EchoVR -ErrorAction SilentlyContinue) {
                     taskkill /f /im EchoVR.exe
@@ -1357,7 +1453,7 @@ $combatLoungeList.Add_CellDoubleClick({
                 session_id = $combatGames.gameServers[$global:RowIndex].sessionID
                 team_idx = 3
             } | ConvertTo-Json
-            invoke-restmethod -method post -uri http://127.0.0.1:6721/join_session -Body $body -ContentType "application/json"
+            invoke-restmethod -method post -uri http://$($headsetIP):6721/join_session -Body $body -ContentType "application/json"
         } catch {
             if (Get-Process -Name EchoVR -ErrorAction SilentlyContinue) {
                 taskkill /f /im EchoVR.exe
@@ -1390,7 +1486,7 @@ foreach ($gameServer in $combatGames.gameServers) {
     }
     ++$i
 }
-if (!$config.quest) {
+if (!$config.quest -or $config.lastHeadsetIP) {
     $pingResults = pingServer $combatGames
     $i=0
     foreach ($gameServer in $combatGames.gameServers) {
@@ -1489,7 +1585,7 @@ $join.add_click({
             session_id = $combatGames.gameServers[$global:RowIndex].sessionID
             team_idx = 3
         } | ConvertTo-Json
-        invoke-restmethod -method post -uri http://127.0.0.1:6721/join_session -Body $body -ContentType "application/json"
+        invoke-restmethod -method post -uri http://$($headsetIP):6721/join_session -Body $body -ContentType "application/json"
     } catch {
         if (Get-Process -Name EchoVR -ErrorAction SilentlyContinue) {
             taskkill /f /im EchoVR.exe
