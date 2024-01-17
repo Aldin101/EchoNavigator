@@ -337,6 +337,34 @@ function questPatcher {
     $global:config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
 }
 
+function joinGame {
+    if ($config.quest) {
+        try {
+            $body = @{
+                session_id = $combatGames.gameServers[$global:RowIndex].sessionID
+                team_idx = 3
+            } | ConvertTo-Json
+            invoke-restmethod -method post -uri http://$($headsetIP):6721/join_session -Body $body -ContentType "application/json"
+        } catch {
+            [System.Windows.Forms.MessageBox]::Show("Failed to join match, you need to have Echo VR open and be either in the lobby or in a match. Once you do that try joining the match again.", "Echo Navigator", "OK", "Warning")
+        }
+    } else {
+        try {
+            $body = @{
+                session_id = $combatGames.gameServers[$global:RowIndex].sessionID
+                team_idx = 3
+            } | ConvertTo-Json
+            invoke-restmethod -method post -uri http://$($headsetIP):6721/join_session -Body $body -ContentType "application/json"
+        } catch {
+            if (Get-Process -Name EchoVR -ErrorAction SilentlyContinue) {
+                taskkill /f /im EchoVR.exe
+                [System.Windows.Forms.MessageBox]::Show("Did you know that you can join games without restarting Echo VR?`n`nThe only requirement is that the game is running and that you have API access enabled in your game settings.", "Echo Navigator", "OK", "Information")
+            }
+            Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-lobbyid $($combatGames.gameServers[$global:RowIndex].sessionID)"
+        }
+    }
+}
+
 function joinServer {
     if ($global:config.$($database.online[$global:rowIndex].ip) -eq $null) {
         $usernamePicker = New-Object System.Windows.Forms.Form
@@ -1260,6 +1288,7 @@ $tabs.add_SelectedIndexChanged({
         if ($config.quest -ne $null) {
             $questLabel.BringToFront()
             $connectButton.BringToFront()
+            $menuDetails.BringToFront()
         }
     }
     if ($tabs.SelectedTab -eq $otherServers) {
@@ -1304,6 +1333,12 @@ if ($config.quest -ne $null) {
     $connectButton.Text = "Connect"
     $connectButton.Font = New-Object System.Drawing.Font("Arial", 20)
     $connectButton.add_click({
+
+        if (!(test-path $env:appdata\EchoNavigator\setUpFinished.set)) {
+            [System.Windows.Forms.MessageBox]::Show("You must have patched your game with Echo Navigator in order to use this feature", "Echo Navigator", "OK", "Error")
+            return
+        }
+
         if ($config.lastHeadsetIP -eq $null) {
             [System.Windows.Forms.MessageBox]::Show("This menu will allow you to join specific matches on your headset, in order for the feature to work API access needs to be enabled in the Echo VR game settings and Echo VR needs to be open with the lobby loaded. Your PC and Quest also need to be connected to the same network.", "Echo Navigator", "OK", "Information")
         }
@@ -1341,6 +1376,7 @@ if ($config.quest -ne $null) {
             [System.Windows.Forms.MessageBox]::Show("Connected!", "Echo Navigator", "OK", "Information")
             $questLabel.Dispose()
             $connectButton.Dispose()
+            $menuDetails.Dispose()
         }
     })
     $combatLounge.Controls.Add($connectButton)
@@ -1352,6 +1388,14 @@ if ($config.quest -ne $null) {
     $searchProgress.Visible = $false
     $connectButton.Controls.Add($searchProgress)
     $searchProgress.BringToFront()
+
+    $menuDetails = New-Object System.Windows.Forms.Label
+    $menuDetails.Size = New-Object System.Drawing.Size(520, 120)
+    $menuDetails.Location = New-Object System.Drawing.Point(730, 545)
+    $menuDetails.Text = "This menu gives you access to join specific matches hosted on the Echo Combat Lounge server. This feature assumes that you selected Echo Combat Lounge when patching the game. API access needs to be enabled in Echo VR game settings and Echo VR needs to be open to either the lobby or an arena match running. Your PC and Quest also need to be connected to the same network."
+    $menuDetails.Font = New-Object System.Drawing.Font("Arial", 12)
+    $combatLounge.Controls.Add($menuDetails)
+    $menuDetails.BringToFront()
 } else {
     $headsetIP = 127.0.0.1
 }
@@ -1423,19 +1467,7 @@ $combatLoungeList.Add_KeyDown({
         $global:clientselected = $true
         $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to join $($combatLoungeList.Rows[$e.RowIndex].Cells[1].value)?", "Echo Navigator", "YesNo", "Question")
         if ($choice -eq "Yes") {
-            try {
-                $body = @{
-                    session_id = $combatGames.gameServers[$global:RowIndex].sessionID
-                    team_idx = 3
-                } | ConvertTo-Json
-                invoke-restmethod -method post -uri http://$($headsetIP):6721/join_session -Body $body -ContentType "application/json"
-            } catch {
-                if (Get-Process -Name EchoVR -ErrorAction SilentlyContinue) {
-                    taskkill /f /im EchoVR.exe
-                    [System.Windows.Forms.MessageBox]::Show("Did you know that you can join games without restarting Echo VR?`n`nThe only requirement is that the game is running and that you have API access enabled in your game settings.", "Echo Navigator", "OK", "Information")
-                }
-                Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-lobbyid $($combatGames.gameServers[$global:RowIndex].sessionID)"
-}
+            joinGame
         }
     }
 })
@@ -1448,19 +1480,7 @@ $combatLoungeList.Add_CellDoubleClick({
     $global:clientselected = $true
     $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to join $($combatLoungeList.Rows[$e.RowIndex].Cells[1].value)?", "Echo Navigator", "YesNo", "Question")
     if ($choice -eq "Yes") {
-        try {
-            $body = @{
-                session_id = $combatGames.gameServers[$global:RowIndex].sessionID
-                team_idx = 3
-            } | ConvertTo-Json
-            invoke-restmethod -method post -uri http://$($headsetIP):6721/join_session -Body $body -ContentType "application/json"
-        } catch {
-            if (Get-Process -Name EchoVR -ErrorAction SilentlyContinue) {
-                taskkill /f /im EchoVR.exe
-                [System.Windows.Forms.MessageBox]::Show("Did you know that you can join games without restarting Echo VR?`n`nThe only requirement is that the game is running and that you have API access enabled in your game settings.", "Echo Navigator", "OK", "Information")
-            }
-            Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-lobbyid $($combatGames.gameServers[$global:RowIndex].sessionID)"
-        }
+        joinGame
     }
 })
 
@@ -1580,19 +1600,7 @@ $join.Location = New-Object System.Drawing.Point(10, 600)
 $join.Text = "Join Game"
 $join.Font = New-Object System.Drawing.Font("Arial", 12)
 $join.add_click({
-    try {
-        $body = @{
-            session_id = $combatGames.gameServers[$global:RowIndex].sessionID
-            team_idx = 3
-        } | ConvertTo-Json
-        invoke-restmethod -method post -uri http://$($headsetIP):6721/join_session -Body $body -ContentType "application/json"
-    } catch {
-        if (Get-Process -Name EchoVR -ErrorAction SilentlyContinue) {
-            taskkill /f /im EchoVR.exe
-            [System.Windows.Forms.MessageBox]::Show("Did you know that you can join games without restarting Echo VR?`n`nThe only requirement is that the game is running and that you have API access enabled in your game settings.", "Echo Navigator", "OK", "Information")
-        }
-        Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-lobbyid $($combatGames.gameServers[$global:RowIndex].sessionID) -noovr -spectatorstream"
-    }
+    joinGame
 })
 
 $combatSideBar.Controls.Add($join)
