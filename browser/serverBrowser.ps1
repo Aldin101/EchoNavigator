@@ -221,8 +221,7 @@ function questPatcher {
         }
         $patchEchoVR.text = "Patching..."
         $patchEchoVR.Refresh()
-        $adb = "$env:appdata\EchoNavigator\adb\platform-tools\adb.exe"
-        Start-Process -FilePath $adb -ArgumentList "start-server" -WorkingDirectory "C:\"
+        $global:adb = "$env:appdata\EchoNavigator\adb\platform-tools\adb.exe"
         while (1) {
             $devices = & $adb devices
             $devices = $devices -split "`n"
@@ -1101,7 +1100,7 @@ if ($launchArgs -like "navigator://*") {
 
 
         try {
-            Invoke-RestMethod -Method Post -Uri "https://echo-cosmetic-unlocker.deno.dev/$orvOrg"
+            Invoke-RestMethod -Method Post -Uri "https://echo-cosmetic-unlocker.deno.dev/$ovrOrg"
             [System.Windows.Forms.MessageBox]::Show("Cosmetics unlocked successfully.", "Echo Navigator", "OK", "Information")
             exit
         } catch {
@@ -2256,4 +2255,9 @@ if ($config.quest) {
     New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "EstimatedSize" -Value $folderSizeKB -PropertyType "DWORD" -Force | Out-Null
 }
 
+if ($global:adb -ne $null) {
+    & $global:adb kill-server
+}
+Remove-Item -Path "$env:appdata\EchoNavigator\gameConfig.json" -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "$env:appdata\EchoNavigator\configbak.json" -Force -ErrorAction SilentlyContinue
 $config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
