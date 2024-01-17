@@ -937,7 +937,7 @@ if ($launchArgs -like "navigator://*") {
             try {
                 $body = @{
                     session_id = $($launchArgs -replace 'navigator://joinGame/', '')
-                    team_idx = 0
+                    team_idx = $(Get-Random -Minimum 0 -Maximum 2)
                 } | ConvertTo-Json
                 invoke-restmethod -method post -uri http://127.0.0.1:6721/join_session -Body $body -ContentType "application/json"
             } catch {
@@ -1330,7 +1330,7 @@ $combatLoungeList.Add_KeyDown({
             try {
                 $body = @{
                     session_id = $combatGames.gameServers[$global:RowIndex].sessionID
-                    team_idx = 0
+                    team_idx = $(Get-Random -Minimum 0 -Maximum 2)
                 } | ConvertTo-Json
                 invoke-restmethod -method post -uri http://127.0.0.1:6721/join_session -Body $body -ContentType "application/json"
             } catch {
@@ -1355,7 +1355,7 @@ $combatLoungeList.Add_CellDoubleClick({
         try {
             $body = @{
                 session_id = $combatGames.gameServers[$global:RowIndex].sessionID
-                team_idx = 0
+                team_idx = $(Get-Random -Minimum 0 -Maximum 2)
             } | ConvertTo-Json
             invoke-restmethod -method post -uri http://127.0.0.1:6721/join_session -Body $body -ContentType "application/json"
         } catch {
@@ -1487,7 +1487,7 @@ $join.add_click({
     try {
         $body = @{
             session_id = $combatGames.gameServers[$global:RowIndex].sessionID
-            team_idx = 0
+            team_idx = $(Get-Random -Minimum 0 -Maximum 2)
         } | ConvertTo-Json
         invoke-restmethod -method post -uri http://127.0.0.1:6721/join_session -Body $body -ContentType "application/json"
     } catch {
@@ -1495,7 +1495,7 @@ $join.add_click({
             taskkill /f /im EchoVR.exe
             [System.Windows.Forms.MessageBox]::Show("Did you know that you can join games without restarting Echo VR?`n`nThe only requirement is that the game is running and that you have API access enabled in your game settings.", "Echo Navigator", "OK", "Information")
         }
-        Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-lobbyid $($combatGames.gameServers[$global:RowIndex].sessionID)"
+        Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-lobbyid $($combatGames.gameServers[$global:RowIndex].sessionID) -noovr -spectatorstream"
     }
 })
 
