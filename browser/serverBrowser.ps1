@@ -221,7 +221,7 @@ function questPatcher {
         }
         $patchEchoVR.text = "Patching..."
         $patchEchoVR.Refresh()
-        $adb = "$env:appdata\EchoNavigator\adb\platform-tools\adb.exe"
+        $global:adb = "$env:appdata\EchoNavigator\adb\platform-tools\adb.exe"
         while (1) {
             $devices = & $adb devices
             $devices = $devices -split "`n"
@@ -839,7 +839,8 @@ if ($config.quest) {
         Invoke-WebRequest "https://aldin101.github.io/EchoNavigatorAPI/EchoNavigator.exe" -OutFile "$env:appdata\EchoNavigator\EchoNavigator.exe"
         Remove-Item HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Recurse -Force
         Remove-Item HKCU:\Software\Classes\EchoNavigator -Recurse -Force
-        start-process "$env:appdata\EchoNavigator\EchoNavigator.exe"
+        Set-Location C:\
+        start-process "$env:appdata\EchoNavigator\EchoNavigator.exe" -ArgumentList $launchArgs
         exit
     }
 } else {
@@ -849,7 +850,8 @@ if ($config.quest) {
         Invoke-WebRequest "https://aldin101.github.io/EchoNavigatorAPI/EchoNavigator.exe" -OutFile "$($global:config.gamePath)\bin\win10\EchoNavigator.exe"
         Remove-Item HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Recurse -Force
         Remove-Item HKCU:\Software\Classes\EchoNavigator -Recurse -Force
-        start-process "$($global:config.gamePath)\bin\win10\EchoNavigator.exe"
+        Set-Location C:\
+        start-process "$($global:config.gamePath)\bin\win10\EchoNavigator.exe" -ArgumentList $launchArgs
         exit
     }
 }
@@ -1108,7 +1110,7 @@ if ($launchArgs -like "navigator://*") {
 
 
         try {
-            Invoke-RestMethod -Method Post -Uri "https://echo-cosmetic-unlocker.deno.dev/$orvOrg"
+            Invoke-RestMethod -Method Post -Uri "https://echo-cosmetic-unlocker.deno.dev/$ovrOrg"
             [System.Windows.Forms.MessageBox]::Show("Cosmetics unlocked successfully.", "Echo Navigator", "OK", "Information")
             exit
         } catch {
@@ -2178,7 +2180,7 @@ $addServer.Font = New-Object System.Drawing.Font("Arial", 12)
 $addServer.add_Click({
     $addServerMenu = New-Object System.Windows.Forms.Form
     $addServerMenu.Text = "Echo Navigator"
-    $addServerMenu.Size = New-Object System.Drawing.Size(300, 350)
+    $addServerMenu.Size = New-Object System.Drawing.Size(325, 320)
     $addServerMenu.StartPosition = "CenterScreen"
     $addServerMenu.FormBorderStyle = "FixedDialog"
     $addServerMenu.showInTaskbar = $false
@@ -2293,4 +2295,9 @@ if ($config.quest) {
     New-ItemProperty HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Name "EstimatedSize" -Value $folderSizeKB -PropertyType "DWORD" -Force | Out-Null
 }
 
+if ($global:adb -ne $null) {
+    & $global:adb kill-server
+}
+Remove-Item -Path "$env:appdata\EchoNavigator\gameConfig.json" -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "$env:appdata\EchoNavigator\configbak.json" -Force -ErrorAction SilentlyContinue
 $config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
