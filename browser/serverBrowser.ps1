@@ -349,9 +349,12 @@ function joinGame {
                 session_id = $combatGames.gameServers[$global:RowIndex].sessionID
                 team_idx = 3
             } | ConvertTo-Json
-            invoke-restmethod -method post -uri http://$($headsetIP):6721/join_session -Body $body -ContentType "application/json"
+            Invoke-RestMethod -method post -uri "http://$($headsetIP):6721/join_session" -Body $body -ContentType "application/json"
         } catch {
             [System.Windows.Forms.MessageBox]::Show("Failed to join match, you need to have Echo VR open and be either in the lobby or in a match. Once you do that try joining the match again.", "Echo Navigator", "OK", "Warning")
+            $questLabel.Visible = $true
+            $connectButton.Visible = $true
+            $menuDetails.Visible = $false
         }
     } else {
         try {
@@ -359,7 +362,7 @@ function joinGame {
                 session_id = $combatGames.gameServers[$global:RowIndex].sessionID
                 team_idx = 3
             } | ConvertTo-Json
-            invoke-restmethod -method post -uri http://$($headsetIP):6721/join_session -Body $body -ContentType "application/json"
+            Invoke-RestMethod -method post -uri "http://$($headsetIP):6721/join_session" -Body $body -ContentType "application/json"
         } catch {
             if (Get-Process -Name EchoVR -ErrorAction SilentlyContinue) {
                 taskkill /f /im EchoVR.exe
@@ -558,7 +561,7 @@ function findHeadset {
     $port = 6721
     $timeout = (Test-Connection -ComputerName "google.com" -Count 1).Latency
 
-    if ($timeout -eq 0) {
+    if ($timeout -eq $null) {
         $timeout = 200
     }
 
@@ -1327,7 +1330,7 @@ if ($config.quest -ne $null) {
     $questLabel = New-Object System.Windows.Forms.Label
     $questLabel.Size = New-Object System.Drawing.Size(1300, 720)
     $questLabel.Location = New-Object System.Drawing.Point(-30, -60)
-    $questLabel.Text = "Headset not connected`n"
+    $questLabel.Text = "Not connected to Echo VR`n"
     $questLabel.TextAlign = 'MiddleCenter'
     $questLabel.Font = New-Object System.Drawing.Font("Arial", 50)
     $combatLounge.Controls.Add($questLabel)
@@ -1354,34 +1357,61 @@ if ($config.quest -ne $null) {
             $asyncResult = $client.BeginConnect($config.lastHeadsetIP, 6721, $null, $null)
             $success = $asyncResult.AsyncWaitHandle.WaitOne(1000, $true)
             if ($success) {
-                $headsetIP = $config.lastHeadsetIP
+                $global:headsetIP = $config.lastHeadsetIP
             } else {
-                $choice = [System.Windows.Forms.MessageBox]::Show("Failed to connect to headset, are you in the Echo VR lobby?", "Echo Navigator", "YesNo", "Error")
+                $choice = [System.Windows.Forms.MessageBox]::Show("Failed to connect to headset, is Echo VR open?", "Echo Navigator", "YesNo", "Error")
                 if ($choice -eq "No") {
-                    [System.Windows.Forms.MessageBox]::Show("Please make sure that you are in the Echo VR lobby before pressing connect.", "Echo Navigator", "OK", "Information")
+                    [System.Windows.Forms.MessageBox]::Show("Please make sure that Echo VR is running before pressing connect.", "Echo Navigator", "OK", "Information")
                     $connectButton.Enabled = $true
                     $connectButton.Text = "Connect"
                     return
                 } else {
                     $connectButton.Text = "Finding headset...`n`n"
-                    $headsetIP = findHeadset
+                    $global:headsetIP = findHeadset
+                    # $global:headsetIP = "127.0.0.1"
                 }
             }
         } else {
             $connectButton.Enabled = $false
             $connectButton.Text = "Finding headset...`n`n"
-            $headsetIP = findHeadset
+            $global:headsetIP = findHeadset
+            # $global:headsetIP = "127.0.0.1"
         }
         if ($headsetIP -eq $null) {
-            [System.Windows.Forms.MessageBox]::Show("Headset not found, please make sure that you are loaded into the Echo VR lobby, API access is enabled, and that you are on the same network as your headset.", "Echo Navigator", "OK", "Error")
+            [System.Windows.Forms.MessageBox]::Show("Headset not found, please make sure that Echo VR is open, API access is enabled, and that you are on the same network as your headset.", "Echo Navigator", "OK", "Error")
             $connectButton.Enabled = $true
             $connectButton.Text = "Connect"
             $searchProgress.Visible = $false
         } else {
+            $connectButton.Text = "Connecting..."
+            try {
+                $currentSession = Invoke-RestMethod -Method Get -Uri "http://$($headsetIP):6721/session"
+            } catch {
+                [System.Windows.Forms.MessageBox]::Show("Failed to connect to Echo VR session, make sure that you are in the lobby and try connecting again", "Echo Navigator", "OK", "Error")
+                $connectButton.Enabled = $true
+                $connectButton.Text = "Connect"
+                return
+            }
+            $refreshCombatLounge.PerformClick()
+            if (!$combatGames.gameServers.sessionID -contains $currentSession.sessionID -and $currentSession.private_match -eq $false) {
+                $choice = [System.Windows.Forms.MessageBox]::Show("It looks like you are on a server other than Echo Combat Lounge, this menu is only meant for joining games on Echo Combat Lounge. Are you sure that you joined Echo Combat Lounge when patching the game? (This message could be a false positive)", "Echo Navigator", "YesNo", "Warning")
+                if ($choice -eq "No") {
+                    if ($database.online[0].name -ne "Echo Combat Lounge") {
+                        [System.Windows.Forms.MessageBox]::Show("Echo Combat Lounge looks to be offline, please try again later.", "Echo Navigator", "OK", "Error")
+                    }
+                    $global:rowIndex = 0
+                    joinServer
+                    return
+                }
+            }
+
             [System.Windows.Forms.MessageBox]::Show("Connected!", "Echo Navigator", "OK", "Information")
-            $questLabel.Dispose()
-            $connectButton.Dispose()
-            $menuDetails.Dispose()
+            $connectButton.Enabled = $true
+            $connectButton.Text = "Connect"
+            $searchProgress.Visible = $false
+            $questLabel.Visible = $false
+            $connectButton.Visible = $false
+            $menuDetails.Visible = $false
         }
     })
     $combatLounge.Controls.Add($connectButton)
@@ -1402,10 +1432,7 @@ if ($config.quest -ne $null) {
     $combatLounge.Controls.Add($menuDetails)
     $menuDetails.BringToFront()
 } else {
-    $headsetIP = 127.0.0.1
-}
-
-if ($config.quest -eq $null) {
+    $headsetIP = "127.0.0.1"
     $currentServer = Get-Content "$($global:config.gamePath)\_Local\config.json" | ConvertFrom-Json
     if ($currentServer.apiservice_host -ne "http://62.68.167.123:1234/api") {combatLoungeNotSelected}
 }
@@ -2091,11 +2118,17 @@ $clientServerList.ColumnHeadersDefaultCellStyle.BackColor = [System.Drawing.Colo
 $clientServerList.ColumnHeadersDefaultCellStyle.SelectionBackColor = [System.Drawing.Color]::FromArgb(240, 240, 240)
 $clientServerList.SelectionMode = 'FullRowSelect'
 $clientServerList.ColumnCount = 1
-$clientServerList.RowCount = $global:config.servers.Count
 $clientServerList.ColumnHeadersVisible = $true
 $clientServerList.TabIndex = 1
 $clientServerList.Columns[0].Name = "Server Name"
 $clientServerList.Columns[0].Width = 200
+
+try {
+    $clientServerList.RowCount = $global:config.servers.Count  
+} catch {
+    $clientServerList.RowCount = 1
+    $clientServerList.Rows[0].Cells[0].Value = "No servers added"
+}
 
 $clientServerList.Add_CellMouseDown({
     param($sender, $e)
@@ -2164,11 +2197,6 @@ $i=0
 foreach ($server in $global:config.servers) {
     $clientServerList.Rows[$i].Cells[0].Value = $server.name
     ++$i
-}
-
-if ($global:config.servers.Count -eq 0) {
-    $clientServerList.RowCount = 1
-    $clientServerList.Rows[0].Cells[0].Value = "No servers added"
 }
 
 
