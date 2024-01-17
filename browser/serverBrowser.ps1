@@ -937,7 +937,7 @@ if ($launchArgs -like "navigator://*") {
             try {
                 $body = @{
                     session_id = $($launchArgs -replace 'navigator://joinGame/', '')
-                    team_idx = $(Get-Random -Minimum 0 -Maximum 2)
+                    team_idx = 3
                 } | ConvertTo-Json
                 invoke-restmethod -method post -uri http://127.0.0.1:6721/join_session -Body $body -ContentType "application/json"
             } catch {
@@ -1330,7 +1330,7 @@ $combatLoungeList.Add_KeyDown({
             try {
                 $body = @{
                     session_id = $combatGames.gameServers[$global:RowIndex].sessionID
-                    team_idx = $(Get-Random -Minimum 0 -Maximum 2)
+                    team_idx = 3
                 } | ConvertTo-Json
                 invoke-restmethod -method post -uri http://127.0.0.1:6721/join_session -Body $body -ContentType "application/json"
             } catch {
@@ -1355,7 +1355,7 @@ $combatLoungeList.Add_CellDoubleClick({
         try {
             $body = @{
                 session_id = $combatGames.gameServers[$global:RowIndex].sessionID
-                team_idx = $(Get-Random -Minimum 0 -Maximum 2)
+                team_idx = 3
             } | ConvertTo-Json
             invoke-restmethod -method post -uri http://127.0.0.1:6721/join_session -Body $body -ContentType "application/json"
         } catch {
@@ -1487,7 +1487,7 @@ $join.add_click({
     try {
         $body = @{
             session_id = $combatGames.gameServers[$global:RowIndex].sessionID
-            team_idx = $(Get-Random -Minimum 0 -Maximum 2)
+            team_idx = 3
         } | ConvertTo-Json
         invoke-restmethod -method post -uri http://127.0.0.1:6721/join_session -Body $body -ContentType "application/json"
     } catch {
