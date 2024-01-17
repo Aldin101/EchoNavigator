@@ -941,9 +941,11 @@ if ($launchArgs -like "navigator://*") {
                 } | ConvertTo-Json
                 invoke-restmethod -method post -uri http://127.0.0.1:6721/join_session -Body $body -ContentType "application/json"
             } catch {
-                taskkill /f /im EchoVR.exe
+                if (Get-Process -Name EchoVR -ErrorAction SilentlyContinue) {
+                    taskkill /f /im EchoVR.exe
+                    [System.Windows.Forms.MessageBox]::Show("Did you know that you can join games without restarting Echo VR?`n`nThe only requirement is that the game is running and that you have API access enabled in your game settings.", "Echo Navigator", "OK", "Information")
+                }
                 Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-lobbyid $($launchArgs -replace 'navigator://joinGame/', '')"
-                [System.Windows.Forms.MessageBox]::Show("Did you know that you can join games without restarting Echo VR?`n`nThe only requirement is that the game is running and that you have API access enabled in your game settings.", "Echo Navigator", "OK", "Information")
             }
         }
         exit
@@ -1332,10 +1334,12 @@ $combatLoungeList.Add_KeyDown({
                 } | ConvertTo-Json
                 invoke-restmethod -method post -uri http://127.0.0.1:6721/join_session -Body $body -ContentType "application/json"
             } catch {
-                taskkill /f /im EchoVR.exe
+                if (Get-Process -Name EchoVR -ErrorAction SilentlyContinue) {
+                    taskkill /f /im EchoVR.exe
+                    [System.Windows.Forms.MessageBox]::Show("Did you know that you can join games without restarting Echo VR?`n`nThe only requirement is that the game is running and that you have API access enabled in your game settings.", "Echo Navigator", "OK", "Information")
+                }
                 Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-lobbyid $($combatGames.gameServers[$global:RowIndex].sessionID)"
-                [System.Windows.Forms.MessageBox]::Show("Did you know that you can join games without restarting Echo VR?`n`nThe only requirement is that the game is running and that you have API access enabled in your game settings.", "Echo Navigator", "OK", "Information")
-            }
+}
         }
     }
 })
@@ -1355,9 +1359,11 @@ $combatLoungeList.Add_CellDoubleClick({
             } | ConvertTo-Json
             invoke-restmethod -method post -uri http://127.0.0.1:6721/join_session -Body $body -ContentType "application/json"
         } catch {
-            taskkill /f /im EchoVR.exe
+            if (Get-Process -Name EchoVR -ErrorAction SilentlyContinue) {
+                taskkill /f /im EchoVR.exe
+                [System.Windows.Forms.MessageBox]::Show("Did you know that you can join games without restarting Echo VR?`n`nThe only requirement is that the game is running and that you have API access enabled in your game settings.", "Echo Navigator", "OK", "Information")
+            }
             Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-lobbyid $($combatGames.gameServers[$global:RowIndex].sessionID)"
-            [System.Windows.Forms.MessageBox]::Show("Did you know that you can join games without restarting Echo VR?`n`nThe only requirement is that the game is running and that you have API access enabled in your game settings.", "Echo Navigator", "OK", "Information")
         }
     }
 })
@@ -1439,7 +1445,7 @@ $refreshCombatLounge.add_click({
         $combatLoungeList.Rows[$i].Cells[2].value = $pingResults[$i]
         ++$i
     }
-    $global:conbatGames = $combatGames
+    $global:combatGames = $combatGames
 
     $refreshCombatLounge.Enabled = $true
     $refreshCombatLounge.text = "Refresh"
@@ -1485,9 +1491,11 @@ $join.add_click({
         } | ConvertTo-Json
         invoke-restmethod -method post -uri http://127.0.0.1:6721/join_session -Body $body -ContentType "application/json"
     } catch {
-        taskkill /f /im EchoVR.exe
-        Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-lobbyid $($combatGames.gameServers[$global:RowIndex].sessionID) -noovr -spectatorstream"
-        [System.Windows.Forms.MessageBox]::Show("Did you know that you can join games without restarting Echo VR?`n`nThe only requirement is that the game is running and that you have API access enabled in your game settings.", "Echo Navigator", "OK", "Information")
+        if (Get-Process -Name EchoVR -ErrorAction SilentlyContinue) {
+            taskkill /f /im EchoVR.exe
+            [System.Windows.Forms.MessageBox]::Show("Did you know that you can join games without restarting Echo VR?`n`nThe only requirement is that the game is running and that you have API access enabled in your game settings.", "Echo Navigator", "OK", "Information")
+        }
+        Start-Process "$($global:config.gamePath)\bin\win10\EchoVR.exe" -ArgumentList "-lobbyid $($combatGames.gameServers[$global:RowIndex].sessionID)"
     }
 })
 
