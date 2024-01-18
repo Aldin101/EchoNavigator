@@ -347,9 +347,10 @@ function joinGame {
         try {
             $body = @{
                 session_id = $combatGames.gameServers[$global:RowIndex].sessionID
-                team_idx = 3
+                team_idx = $(Get-Random -Minimum 0 -Maximum 2)
             } | ConvertTo-Json
-            Invoke-RestMethod -method post -uri "http://$($headsetIP):6721/join_session" -Body $body -ContentType "application/json"
+            $joinReturn = Invoke-RestMethod -method post -uri "http://$($headsetIP):6721/join_session" -Body $body -ContentType "application/json"
+            write-host $joinReturn
         } catch {
             [System.Windows.Forms.MessageBox]::Show("Failed to join match, you need to have Echo VR open and be either in the lobby or in a match. Once you do that try joining the match again.", "Echo Navigator", "OK", "Warning")
             $questLabel.Visible = $true
@@ -360,9 +361,9 @@ function joinGame {
         try {
             $body = @{
                 session_id = $combatGames.gameServers[$global:RowIndex].sessionID
-                team_idx = 3
+                team_idx = $(Get-Random -Minimum 0 -Maximum 2)
             } | ConvertTo-Json
-            Invoke-RestMethod -method post -uri "http://$($headsetIP):6721/join_session" -Body $body -ContentType "application/json"
+            $joinReturn = Invoke-RestMethod -method post -uri "http://$($headsetIP):6721/join_session" -Body $body -ContentType "application/json"
         } catch {
             if (Get-Process -Name EchoVR -ErrorAction SilentlyContinue) {
                 taskkill /f /im EchoVR.exe
@@ -559,7 +560,7 @@ function findHeadset {
     $subnet = [string]::Join('.', $subnetParts) + '.'
 
     $port = 6721
-    $timeout = (Test-Connection -ComputerName "google.com" -Count 1).Latency
+    $timeout = (Test-Connection -ComputerName ($subnet+"1") -Count 1).Latency + 50
 
     if ($timeout -eq $null) {
         $timeout = 200
@@ -1359,9 +1360,9 @@ if ($config.quest -ne $null) {
             if ($success) {
                 $global:headsetIP = $config.lastHeadsetIP
             } else {
-                $choice = [System.Windows.Forms.MessageBox]::Show("Failed to connect to headset, is Echo VR open?", "Echo Navigator", "YesNo", "Error")
+                $choice = [System.Windows.Forms.MessageBox]::Show("Failed to connect to headset, are you in the Echo VR lobby or in a match?", "Echo Navigator", "YesNo", "Error")
                 if ($choice -eq "No") {
-                    [System.Windows.Forms.MessageBox]::Show("Please make sure that Echo VR is running before pressing connect.", "Echo Navigator", "OK", "Information")
+                    [System.Windows.Forms.MessageBox]::Show("Please make sure that you are in the Echo VR lobby before pressing connect.", "Echo Navigator", "OK", "Information")
                     $connectButton.Enabled = $true
                     $connectButton.Text = "Connect"
                     return
@@ -1378,32 +1379,32 @@ if ($config.quest -ne $null) {
             # $global:headsetIP = "127.0.0.1"
         }
         if ($headsetIP -eq $null) {
-            [System.Windows.Forms.MessageBox]::Show("Headset not found, please make sure that Echo VR is open, API access is enabled, and that you are on the same network as your headset.", "Echo Navigator", "OK", "Error")
+            [System.Windows.Forms.MessageBox]::Show("Headset not found, please make sure that Echo VR is open and in a lobby/match, API access is enabled, and that you are on the same network as your headset.", "Echo Navigator", "OK", "Error")
             $connectButton.Enabled = $true
             $connectButton.Text = "Connect"
             $searchProgress.Visible = $false
         } else {
             $connectButton.Text = "Connecting..."
-            try {
-                $currentSession = Invoke-RestMethod -Method Get -Uri "http://$($headsetIP):6721/session"
-            } catch {
-                [System.Windows.Forms.MessageBox]::Show("Failed to connect to Echo VR session, make sure that you are in the lobby and try connecting again", "Echo Navigator", "OK", "Error")
-                $connectButton.Enabled = $true
-                $connectButton.Text = "Connect"
-                return
-            }
-            $refreshCombatLounge.PerformClick()
-            if (!$combatGames.gameServers.sessionID -contains $currentSession.sessionID -and $currentSession.private_match -eq $false) {
-                $choice = [System.Windows.Forms.MessageBox]::Show("It looks like you are on a server other than Echo Combat Lounge, this menu is only meant for joining games on Echo Combat Lounge. Are you sure that you joined Echo Combat Lounge when patching the game? (This message could be a false positive)", "Echo Navigator", "YesNo", "Warning")
-                if ($choice -eq "No") {
-                    if ($database.online[0].name -ne "Echo Combat Lounge") {
-                        [System.Windows.Forms.MessageBox]::Show("Echo Combat Lounge looks to be offline, please try again later.", "Echo Navigator", "OK", "Error")
-                    }
-                    $global:rowIndex = 0
-                    joinServer
-                    return
-                }
-            }
+            # try {
+            #     $currentSession = Invoke-RestMethod -Method Get -Uri "http://$($headsetIP):6721/session"
+            # } catch {
+            #     [System.Windows.Forms.MessageBox]::Show("Failed to connect to Echo VR session, make sure that you are in the lobby and try connecting again", "Echo Navigator", "OK", "Error")
+            #     $connectButton.Enabled = $true
+            #     $connectButton.Text = "Connect"
+            #     return
+            # }
+            # $refreshCombatLounge.PerformClick()
+            # if (!$combatGames.gameServers.sessionID -contains $currentSession.sessionID -and $currentSession.private_match -eq $false) {
+            #     $choice = [System.Windows.Forms.MessageBox]::Show("It looks like you are on a server other than Echo Combat Lounge, this menu is only meant for joining games on Echo Combat Lounge. Are you sure that you joined Echo Combat Lounge when patching the game? (This message could be a false positive)", "Echo Navigator", "YesNo", "Warning")
+            #     if ($choice -eq "No") {
+            #         if ($database.online[0].name -ne "Echo Combat Lounge") {
+            #             [System.Windows.Forms.MessageBox]::Show("Echo Combat Lounge looks to be offline, please try again later.", "Echo Navigator", "OK", "Error")
+            #         }
+            #         $global:rowIndex = 0
+            #         joinServer
+            #         return
+            #     }
+            # }
 
             [System.Windows.Forms.MessageBox]::Show("Connected!", "Echo Navigator", "OK", "Information")
             $connectButton.Enabled = $true
