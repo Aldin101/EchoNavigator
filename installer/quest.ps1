@@ -49,8 +49,6 @@ function makeMovableObject {
         #     {$_ -gt $sendingObject.Parent.Size.Height - $sendingObject.Size.Height*2} {$newObjectLocation.Y = $sendingObject.Parent.Size.Height - $sendingObject.Size.Height*2}
         # }
 
-        # $sendingObject.Location = $newObjectLocation
-
         # $pathRectangle = New-Object System.Drawing.Rectangle(
         #     [Math]::Min($oldObjectLocation.X, $newObjectLocation.X),
         #     [Math]::Min($oldObjectLocation.Y, $newObjectLocation.Y),
@@ -58,12 +56,12 @@ function makeMovableObject {
         #     ([Math]::Abs($newObjectLocation.Y - $oldObjectLocation.Y) + $sendingObject.Height)
         # )
 
-        # foreach ($control in $sender.Parent.Controls) {
-        #     if ($control -ne $sender) {
+        # foreach ($control in $sendingObject.Parent.Controls) {
+        #     if ($control -ne $sendingObject) {
         #         if ($control.Bounds.IntersectsWith($pathRectangle)) {
-        #             $sender.Location = $oldObjectLocation
+        #             $sendingObject.Location = $oldObjectLocation
         #             $global:hasIntersected = $true
-        #             break
+        #             return
         #         }
         #     }
         # }
