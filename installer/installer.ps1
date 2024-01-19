@@ -1,3 +1,81 @@
+function makeMovableObject {
+    param(
+        [Parameter(Mandatory=$true)]
+        $object
+    )
+
+    $object.Add_MouseDown({
+        param($global:sendingObject, $event)
+
+        $global:hasIntersected = $false
+
+        $global:clickedPoint = $sendingObject.PointToClient([System.Windows.Forms.Cursor]::Position)
+
+        $global:moveable = $true
+
+    })
+    $object.Add_MouseMove({
+        if (!$global:moveable) {
+            return
+        }
+        $cursorPosition = ($sendingObject.Parent.PointToClient([System.Windows.Forms.Cursor]::Position) - $clickedPoint)
+        $newObjectLocation = New-Object System.Drawing.Point($cursorPosition.X, $cursorPosition.Y)
+        $oldObjectLocation = $sendingObject.Location
+
+        while (($newObjectLocation.X - $oldObjectLocation.x) -gt 20 -and $global:hasIntersected -eq $true) {
+            $newObjectLocation.X = $newObjectLocation.X - [math]::Sign($newObjectLocation.X - $oldObjectLocation.x)
+        }
+        while (($newObjectLocation.Y - $oldObjectLocation.y) -gt 20 -and $global:hasIntersected -eq $true) {
+            $newObjectLocation.Y = $newObjectLocation.Y - [math]::Sign($newObjectLocation.Y - $oldObjectLocation.y)
+        }
+        while (($newObjectLocation.X - $oldObjectLocation.x) -lt -20 -and $global:hasIntersected -eq $true) {
+            $newObjectLocation.X = $newObjectLocation.X + [math]::Sign($oldObjectLocation.X - $newObjectLocation.x)
+        }
+        while (($newObjectLocation.Y - $oldObjectLocation.y) -lt -20 -and $global:hasIntersected -eq $true) {
+            $newObjectLocation.Y = $newObjectLocation.Y + [math]::Sign($oldObjectLocation.Y - $newObjectLocation.y)
+        }
+
+        # collision detection, unused because there are a lot of elements on the screen and keeping it off is more fun, also bugs
+
+        # switch ($newObjectLocation.X) {
+        #     {$_ -lt 0} {$newObjectLocation.X = 0}
+        #     {$_ -gt $sendingObject.Parent.Size.Width - $sendingObject.Size.Width} {$newObjectLocation.X = $sendingObject.Parent.Size.Width - $sendingObject.Size.Width}
+        # }
+
+        # switch ($newObjectLocation.Y) {
+        #     {$_ -lt 0} {$newObjectLocation.Y = 0}
+        #     {$_ -gt $sendingObject.Parent.Size.Height - $sendingObject.Size.Height*2} {$newObjectLocation.Y = $sendingObject.Parent.Size.Height - $sendingObject.Size.Height*2}
+        # }
+
+        # $sendingObject.Location = $newObjectLocation
+
+        # $pathRectangle = New-Object System.Drawing.Rectangle(
+        #     [Math]::Min($oldObjectLocation.X, $newObjectLocation.X),
+        #     [Math]::Min($oldObjectLocation.Y, $newObjectLocation.Y),
+        #     ([Math]::Abs($newObjectLocation.X - $oldObjectLocation.X) + $sendingObject.Width),
+        #     ([Math]::Abs($newObjectLocation.Y - $oldObjectLocation.Y) + $sendingObject.Height)
+        # )
+
+        # foreach ($control in $sender.Parent.Controls) {
+        #     if ($control -ne $sender) {
+        #         if ($control.Bounds.IntersectsWith($pathRectangle)) {
+        #             $sender.Location = $oldObjectLocation
+        #             $global:hasIntersected = $true
+        #             break
+        #         }
+        #     }
+        # }
+
+        $sendingObject.Location = $newObjectLocation
+
+        $global:sendingObject.BringToFront()
+        $global:sendingObject.TopLevelControl.Refresh()
+    })
+    $object.Add_MouseUp({
+        $global:moveable = $false
+    })
+}
+
 $ProgressPreference = 'SilentlyContinue'
 [reflection.assembly]::LoadWithPartialName( "System.Windows.Forms")
 [System.Windows.Forms.Application]::EnableVisualStyles()
@@ -24,6 +102,7 @@ $label.Text = "Select your platform"
 $label.Font = "Microsoft Sans Serif,20"
 $label.TextAlign = "MiddleCenter"
 $platformMenu.Controls.Add($label)
+makeMovableObject -object $label
 
 $pcButton = New-Object System.Windows.Forms.Button
 $pcButton.Location = New-Object System.Drawing.Size(5,40)
@@ -40,6 +119,7 @@ $pcButton.Add_Click({
     }
 })
 $platformMenu.Controls.Add($pcButton)
+makeMovableObject -object $pcButton
 
 $questButton = New-Object System.Windows.Forms.Button
 $questButton.Location = New-Object System.Drawing.Size(195,40)
@@ -57,6 +137,7 @@ $questButton.Add_Click({
 })
 
 $platformMenu.Controls.Add($questButton)
+makeMovableObject -object $questButton
 
 $platformMenu.ShowDialog()
 

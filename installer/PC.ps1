@@ -1,5 +1,83 @@
 $ProgressPreference = 'SilentlyContinue'
 
+
+function makeMovableObject {
+    param(
+        [Parameter(Mandatory=$true)]
+        $object
+    )
+
+    $object.Add_MouseDown({
+        param($global:sendingObject, $event)
+
+        $global:hasIntersected = $false
+
+        $global:clickedPoint = $sendingObject.PointToClient([System.Windows.Forms.Cursor]::Position)
+
+        $global:moveable = $true
+
+    })
+    $object.Add_MouseMove({
+        if (!$global:moveable) {
+            return
+        }
+        $cursorPosition = ($sendingObject.Parent.PointToClient([System.Windows.Forms.Cursor]::Position) - $clickedPoint)
+        $newObjectLocation = New-Object System.Drawing.Point($cursorPosition.X, $cursorPosition.Y)
+        $oldObjectLocation = $sendingObject.Location
+
+        while (($newObjectLocation.X - $oldObjectLocation.x) -gt 20 -and $global:hasIntersected -eq $true) {
+            $newObjectLocation.X = $newObjectLocation.X - [math]::Sign($newObjectLocation.X - $oldObjectLocation.x)
+        }
+        while (($newObjectLocation.Y - $oldObjectLocation.y) -gt 20 -and $global:hasIntersected -eq $true) {
+            $newObjectLocation.Y = $newObjectLocation.Y - [math]::Sign($newObjectLocation.Y - $oldObjectLocation.y)
+        }
+        while (($newObjectLocation.X - $oldObjectLocation.x) -lt -20 -and $global:hasIntersected -eq $true) {
+            $newObjectLocation.X = $newObjectLocation.X + [math]::Sign($oldObjectLocation.X - $newObjectLocation.x)
+        }
+        while (($newObjectLocation.Y - $oldObjectLocation.y) -lt -20 -and $global:hasIntersected -eq $true) {
+            $newObjectLocation.Y = $newObjectLocation.Y + [math]::Sign($oldObjectLocation.Y - $newObjectLocation.y)
+        }
+
+        # collision detection, unused because there are a lot of elements on the screen and keeping it off is more fun, also bugs
+
+        # switch ($newObjectLocation.X) {
+        #     {$_ -lt 0} {$newObjectLocation.X = 0}
+        #     {$_ -gt $sendingObject.Parent.Size.Width - $sendingObject.Size.Width} {$newObjectLocation.X = $sendingObject.Parent.Size.Width - $sendingObject.Size.Width}
+        # }
+
+        # switch ($newObjectLocation.Y) {
+        #     {$_ -lt 0} {$newObjectLocation.Y = 0}
+        #     {$_ -gt $sendingObject.Parent.Size.Height - $sendingObject.Size.Height*2} {$newObjectLocation.Y = $sendingObject.Parent.Size.Height - $sendingObject.Size.Height*2}
+        # }
+
+        # $sendingObject.Location = $newObjectLocation
+
+        # $pathRectangle = New-Object System.Drawing.Rectangle(
+        #     [Math]::Min($oldObjectLocation.X, $newObjectLocation.X),
+        #     [Math]::Min($oldObjectLocation.Y, $newObjectLocation.Y),
+        #     ([Math]::Abs($newObjectLocation.X - $oldObjectLocation.X) + $sendingObject.Width),
+        #     ([Math]::Abs($newObjectLocation.Y - $oldObjectLocation.Y) + $sendingObject.Height)
+        # )
+
+        # foreach ($control in $sender.Parent.Controls) {
+        #     if ($control -ne $sender) {
+        #         if ($control.Bounds.IntersectsWith($pathRectangle)) {
+        #             $sender.Location = $oldObjectLocation
+        #             $global:hasIntersected = $true
+        #             break
+        #         }
+        #     }
+        # }
+
+        $sendingObject.Location = $newObjectLocation
+
+        $global:sendingObject.BringToFront()
+        $global:sendingObject.TopLevelControl.Refresh()
+    })
+    $object.Add_MouseUp({
+        $global:moveable = $false
+    })
+}
 function chooseFolder {
     $locations = Get-ChildItem "HKCU:\SOFTWARE\Oculus VR, LLC\Oculus\Libraries\*"
     $locationList = [System.Collections.ArrayList]@()
@@ -30,6 +108,7 @@ function chooseFolder {
     $pickLabel.TextAlign = "MiddleCenter"
     $pickLabel.Font = "Microsoft Sans Serif,10"
     $pickMenu.Controls.Add($pickLabel)
+makeMovableObject -object $pickLabel
 
     $pickList = New-Object System.Windows.Forms.ListBox
     $pickList.Location = New-Object System.Drawing.Size(10,30)
@@ -38,6 +117,7 @@ function chooseFolder {
     $pickList.DataSource = $locationList
     $pickList.SelectedIndex = $i
     $pickMenu.Controls.Add($pickList)
+makeMovableObject -object $pickList
 
     $customPath = New-Object System.Windows.Forms.Button
     $customPath.Location = New-Object System.Drawing.Size(10,140)
@@ -49,6 +129,7 @@ function chooseFolder {
         $pickMenu.Close()
     })
     $pickMenu.Controls.Add($customPath)
+makeMovableObject -object $customPath
 
     $pickButton = New-Object System.Windows.Forms.Button
     $pickButton.Location = New-Object System.Drawing.Size(10,180)
@@ -60,6 +141,7 @@ function chooseFolder {
         $pickMenu.Close()
     })
     $pickMenu.Controls.Add($pickButton)
+makeMovableObject -object $pickButton
 
     $pickMenu.ShowDialog()
 }
@@ -155,6 +237,7 @@ function downgrade {
     $downgradeLabel.Font = "Microsoft Sans Serif,11"
     $downgradeLabel.TextAlign = "MiddleCenter"
     $downgradeMenu.Controls.Add($downgradeLabel)
+makeMovableObject -object $downgradeLabel
 
     $segmentLabel = New-Object System.Windows.Forms.Label
     $segmentLabel.Location = New-Object System.Drawing.Size(10,70)
@@ -163,6 +246,7 @@ function downgrade {
     $segmentLabel.Font = "Microsoft Sans Serif,10"
     $segmentLabel.Visible = $false
     $downgradeMenu.Controls.Add($segmentLabel)
+makeMovableObject -object $segmentLabel
 
     $segmentProgress = New-Object System.Windows.Forms.ProgressBar
     $segmentProgress.Location = New-Object System.Drawing.Size(10,90)
@@ -172,6 +256,7 @@ function downgrade {
     $segmentProgress.Value = 0
     $segmentProgress.Visible = $false
     $downgradeMenu.Controls.Add($segmentProgress)
+makeMovableObject -object $segmentProgress
 
     $sizeLabel = New-Object System.Windows.Forms.Label
     $sizeLabel.Location = New-Object System.Drawing.Size(10,110)
@@ -180,6 +265,7 @@ function downgrade {
     $sizeLabel.Font = "Microsoft Sans Serif,10"
     $sizeLabel.Visible = $false
     $downgradeMenu.Controls.Add($sizeLabel)
+makeMovableObject -object $sizeLabel
 
     $sizeProgress = New-Object System.Windows.Forms.ProgressBar
     $sizeProgress.Location = New-Object System.Drawing.Size(10,130)
@@ -189,6 +275,7 @@ function downgrade {
     $sizeProgress.Value = 0
     $sizeProgress.Visible = $false
     $downgradeMenu.Controls.Add($sizeProgress)
+makeMovableObject -object $sizeProgress
 
     $timeRemainingLabel = New-Object System.Windows.Forms.Label
     $timeRemainingLabel.Location = New-Object System.Drawing.Size(10, 110)
@@ -197,6 +284,7 @@ function downgrade {
     $timeRemainingLabel.Font = "Microsoft Sans Serif,10"
     $timeRemainingLabel.Visible = $false
     $downgradeMenu.Controls.Add($timeRemainingLabel)
+makeMovableObject -object $timeRemainingLabel
 
 
     $downgradeButton = New-Object System.Windows.Forms.Button
@@ -435,6 +523,7 @@ function downgrade {
         $downgradeMenu.Close()
     })
     $downgradeMenu.Controls.Add($downgradeButton)
+makeMovableObject -object $downgradeButton
 
     $folderPicker = New-Object System.Windows.Forms.Button
     $folderPicker.Location = New-Object System.Drawing.Size(10,80)
@@ -470,6 +559,7 @@ function downgrade {
         $pickLabel.TextAlign = "MiddleCenter"
         $pickLabel.Font = "Microsoft Sans Serif,10"
         $pickMenu.Controls.Add($pickLabel)
+makeMovableObject -object $pickLabel
 
         $pickList = New-Object System.Windows.Forms.ListBox
         $pickList.Location = New-Object System.Drawing.Size(10,30)
@@ -478,6 +568,7 @@ function downgrade {
         $pickList.DataSource = $locationList
         $pickList.SelectedIndex = $i
         $pickMenu.Controls.Add($pickList)
+makeMovableObject -object $pickList
 
         $customPath = New-Object System.Windows.Forms.Button
         $customPath.Location = New-Object System.Drawing.Size(10,140)
@@ -493,6 +584,7 @@ function downgrade {
             $pickMenu.Close()
         })
         $pickMenu.Controls.Add($customPath)
+makeMovableObject -object $customPath
 
         $pickButton = New-Object System.Windows.Forms.Button
         $pickButton.Location = New-Object System.Drawing.Size(10,180)
@@ -510,10 +602,12 @@ function downgrade {
             $pickMenu.Close()
         })
         $pickMenu.Controls.Add($pickButton)
+makeMovableObject -object $pickButton
 
         $pickMenu.ShowDialog()
     })
     $downgradeMenu.Controls.Add($folderPicker)
+makeMovableObject -object $folderPicker
 
     $downgradeMenu.ShowDialog()
     $menu.Show()
@@ -637,6 +731,7 @@ function pickGameFolder {
     $pickLabel.TextAlign = "MiddleCenter"
     $pickLabel.Font = "Microsoft Sans Serif,10"
     $pickMenu.Controls.Add($pickLabel)
+makeMovableObject -object $pickLabel
 
     $pickList = New-Object System.Windows.Forms.ListBox
     $pickList.Location = New-Object System.Drawing.Size(10,30)
@@ -645,6 +740,7 @@ function pickGameFolder {
     $pickList.DataSource = $locationList
     $pickList.SelectedIndex = $i
     $pickMenu.Controls.Add($pickList)
+makeMovableObject -object $pickList
 
     $customPath = New-Object System.Windows.Forms.Button
     $customPath.Location = New-Object System.Drawing.Size(10,140)
@@ -667,6 +763,7 @@ function pickGameFolder {
         $pickMenu.Close()
     })
     $pickMenu.Controls.Add($customPath)
+makeMovableObject -object $customPath
 
     $pickButton = New-Object System.Windows.Forms.Button
     $pickButton.Location = New-Object System.Drawing.Size(10,180)
@@ -684,6 +781,7 @@ function pickGameFolder {
         $pickMenu.Close()
     })
     $pickMenu.Controls.Add($pickButton)
+makeMovableObject -object $pickButton
 
     $pickMenu.ShowDialog()
 }
@@ -729,6 +827,7 @@ $label.Text = "Echo Navigator Installer"
 $label.Font = "Microsoft Sans Serif,13"
 $label.TextAlign = "MiddleLeft"
 $menu.Controls.Add($label)
+makeMovableObject -object $label
 
 $username = New-Object System.Windows.Forms.Label
 $username.Location = New-Object System.Drawing.Size(10,40)
@@ -736,12 +835,14 @@ $username.Size = New-Object System.Drawing.Size(200,20)
 $username.Text = "Username"
 $username.Font = "Microsoft Sans Serif,10"
 $menu.Controls.Add($username)
+makeMovableObject -object $username
 
 $usernameBox = New-Object System.Windows.Forms.TextBox
 $usernameBox.Location = New-Object System.Drawing.Size(10,60)
 $usernameBox.Size = New-Object System.Drawing.Size(200,20)
 $usernameBox.Font = "Microsoft Sans Serif,10"
 $menu.Controls.Add($usernameBox)
+makeMovableObject -object $usernameBox
 
 $password = New-Object System.Windows.Forms.Label
 $password.Location = New-Object System.Drawing.Size(10,90)
@@ -749,6 +850,7 @@ $password.Size = New-Object System.Drawing.Size(200,20)
 $password.Text = "Password"
 $password.Font = "Microsoft Sans Serif,10"
 $menu.Controls.Add($password)
+makeMovableObject -object $password
 
 $passwordBox = New-Object System.Windows.Forms.TextBox
 $passwordBox.Location = New-Object System.Drawing.Size(10,110)
@@ -756,6 +858,7 @@ $passwordBox.Size = New-Object System.Drawing.Size(200,20)
 $passwordBox.Font = "Microsoft Sans Serif,10"
 $passwordBox.PasswordChar = "*"
 $menu.Controls.Add($passwordBox)
+makeMovableObject -object $passwordBox
 
 $showPassword = New-Object System.Windows.Forms.PictureBox
 $showPassword.Location = New-Object System.Drawing.Size(188, 111)
@@ -781,6 +884,7 @@ $showPassword.Add_MouseLeave({
     $showPassword.BorderStyle = [System.Windows.Forms.BorderStyle]::None
 })
 $menu.Controls.Add($showPassword)
+makeMovableObject -object $showPassword
 
 $showPassword.BringToFront()
 
@@ -795,6 +899,7 @@ $noUsernameOrPassword.Font = "Microsoft Sans Serif,8"
 $noUsernameOrPassword.ForeColor = "Red"
 $noUsernameOrPassword.Visible = $false
 $menu.Controls.Add($noUsernameOrPassword)
+makeMovableObject -object $noUsernameOrPassword
 
 $infoLabel = New-Object System.Windows.Forms.Label
 $infoLabel.Location = New-Object System.Drawing.Size(220,10)
@@ -802,6 +907,7 @@ $infoLabel.Size = New-Object System.Drawing.Size(2000,230)
 $infoLabel.Text = "This information is not your Meta log in, it is your account`non Echo Relay servers. But your account info is still tied to`nyour Meta account and cannot be changed later.`nIf you forget your account information for a server please`ncontact the server host.`n`nThere is no check for if your username has already been`nclaimed at this time. If you receive login errors please`ntry a different username.`n`nDO NOT use the same password for you Meta account or`nany other online service. While using unique passwords for`nall online services is always recommended, it is especially`nimportant for Echo Relay because your account information`nis not secured."
 $infoLabel.Font = "Microsoft Sans Serif,10"
 $menu.Controls.Add($infoLabel)
+makeMovableObject -object $infoLabel
 
 $infoCheckBox = New-Object System.Windows.Forms.CheckBox
 $infoCheckBox.Location = New-Object System.Drawing.Size(220,240)
@@ -816,6 +922,7 @@ $infoCheckBox.Add_KeyDown({
 })
 
 $menu.Controls.add($infoCheckBox)
+makeMovableObject -object $infoCheckBox
 
 
 $install = New-Object System.Windows.Forms.Button
@@ -825,6 +932,7 @@ $install.Text = "Install"
 $install.Font = "Microsoft Sans Serif,10"
 $install.Add_Click({install})
 $menu.Controls.Add($install)
+makeMovableObject -object $install
 
 $credits = New-Object System.Windows.Forms.Label
 $credits.Location = New-Object System.Drawing.Size(5,325)
@@ -832,6 +940,7 @@ $credits.Size = New-Object System.Drawing.Size(2000,200)
 $credits.Text = "Echo Navigator Created By: Aldin101`nOriginal Echo Relay Created By:Xenomega"
 $credits.Font = "Microsoft Sans Serif,10"
 $menu.Controls.Add($credits)
+makeMovableObject -object $credits
 
 $currentPath = New-Object System.Windows.Forms.Label
 $selectGameFolder = New-Object System.Windows.Forms.Button
@@ -845,11 +954,13 @@ $selectGameFolder.Add_Click({
 })
 $currentPath.Text = "Current Game Folder:`n$global:gamePath"
 $menu.Controls.Add($selectGameFolder)
+makeMovableObject -object $selectGameFolder
 
 $currentPath.Location = New-Object System.Drawing.Size(10,250)
 $currentPath.Size = New-Object System.Drawing.Size(2000,200)
 $currentPath.Font = "Microsoft Sans Serif,10"
 $menu.Controls.Add($currentPath)
+makeMovableObject -object $currentPath
 
 $menu.ShowDialog()
 

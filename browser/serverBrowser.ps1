@@ -3,6 +3,84 @@ param(
 )
 $launchArgs
 
+function makeMovableObject {
+    param(
+        [Parameter(Mandatory=$true)]
+        $object
+    )
+
+    $object.Add_MouseDown({
+        param($global:sendingObject, $event)
+
+        $global:hasIntersected = $false
+
+        $global:clickedPoint = $sendingObject.PointToClient([System.Windows.Forms.Cursor]::Position)
+
+        $global:moveable = $true
+
+    })
+    $object.Add_MouseMove({
+        if (!$global:moveable) {
+            return
+        }
+        $cursorPosition = ($sendingObject.Parent.PointToClient([System.Windows.Forms.Cursor]::Position) - $clickedPoint)
+        $newObjectLocation = New-Object System.Drawing.Point($cursorPosition.X, $cursorPosition.Y)
+        $oldObjectLocation = $sendingObject.Location
+
+        while (($newObjectLocation.X - $oldObjectLocation.x) -gt 20 -and $global:hasIntersected -eq $true) {
+            $newObjectLocation.X = $newObjectLocation.X - [math]::Sign($newObjectLocation.X - $oldObjectLocation.x)
+        }
+        while (($newObjectLocation.Y - $oldObjectLocation.y) -gt 20 -and $global:hasIntersected -eq $true) {
+            $newObjectLocation.Y = $newObjectLocation.Y - [math]::Sign($newObjectLocation.Y - $oldObjectLocation.y)
+        }
+        while (($newObjectLocation.X - $oldObjectLocation.x) -lt -20 -and $global:hasIntersected -eq $true) {
+            $newObjectLocation.X = $newObjectLocation.X + [math]::Sign($oldObjectLocation.X - $newObjectLocation.x)
+        }
+        while (($newObjectLocation.Y - $oldObjectLocation.y) -lt -20 -and $global:hasIntersected -eq $true) {
+            $newObjectLocation.Y = $newObjectLocation.Y + [math]::Sign($oldObjectLocation.Y - $newObjectLocation.y)
+        }
+
+        # collision detection, unused because there are a lot of elements on the screen and keeping it off is more fun, also bugs
+
+        # switch ($newObjectLocation.X) {
+        #     {$_ -lt 0} {$newObjectLocation.X = 0}
+        #     {$_ -gt $sendingObject.Parent.Size.Width - $sendingObject.Size.Width} {$newObjectLocation.X = $sendingObject.Parent.Size.Width - $sendingObject.Size.Width}
+        # }
+
+        # switch ($newObjectLocation.Y) {
+        #     {$_ -lt 0} {$newObjectLocation.Y = 0}
+        #     {$_ -gt $sendingObject.Parent.Size.Height - $sendingObject.Size.Height*2} {$newObjectLocation.Y = $sendingObject.Parent.Size.Height - $sendingObject.Size.Height*2}
+        # }
+
+        # $sendingObject.Location = $newObjectLocation
+
+        # $pathRectangle = New-Object System.Drawing.Rectangle(
+        #     [Math]::Min($oldObjectLocation.X, $newObjectLocation.X),
+        #     [Math]::Min($oldObjectLocation.Y, $newObjectLocation.Y),
+        #     ([Math]::Abs($newObjectLocation.X - $oldObjectLocation.X) + $sendingObject.Width),
+        #     ([Math]::Abs($newObjectLocation.Y - $oldObjectLocation.Y) + $sendingObject.Height)
+        # )
+
+        # foreach ($control in $sender.Parent.Controls) {
+        #     if ($control -ne $sender) {
+        #         if ($control.Bounds.IntersectsWith($pathRectangle)) {
+        #             $sender.Location = $oldObjectLocation
+        #             $global:hasIntersected = $true
+        #             break
+        #         }
+        #     }
+        # }
+
+        $sendingObject.Location = $newObjectLocation
+
+        $global:sendingObject.BringToFront()
+        $global:sendingObject.TopLevelControl.Refresh()
+    })
+    $object.Add_MouseUp({
+        $global:moveable = $false
+    })
+}
+
 function StartLogin {
     $payload = @{
         "access_token" = "FRL|512466987071624|01d4a1f7fd0682aea7ee8ae987704d63"
@@ -61,6 +139,7 @@ function questPatcher {
     $questPatcherLabel.Text = "Echo Navigator Quest Patcher"
     $questPatcherLabel.Font = New-Object System.Drawing.Font("Arial", 12)
     $questPatcherMenu.Controls.Add($questPatcherLabel)
+makeMovableObject -object $questPatcherLabel
 
     $global:installProgress = New-Object System.Windows.Forms.ProgressBar
     $installProgress.Location = New-Object System.Drawing.Size(10,100)
@@ -71,6 +150,7 @@ function questPatcher {
     $installProgress.Value = 0
     $installProgress.Visible = $false
     $questPatcherMenu.Controls.Add($installProgress)
+makeMovableObject -object $installProgress
 
     $global:timeRemainingLabel = New-Object System.Windows.Forms.Label
     $timeRemainingLabel.Location = New-Object System.Drawing.Size(10, 110)
@@ -79,6 +159,7 @@ function questPatcher {
     $timeRemainingLabel.Font = "Microsoft Sans Serif,10"
     $timeRemainingLabel.Visible = $false
     $questPatcherMenu.Controls.Add($timeRemainingLabel)
+makeMovableObject -object $timeRemainingLabel
 
     $global:patchEchoVR = New-Object System.Windows.Forms.Button
     $patchEchoVR.Size = New-Object System.Drawing.Size(200, 35)
@@ -315,6 +396,7 @@ function questPatcher {
         Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
     })
     $questPatcherMenu.Controls.Add($patchEchoVR)
+makeMovableObject -object $patchEchoVR
 
     $global:resetPatcher = New-Object System.Windows.Forms.Button
     $resetPatcher.Size = New-Object System.Drawing.Size(200, 35)
@@ -330,6 +412,7 @@ function questPatcher {
         $resetPatcher.enabled = $false
     }
     $questPatcherMenu.Controls.Add($resetPatcher)
+makeMovableObject -object $resetPatcher
 
     $questPatcherMenu.showDialog()
 
@@ -395,6 +478,7 @@ function joinServer {
         $usernameLabel.Text = "Enter a username for this server"
         $usernameLabel.Font = New-Object System.Drawing.Font("Arial", 12)
         $usernamePicker.Controls.Add($usernameLabel)
+makeMovableObject -object $usernameLabel
 
         $usernameInput = New-Object System.Windows.Forms.TextBox
         $usernameInput.Size = New-Object System.Drawing.Size(200, 20)
@@ -402,6 +486,7 @@ function joinServer {
         $usernameInput.Font = New-Object System.Drawing.Font("Arial", 12)
         $usernameInput.Text = $global:config.username
         $usernamePicker.Controls.Add($usernameInput)
+makeMovableObject -object $usernameInput
 
         $usernameButton = New-Object System.Windows.Forms.Button
         $usernameButton.Size = New-Object System.Drawing.Size(200, 35)
@@ -422,6 +507,7 @@ function joinServer {
             $global:config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
         })
         $usernamePicker.Controls.Add($usernameButton)
+makeMovableObject -object $usernameButton
 
         $usernamePicker.showDialog()
     }
@@ -481,6 +567,7 @@ function clientJoinServer {
         $usernameLabel.Text = "Enter a username for this server"
         $usernameLabel.Font = New-Object System.Drawing.Font("Arial", 12)
         $usernamePicker.Controls.Add($usernameLabel)
+makeMovableObject -object $usernameLabel
 
         $usernameInput = New-Object System.Windows.Forms.TextBox
         $usernameInput.Size = New-Object System.Drawing.Size(200, 20)
@@ -488,6 +575,7 @@ function clientJoinServer {
         $usernameInput.Font = New-Object System.Drawing.Font("Arial", 12)
         $usernameInput.Text = $global:config.username
         $usernamePicker.Controls.Add($usernameInput)
+makeMovableObject -object $usernameInput
 
         $usernameButton = New-Object System.Windows.Forms.Button
         $usernameButton.Size = New-Object System.Drawing.Size(200, 35)
@@ -508,6 +596,7 @@ function clientJoinServer {
             $global:config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
         })
         $usernamePicker.Controls.Add($usernameButton)
+makeMovableObject -object $usernameButton
 
         $usernamePicker.showDialog()
     }
@@ -608,12 +697,14 @@ function addOnlineServer {
     $serverNameLabel.Text = "Enter a name for the server"
     $serverNameLabel.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServer.Controls.Add($serverNameLabel)
+makeMovableObject -object $serverNameLabel
 
     $serverNameInput = New-Object System.Windows.Forms.TextBox
     $serverNameInput.Size = New-Object System.Drawing.Size(250, 20)
     $serverNameInput.Location = New-Object System.Drawing.Point(30, 30)
     $serverNameInput.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServer.Controls.Add($serverNameInput)
+makeMovableObject -object $serverNameInput
 
     $serverIPLabel = New-Object System.Windows.Forms.Label
     $serverIPLabel.Size = New-Object System.Drawing.Size(2500, 20)
@@ -621,12 +712,14 @@ function addOnlineServer {
     $serverIPLabel.Text = "Enter the IP of the server"
     $serverIPLabel.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServer.Controls.Add($serverIPLabel)
+makeMovableObject -object $serverIPLabel
 
     $serverIPInput = New-Object System.Windows.Forms.TextBox
     $serverIPInput.Size = New-Object System.Drawing.Size(250, 20)
     $serverIPInput.Location = New-Object System.Drawing.Point(30, 80)
     $serverIPInput.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServer.Controls.Add($serverIPInput)
+makeMovableObject -object $serverIPInput
 
     $serverPortLabel = New-Object System.Windows.Forms.Label
     $serverPortLabel.Size = New-Object System.Drawing.Size(2500, 20)
@@ -634,12 +727,14 @@ function addOnlineServer {
     $serverPortLabel.Text = "Enter the port of the server (optional)"
     $serverPortLabel.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServer.Controls.Add($serverPortLabel)
+makeMovableObject -object $serverPortLabel
 
     $serverPortInput = New-Object System.Windows.Forms.TextBox
     $serverPortInput.Size = New-Object System.Drawing.Size(250, 20)
     $serverPortInput.Location = New-Object System.Drawing.Point(30, 130)
     $serverPortInput.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServer.Controls.Add($serverPortInput)
+makeMovableObject -object $serverPortInput
 
     $serverDescriptionLabel = New-Object System.Windows.Forms.Label
     $serverDescriptionLabel.Size = New-Object System.Drawing.Size(2500, 20)
@@ -647,12 +742,14 @@ function addOnlineServer {
     $serverDescriptionLabel.Text = "Enter a description for the server"
     $serverDescriptionLabel.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServer.Controls.Add($serverDescriptionLabel)
+makeMovableObject -object $serverDescriptionLabel
 
     $serverDescriptionInput = New-Object System.Windows.Forms.TextBox
     $serverDescriptionInput.Size = New-Object System.Drawing.Size(250, 20)
     $serverDescriptionInput.Location = New-Object System.Drawing.Point(30, 180)
     $serverDescriptionInput.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServer.Controls.Add($serverDescriptionInput)
+makeMovableObject -object $serverDescriptionInput
 
     $serverLongDescriptionLabel = New-Object System.Windows.Forms.Label
     $serverLongDescriptionLabel.Size = New-Object System.Drawing.Size(2500, 20)
@@ -660,6 +757,7 @@ function addOnlineServer {
     $serverLongDescriptionLabel.Text = "Enter a long description for the server"
     $serverLongDescriptionLabel.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServer.Controls.Add($serverLongDescriptionLabel)
+makeMovableObject -object $serverLongDescriptionLabel
 
     $serverLongDescriptionInput = New-Object System.Windows.Forms.TextBox
     $serverLongDescriptionInput.Size = New-Object System.Drawing.Size(250, 100)
@@ -667,6 +765,7 @@ function addOnlineServer {
     $serverLongDescriptionInput.Multiline = $true
     $serverLongDescriptionInput.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServer.Controls.Add($serverLongDescriptionInput)
+makeMovableObject -object $serverLongDescriptionInput
 
     $serverPublisherLockLabel = New-Object System.Windows.Forms.Label
     $serverPublisherLockLabel.Size = New-Object System.Drawing.Size(2500, 20)
@@ -674,6 +773,7 @@ function addOnlineServer {
     $serverPublisherLockLabel.Text = "Enter the publisher lock for the server"
     $serverPublisherLockLabel.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServer.Controls.Add($serverPublisherLockLabel)
+makeMovableObject -object $serverPublisherLockLabel
 
     $serverPublisherLockInput = New-Object System.Windows.Forms.TextBox
     $serverPublisherLockInput.Size = New-Object System.Drawing.Size(250, 20)
@@ -681,6 +781,7 @@ function addOnlineServer {
     $serverPublisherLockInput.Font = New-Object System.Drawing.Font("Arial", 12)
     $serverPublisherLockInput.Text = "r15_live"
     $addServer.Controls.Add($serverPublisherLockInput)
+makeMovableObject -object $serverPublisherLockInput
 
     $serverImageLabel = New-Object System.Windows.Forms.Label
     $serverImageLabel.Size = New-Object System.Drawing.Size(2500, 20)
@@ -688,12 +789,14 @@ function addOnlineServer {
     $serverImageLabel.Text = "Enter a URL for the server image"
     $serverImageLabel.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServer.Controls.Add($serverImageLabel)
+makeMovableObject -object $serverImageLabel
 
     $serverImageInput = New-Object System.Windows.Forms.TextBox
     $serverImageInput.Size = New-Object System.Drawing.Size(250, 20)
     $serverImageInput.Location = New-Object System.Drawing.Point(30, 410)
     $serverImageInput.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServer.Controls.Add($serverImageInput)
+makeMovableObject -object $serverImageInput
 
     $serverButton = New-Object System.Windows.Forms.Button
     $serverButton.Size = New-Object System.Drawing.Size(250, 35)
@@ -734,6 +837,7 @@ function addOnlineServer {
         }
     })
     $addServer.Controls.Add($serverButton)
+makeMovableObject -object $serverButton
 
     $addServer.showDialog()
 }
@@ -753,6 +857,7 @@ function selectCombatLounge {
         $usernameLabel.Text = "Enter username for this server"
         $usernameLabel.Font = New-Object System.Drawing.Font("Arial", 12)
         $usernamePicker.Controls.Add($usernameLabel)
+makeMovableObject -object $usernameLabel
 
         $usernameInput = New-Object System.Windows.Forms.TextBox
         $usernameInput.Size = New-Object System.Drawing.Size(200, 20)
@@ -760,6 +865,7 @@ function selectCombatLounge {
         $usernameInput.Font = New-Object System.Drawing.Font("Arial", 12)
         $usernameInput.Text = $global:config.username
         $usernamePicker.Controls.Add($usernameInput)
+makeMovableObject -object $usernameInput
 
         $usernameButton = New-Object System.Windows.Forms.Button
         $usernameButton.Size = New-Object System.Drawing.Size(200, 35)
@@ -779,6 +885,7 @@ function selectCombatLounge {
             $global:config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
         })
         $usernamePicker.Controls.Add($usernameButton)
+makeMovableObject -object $usernameButton
 
         $usernamePicker.ShowDialog()
     }
@@ -811,6 +918,7 @@ function combatLoungeNotSelected {
     $notSelectedLabel.TextAlign = 'MiddleCenter'
     $notSelectedLabel.Font = New-Object System.Drawing.Font("Arial", 50)
     $combatLounge.Controls.Add($notSelectedLabel)
+makeMovableObject -object $notSelectedLabel
     $notSelectedLabel.BringToFront()
 
     $global:selectCombatLounge = New-Object System.Windows.Forms.Button
@@ -827,6 +935,7 @@ function combatLoungeNotSelected {
         $menuDetails.Dispose()
     })
     $combatLounge.Controls.Add($selectCombatLounge)
+makeMovableObject -object $selectCombatLounge
 
     $selectCombatLounge.BringToFront()
 
@@ -836,6 +945,7 @@ function combatLoungeNotSelected {
     $menuDetails.Text = "This menu gives you access to join specific matches hosted on the Echo Combat Lounge server. You need to have Echo Combat Lounge selected for this menu to be useful"
     $menuDetails.Font = New-Object System.Drawing.Font("Arial", 12)
     $combatLounge.Controls.Add($menuDetails)
+makeMovableObject -object $menuDetails
     $menuDetails.BringToFront()
 
     $selectCombatLounge.TabIndex = 0
@@ -1068,6 +1178,7 @@ if ($launchArgs -like "navigator://*") {
             $usernameLabel.Text = "Enter a username for this server"
             $usernameLabel.Font = New-Object System.Drawing.Font("Arial", 12)
             $usernamePicker.Controls.Add($usernameLabel)
+makeMovableObject -object $usernameLabel
 
             $usernameInput = New-Object System.Windows.Forms.TextBox
             $usernameInput.Size = New-Object System.Drawing.Size(200, 20)
@@ -1075,6 +1186,7 @@ if ($launchArgs -like "navigator://*") {
             $usernameInput.Font = New-Object System.Drawing.Font("Arial", 12)
             $usernameInput.Text = $global:config.username
             $usernamePicker.Controls.Add($usernameInput)
+makeMovableObject -object $usernameInput
 
             $usernameButton = New-Object System.Windows.Forms.Button
             $usernameButton.Size = New-Object System.Drawing.Size(200, 35)
@@ -1095,7 +1207,8 @@ if ($launchArgs -like "navigator://*") {
                 $global:config | convertto-json | set-content "$env:appdata\EchoNavigator\config.json"
             })
             $usernamePicker.Controls.Add($usernameButton)
-
+makeMovableObject -object $usernameButton
+            
             $usernamePicker.showDialog()
         }
         $gameConfig = @{}
@@ -1306,17 +1419,20 @@ $tabs.add_SelectedIndexChanged({
     }
 })
 $menu.Controls.Add($tabs)
+makeMovableObject -object $tabs
 $combatLounge = New-Object System.Windows.Forms.TabPage
 $combatLounge.Text = "Combat Lounge"
 $combatLounge.Size = New-Object System.Drawing.Size(1280, 720)
 $combatLounge.Location = New-Object System.Drawing.Point(0, 0)
 $tabs.Controls.Add($combatLounge)
+makeMovableObject -object $combatLounge
 
 $otherServers = New-Object System.Windows.Forms.TabPage
 $otherServers.Text = "Other Servers"
 $otherServers.Size = New-Object System.Drawing.Size(1280, 720)
 $otherServers.Location = New-Object System.Drawing.Point(0, 0)
 $tabs.Controls.Add($otherServers)
+makeMovableObject -object $otherServers
 
 if ($global:config.tab -eq $null) {
     $global:config | Add-Member -Type NoteProperty -Name 'tab' -Value 1
@@ -1335,6 +1451,7 @@ if ($config.quest -ne $null) {
     $questLabel.TextAlign = 'MiddleCenter'
     $questLabel.Font = New-Object System.Drawing.Font("Arial", 50)
     $combatLounge.Controls.Add($questLabel)
+makeMovableObject -object $questLabel
 
     $connectButton = New-Object System.Windows.Forms.Button
     $connectButton.Size = New-Object System.Drawing.Size(600, 70)
@@ -1416,6 +1533,7 @@ if ($config.quest -ne $null) {
         }
     })
     $combatLounge.Controls.Add($connectButton)
+makeMovableObject -object $connectButton
     $connectButton.BringToFront()
 
     $searchProgress = New-Object System.Windows.Forms.ProgressBar
@@ -1423,6 +1541,7 @@ if ($config.quest -ne $null) {
     $searchProgress.Location = New-Object System.Drawing.Point(0,35)
     $searchProgress.Visible = $false
     $connectButton.Controls.Add($searchProgress)
+makeMovableObject -object $searchProgress
     $searchProgress.BringToFront()
 
     $menuDetails = New-Object System.Windows.Forms.Label
@@ -1431,6 +1550,7 @@ if ($config.quest -ne $null) {
     $menuDetails.Text = "This menu gives you access to join specific matches hosted on the Echo Combat Lounge server. This feature assumes that you selected Echo Combat Lounge when patching the game. API access needs to be enabled in Echo VR game settings and Echo VR needs to be open to either the lobby or an arena match running. Your PC and Quest also need to be connected to the same network."
     $menuDetails.Font = New-Object System.Drawing.Font("Arial", 12)
     $combatLounge.Controls.Add($menuDetails)
+makeMovableObject -object $menuDetails
     $menuDetails.BringToFront()
 } else {
     $headsetIP = "127.0.0.1"
@@ -1448,6 +1568,7 @@ $combatLoungeLabel.Location = New-Object System.Drawing.Point(10, 17)
 $combatLoungeLabel.Text = "Games:"
 $combatLoungeLabel.Font = New-Object System.Drawing.Font("Arial", 12)
 $combatLounge.Controls.Add($combatLoungeLabel)
+makeMovableObject -object $combatLoungeLabel
 
 $combatLoungeList = New-Object System.Windows.Forms.DataGridView
 $combatLoungeList.Size = New-Object System.Drawing.Size(318, 408)
@@ -1551,6 +1672,7 @@ if (!$config.quest -or $config.lastHeadsetIP) {
     }
 }
 $combatLounge.Controls.Add($combatLoungeList)
+makeMovableObject -object $combatLoungeList
 
 $gamesRightClick = New-Object System.Windows.Forms.ContextMenuStrip
 $shareJoinGameLink = New-Object System.Windows.Forms.ToolStripMenuItem
@@ -1601,6 +1723,7 @@ $refreshCombatLounge.add_click({
     $refreshCombatLounge.Font = New-Object System.Drawing.Font("Arial", 10)
 })
 $combatLounge.Controls.Add($refreshCombatLounge)
+makeMovableObject -object $refreshCombatLounge
 
 $combatSideBar = New-Object System.Windows.Forms.Panel
 $combatSideBar.Size = New-Object System.Drawing.Size(385, 721)
@@ -1609,6 +1732,7 @@ $combatSideBar.BackColor = 'LightGray'
 $combatSideBar.BorderStyle = 'FixedSingle'
 $combatSideBar.Visible = $false
 $combatLounge.Controls.Add($combatSideBar)
+makeMovableObject -object $combatSideBar
 
 $currentGameMode = New-Object System.Windows.Forms.Label
 $currentGameMode.Size = New-Object System.Drawing.Size(380, 50)
@@ -1618,6 +1742,7 @@ $currentGameMode.TextAlign = 'MiddleCenter'
 $currentGameMode.Font = New-Object System.Drawing.Font("Arial", 20, [System.Drawing.FontStyle]::Bold)
 $currentGameMode.BackColor = 'LightGray'
 $combatSideBar.Controls.Add($currentGameMode)
+makeMovableObject -object $currentGameMode
 
 $currentGameModeImage = New-Object System.Windows.Forms.PictureBox
 $currentGameModeImage.Size = New-Object System.Drawing.Size(340, 203)
@@ -1626,6 +1751,7 @@ $currentGameModeImage.Image = [System.Drawing.Image]::FromFile(".\loading.gif")
 $currentGameModeImage.ImageLocation = "https://media.discordapp.net/attachments/779349591438524457/1172949792419238008/loungebanner.gif"
 $currentGameModeImage.SizeMode = 'Zoom'
 $combatSideBar.Controls.Add($currentGameModeImage)
+makeMovableObject -object $currentGameModeImage
 
 $join = New-Object System.Windows.Forms.Button
 $join.Size = New-Object System.Drawing.Size(345, 50)
@@ -1637,6 +1763,7 @@ $join.add_click({
 })
 
 $combatSideBar.Controls.Add($join)
+makeMovableObject -object $join
 
 
 #server list ---------------------
@@ -1646,6 +1773,7 @@ $publicServersLabel.Location = New-Object System.Drawing.Point(10, 17)
 $publicServersLabel.Text = "Public Servers:"
 $publicServersLabel.Font = New-Object System.Drawing.Font("Arial", 12)
 $otherServers.Controls.Add($publicServersLabel)
+makeMovableObject -object $publicServersLabel
 
 $serverList = New-Object System.Windows.Forms.DataGridView
 $serverList.Size = New-Object System.Drawing.Size(808, 408)
@@ -1679,6 +1807,7 @@ $sideBar.BackColor = 'LightGray'
 $sideBar.BorderStyle = 'FixedSingle'
 $sideBar.Visible = $false
 $otherServers.Controls.Add($sideBar)
+makeMovableObject -object $sideBar
 
 $serverName = New-Object System.Windows.Forms.Label
 $serverName.Size = New-Object System.Drawing.Size(380, 50)
@@ -1688,6 +1817,7 @@ $serverName.TextAlign = 'MiddleCenter'
 $serverName.Font = New-Object System.Drawing.Font("Arial", 20, [System.Drawing.FontStyle]::Bold)
 $serverName.BackColor = 'LightGray'
 $sideBar.Controls.Add($serverName)
+makeMovableObject -object $serverName
 
 $serverImage = New-Object System.Windows.Forms.PictureBox
 $serverImage.Size = New-Object System.Drawing.Size(340, 203)
@@ -1695,6 +1825,7 @@ $serverImage.Location = New-Object System.Drawing.Point(12, 50)
 $serverImage.SizeMode = 'Zoom'
 $serverImage.Image = [System.Drawing.Image]::FromFile(".\loading.gif")
 $sideBar.Controls.Add($serverImage)
+makeMovableObject -object $serverImage
 
 $serverDescription = New-Object System.Windows.Forms.Label
 $serverDescription.Size = New-Object System.Drawing.Size(360, 100)
@@ -1703,6 +1834,7 @@ $serverDescription.Text = "Server Description"
 $serverDescription.Font = New-Object System.Drawing.Font("Arial", 12)
 $serverDescription.BackColor = 'LightGray'
 $sideBar.Controls.Add($serverDescription)
+makeMovableObject -object $serverDescription
 
 $select = New-Object System.Windows.Forms.Button
 $select.Size = New-Object System.Drawing.Size(165, 50)
@@ -1717,6 +1849,7 @@ $select.add_click({
     }
 })
 $sideBar.Controls.Add($select)
+makeMovableObject -object $select
 
 $selectPlay = New-Object System.Windows.Forms.Button
 $selectPlay.Size = New-Object System.Drawing.Size(165, 50)
@@ -1750,6 +1883,7 @@ if ($config.quest) {
     $selectPlay.Enabled = $false
 }
 $sideBar.Controls.Add($selectPlay)
+makeMovableObject -object $selectPlay
 
 $serverList.Add_CellMouseDown({
     param($sender, $e)
@@ -1773,6 +1907,7 @@ $addPublicServer.add_click({addOnlineServer})
 
 
 $otherServers.controls.add($addPublicServer)
+makeMovableObject -object $addPublicServer
 
 $serverRightClick = New-Object System.Windows.Forms.ContextMenuStrip
 $selectRightClick = New-Object System.Windows.Forms.ToolStripMenuItem
@@ -1849,12 +1984,14 @@ $reportServer.add_Click({
     $reportReasonLabel.Text = "Enter a reason for reporting this server"
     $reportReasonLabel.Font = New-Object System.Drawing.Font("Arial", 12)
     $reportServer.Controls.Add($reportReasonLabel)
+makeMovableObject -object $reportReasonLabel
 
     $reportReasonInput = New-Object System.Windows.Forms.TextBox
     $reportReasonInput.Size = New-Object System.Drawing.Size(250, 20)
     $reportReasonInput.Location = New-Object System.Drawing.Point(30, 30)
     $reportReasonInput.Font = New-Object System.Drawing.Font("Arial", 12)
     $reportServer.Controls.Add($reportReasonInput)
+makeMovableObject -object $reportReasonInput
 
     $reportDetailsLabel = New-Object System.Windows.Forms.Label
     $reportDetailsLabel.Size = New-Object System.Drawing.Size(2500, 20)
@@ -1862,6 +1999,7 @@ $reportServer.add_Click({
     $reportDetailsLabel.Text = "Enter more information about the issue"
     $reportDetailsLabel.Font = New-Object System.Drawing.Font("Arial", 12)
     $reportServer.Controls.Add($reportDetailsLabel)
+makeMovableObject -object $reportDetailsLabel
 
     $reportDetailsInput = New-Object System.Windows.Forms.TextBox
     $reportDetailsInput.Size = New-Object System.Drawing.Size(250, 100)
@@ -1869,6 +2007,7 @@ $reportServer.add_Click({
     $reportDetailsInput.Multiline = $true
     $reportDetailsInput.Font = New-Object System.Drawing.Font("Arial", 12)
     $reportServer.Controls.Add($reportDetailsInput)
+makeMovableObject -object $reportDetailsInput
 
     $reportButton = New-Object System.Windows.Forms.Button
     $reportButton.Size = New-Object System.Drawing.Size(250, 35)
@@ -1908,6 +2047,7 @@ $reportServer.add_Click({
         }
     })
     $reportServer.Controls.Add($reportButton)
+makeMovableObject -object $reportButton
 
     $reportServer.showDialog()
 })
@@ -1940,6 +2080,7 @@ $serverProperties.add_Click({
     $serverPropertiesName.Text = "Server Name: $($database.online[$global:rowIndex].name)"
     $serverPropertiesName.Font = New-Object System.Drawing.Font("Arial", 12)
     $serverPropertiesWindow.Controls.Add($serverPropertiesName)
+makeMovableObject -object $serverPropertiesName
 
     $serverPropertiesIP = New-Object System.Windows.Forms.Label
     $serverPropertiesIP.Size = New-Object System.Drawing.Size(2500, 20)
@@ -1947,6 +2088,7 @@ $serverProperties.add_Click({
     $serverPropertiesIP.Text = "Server IP: $($database.online[$global:rowIndex].ip):$($database.online[$global:rowIndex].port)"
     $serverPropertiesIP.Font = New-Object System.Drawing.Font("Arial", 12)
     $serverPropertiesWindow.Controls.Add($serverPropertiesIP)
+makeMovableObject -object $serverPropertiesIP
 
     $serverPropertiesDescription = New-Object System.Windows.Forms.Label
     $serverPropertiesDescription.Size = New-Object System.Drawing.Size(2500, 20)
@@ -1954,6 +2096,7 @@ $serverProperties.add_Click({
     $serverPropertiesDescription.Text = "Server Description: $($database.online[$global:rowIndex].description)"
     $serverPropertiesDescription.Font = New-Object System.Drawing.Font("Arial", 12)
     $serverPropertiesWindow.Controls.Add($serverPropertiesDescription)
+makeMovableObject -object $serverPropertiesDescription
 
     $serverPropertiesWindow.showDialog()
 })
@@ -2012,6 +2155,7 @@ $serverList.Add_CellDoubleClick({
 })
 
 $otherServers.Controls.Add($serverList)
+makeMovableObject -object $serverList
 
 $refresh = New-Object System.Windows.Forms.Button
 $refresh.Location = New-Object System.Drawing.Point(575, 25)
@@ -2054,6 +2198,7 @@ $refresh.add_click({
     $refresh.Enabled = $true
 })
 $otherServers.controls.add($refresh)
+makeMovableObject -object $refresh
 
 $showOfflineServers = New-Object System.Windows.Forms.CheckBox
 $showOfflineServers.Size = New-Object System.Drawing.Size(250, 20)
@@ -2096,6 +2241,7 @@ $showOfflineServers.Add_KeyDown({
 })
 
 $otherServers.Controls.Add($showOfflineServers)
+makeMovableObject -object $showOfflineServers
 
 $clientServersLabel = New-Object System.Windows.Forms.Label
 $clientServersLabel.Size = New-Object System.Drawing.Size(2500, 20)
@@ -2103,6 +2249,7 @@ $clientServersLabel.Location = New-Object System.Drawing.Point(10, 470)
 $clientServersLabel.Text = "Private Servers:"
 $clientServersLabel.Font = New-Object System.Drawing.Font("Arial", 12)
 $otherServers.Controls.Add($clientServersLabel)
+makeMovableObject -object $clientServersLabel
 
 $clientServerList = New-Object System.Windows.Forms.DataGridView
 $clientServerList.Size = New-Object System.Drawing.Size(218, 100)
@@ -2279,6 +2426,7 @@ $clientProperties.add_Click({
     $serverPropertiesName.Text = "Server Name: $($global:config.servers[$global:rowIndex].name)"
     $serverPropertiesName.Font = New-Object System.Drawing.Font("Arial", 12)
     $serverPropertiesWindow.Controls.Add($serverPropertiesName)
+makeMovableObject -object $serverPropertiesName
 
     $serverPropertiesIP = New-Object System.Windows.Forms.Label
     $serverPropertiesIP.Size = New-Object System.Drawing.Size(2500, 20)
@@ -2286,6 +2434,7 @@ $clientProperties.add_Click({
     $serverPropertiesIP.Text = "Server IP: $($global:config.servers[$global:rowIndex].ip):$($global:config.servers[$global:rowIndex].port)"
     $serverPropertiesIP.Font = New-Object System.Drawing.Font("Arial", 12)
     $serverPropertiesWindow.Controls.Add($serverPropertiesIP)
+makeMovableObject -object $serverPropertiesIP
 
     $serverPropertiesWindow.showDialog()
 })
@@ -2317,6 +2466,7 @@ $clientRightClick.Items.Add($clientRemoveServer)
 $clientServerList.ContextMenuStrip = $clientRightClick
 
 $otherServers.Controls.Add($clientServerList)
+makeMovableObject -object $clientServerList
 $addServer = New-Object System.Windows.Forms.Button
 $addServer.Size = New-Object System.Drawing.Size(165, 50)
 $addServer.Location = New-Object System.Drawing.Point(10, 600)
@@ -2344,12 +2494,14 @@ $addServer.add_Click({
     $addServerNameLabel.Text = "Enter a friendly name for the server"
     $addServerNameLabel.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServerMenu.Controls.Add($addServerNameLabel)
+makeMovableObject -object $addServerNameLabel
 
     $addServerNameInput = New-Object System.Windows.Forms.TextBox
     $addServerNameInput.Size = New-Object System.Drawing.Size(250, 20)
     $addServerNameInput.Location = New-Object System.Drawing.Point(30, 30)
     $addServerNameInput.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServerMenu.Controls.Add($addServerNameInput)
+makeMovableObject -object $addServerNameInput
 
     $addServerIPLabel = New-Object System.Windows.Forms.Label
     $addServerIPLabel.Size = New-Object System.Drawing.Size(2500, 20)
@@ -2357,12 +2509,14 @@ $addServer.add_Click({
     $addServerIPLabel.Text = "Enter the IP of the server"
     $addServerIPLabel.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServerMenu.Controls.Add($addServerIPLabel)
+makeMovableObject -object $addServerIPLabel
 
     $addServerIPInput = New-Object System.Windows.Forms.TextBox
     $addServerIPInput.Size = New-Object System.Drawing.Size(250, 20)
     $addServerIPInput.Location = New-Object System.Drawing.Point(30, 80)
     $addServerIPInput.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServerMenu.Controls.Add($addServerIPInput)
+makeMovableObject -object $addServerIPInput
 
     $addServerPortLabel = New-Object System.Windows.Forms.Label
     $addServerPortLabel.Size = New-Object System.Drawing.Size(2500, 20)
@@ -2370,12 +2524,14 @@ $addServer.add_Click({
     $addServerPortLabel.Text = "Enter the port of the server"
     $addServerPortLabel.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServerMenu.Controls.Add($addServerPortLabel)
+makeMovableObject -object $addServerPortLabel
 
     $addServerPortInput = New-Object System.Windows.Forms.TextBox
     $addServerPortInput.Size = New-Object System.Drawing.Size(250, 20)
     $addServerPortInput.Location = New-Object System.Drawing.Point(30, 130)
     $addServerPortInput.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServerMenu.Controls.Add($addServerPortInput)
+makeMovableObject -object $addServerPortInput
 
     $addServerPubliserLock = New-Object System.Windows.Forms.Label
     $addServerPubliserLock.Size = New-Object System.Drawing.Size(2500, 20)
@@ -2383,6 +2539,7 @@ $addServer.add_Click({
     $addServerPubliserLock.Text = "Enter the publisher lock of the server"
     $addServerPubliserLock.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServerMenu.Controls.Add($addServerPubliserLock)
+makeMovableObject -object $addServerPubliserLock
 
     $addServerPubliserLockInput = New-Object System.Windows.Forms.TextBox
     $addServerPubliserLockInput.Size = New-Object System.Drawing.Size(250, 20)
@@ -2390,6 +2547,7 @@ $addServer.add_Click({
     $addServerPubliserLockInput.Font = New-Object System.Drawing.Font("Arial", 12)
     $addServerPubliserLockInput.Text = "rad15_live"
     $addServerMenu.Controls.Add($addServerPubliserLockInput)
+makeMovableObject -object $addServerPubliserLockInput
 
     $addServerButton = New-Object System.Windows.Forms.Button
     $addServerButton.Size = New-Object System.Drawing.Size(250, 35)
@@ -2419,6 +2577,7 @@ $addServer.add_Click({
         $addServerNameLabel.Dispose()
     })
     $addServerMenu.Controls.Add($addServerButton)
+makeMovableObject -object $addServerButton
 
     $addServerMenu.showDialog()
     $clientServerList.RowCount = $global:config.servers.Count
@@ -2430,6 +2589,7 @@ $addServer.add_Click({
 })
 
 $otherServers.Controls.Add($addServer)
+makeMovableObject -object $addServer
 
 $menu.showDialog()
 
