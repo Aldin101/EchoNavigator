@@ -1697,7 +1697,7 @@ $serverImage.Image = [System.Drawing.Image]::FromFile(".\loading.gif")
 $sideBar.Controls.Add($serverImage)
 
 $serverDescription = New-Object System.Windows.Forms.Label
-$serverDescription.Size = New-Object System.Drawing.Size(360, 100)
+$serverDescription.Size = New-Object System.Drawing.Size(360, 340)
 $serverDescription.Location = New-Object System.Drawing.Point(10, 260)
 $serverDescription.Text = "Server Description"
 $serverDescription.Font = New-Object System.Drawing.Font("Arial", 12)
@@ -1949,7 +1949,7 @@ $serverProperties.add_Click({
     $serverPropertiesWindow.Controls.Add($serverPropertiesIP)
 
     $serverPropertiesDescription = New-Object System.Windows.Forms.Label
-    $serverPropertiesDescription.Size = New-Object System.Drawing.Size(2500, 20)
+    $serverPropertiesDescription.Size = New-Object System.Drawing.Size(580, 100)
     $serverPropertiesDescription.Location = New-Object System.Drawing.Point(10, 70)
     $serverPropertiesDescription.Text = "Server Description: $($database.online[$global:rowIndex].description)"
     $serverPropertiesDescription.Font = New-Object System.Drawing.Font("Arial", 12)
