@@ -55,7 +55,7 @@ function install {
     $Shortcut.Save()
     if (Test-Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator") {
         Remove-Item HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EchoNavigator -Recurse -Force
-        Remove-Item HKCU:\Software\Classes\EchoNavigator -Recurse -Force
+        Remove-Item HKCU:\Software\Classes\Navigator -Recurse -Force
     }
     [system.windows.forms.messagebox]::Show("Echo Navigator installed!`n`nSelect a server to get started!", "Echo Navigator Installer", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Information)
     start-process "$env:appdata\EchoNavigator\EchoNavigator.exe" -WorkingDirectory "C:\"

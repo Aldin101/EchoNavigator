@@ -304,8 +304,40 @@ function questPatcher {
         taskkill /f /im EchoRewind.exe
         Remove-Item "$env:appdata\EchoNavigator\config.json"
         Rename-Item "$env:appdata\EchoNavigator\configbak.json" "$env:appdata\EchoNavigator\config.json"
-        & $adb install "$env:appdata\EchoNavigator\r15_goldmaster_store_patched.apk"
-        & $adb push "$env:appdata\EchoNavigator\main.4987566.com.readyatdawn.r15.obb" "/sdcard/Android/obb/com.readyatdawn.r15/main.4987566.com.readyatdawn.r15.obb"
+        $apkInstall = & $adb install "$env:appdata\EchoNavigator\r15_goldmaster_store_patched.apk"
+
+        $apkInstall = $apkInstall -split "`n"
+
+        if ($apkInstall -notcontains "Success") {
+            $jsonData = @{
+                action = "Telemetry"
+                message = "Failed to install APK $($apkInstall -join "`n")"
+            } | ConvertTo-Json
+            Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
+            [System.Windows.Forms.MessageBox]::show("Failed to install APK.", "Echo Navigator", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Error)
+            $patchEchoVR.text = "Try again"
+            $installProgress.Visible = $false
+            $patchEchoVR.enabled = $true
+            $resetPatcher.visible = $true
+            return
+        }
+
+        $push = & $adb push "$env:appdata\EchoNavigator\main.4987566.com.readyatdawn.r15.obb" "/sdcard/Android/obb/com.readyatdawn.r15/main.4987566.com.readyatdawn.r15.obb"
+
+        if ($push -notlike "*1 file pushed*") {
+            $jsonData = @{
+                action = "Telemetry"
+                message = "Failed to push obb $push"
+            } | ConvertTo-Json
+            Invoke-RestMethod -Uri $database.api -Method Post -ContentType "application/json" -Body $jsonData -TimeoutSec 3
+            [System.Windows.Forms.MessageBox]::show("Failed to install OBB file.", "Echo Navigator", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Error)
+            $patchEchoVR.text = "Try again"
+            $installProgress.Visible = $false
+            $patchEchoVR.enabled = $true
+            $resetPatcher.visible = $true
+            return
+        }
+
         $questPatcherMenu.Close()
         $global:gamePatched = $true
         $jsonData = @{
