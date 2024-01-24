@@ -261,6 +261,7 @@ function questPatcher {
         }
         while (1) {
             $devices = & $adb devices
+            $devices = $devices -split "`n"
             if ($devices[1] -like "*unauthorized") {
                 $noDevice = [System.Windows.Forms.MessageBox]::show("This computer is unauthorized. Please accept the prompt in your headset then press retry.", "Echo Navigator", [system.windows.forms.messageboxbuttons]::RetryCancel, [system.windows.forms.messageboxicon]::Warning)
                 if ($noDevice -eq "Cancel") {
@@ -273,6 +274,16 @@ function questPatcher {
             } else {
                 break
             }
+        }
+        $devices = & $adb devices
+        $devices = $devices -split "`n"
+        if ($devices[1] -like "*offline*") {
+            $noDevice = [System.Windows.Forms.MessageBox]::show("The device is not connected correctly please restart your headset and computer, then try again.", "Echo Navigator", [system.windows.forms.messageboxbuttons]::OK, [system.windows.forms.messageboxicon]::Error)
+            $patchEchoVR.text = "Try again"
+            $installProgress.Visible = $false
+            $patchEchoVR.enabled = $true
+            $resetPatcher.visible = $true
+            return
         }
         remove-item "$env:appdata\EchoNavigator\r15_goldmaster_store_patched.apk"
         & $adb uninstall com.readyatdawn.r15
