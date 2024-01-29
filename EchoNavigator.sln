@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34322.80
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Browser", "Browser\Browser.csproj", "{F93C4BE7-AFBB-4FCE-82EA-73079FC7FFCB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Installer", "Installer\Installer.csproj", "{EB3B39C5-606C-4138-98E8-C9BE3F579328}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F93C4BE7-AFBB-4FCE-82EA-73079FC7FFCB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F93C4BE7-AFBB-4FCE-82EA-73079FC7FFCB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F93C4BE7-AFBB-4FCE-82EA-73079FC7FFCB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F93C4BE7-AFBB-4FCE-82EA-73079FC7FFCB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EB3B39C5-606C-4138-98E8-C9BE3F579328}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EB3B39C5-606C-4138-98E8-C9BE3F579328}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EB3B39C5-606C-4138-98E8-C9BE3F579328}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EB3B39C5-606C-4138-98E8-C9BE3F579328}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {51B0A318-C5AC-4A9C-84A8-407B8713A833}
+	EndGlobalSection
+EndGlobal
