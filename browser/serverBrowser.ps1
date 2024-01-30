@@ -381,6 +381,16 @@ function questPatcher {
 }
 
 function joinGame {
+
+    if ($combatGames.gameServers[$global:RowIndex].isPublic -eq $false) {
+        if ($config.quest) {
+            [System.Windows.Forms.MessageBox]::Show("You can not join private games using Echo Navigator, please use Spark instead.", "Echo Navigator", "OK", "Warning")
+        } else {
+            [System.Windows.Forms.MessageBox]::Show("You can not join private games using Echo Navigator, please use the in-game party system instead.", "Echo Navigator", "OK", "Warning")
+        }
+        return
+    }
+
     if ($config.quest) {
         if ($combatGames.gameServers[$global:RowIndex].gameMode -like "*combat*") {
             Start-Process "https://youtu.be/dQw4w9WgXcQ"
@@ -807,7 +817,7 @@ function selectCombatLounge {
         $usernameButton = New-Object System.Windows.Forms.Button
         $usernameButton.Size = New-Object System.Drawing.Size(200, 35)
         $usernameButton.Location = New-Object System.Drawing.Point(30, 60)
-        $usernameButton.Text = "Join Echo Combat Lounge"
+        $usernameButton.Text = "Join Echo VR Lounge"
         $usernameButton.add_click({
             $username = $global:config.username
             if ($usernameInput.text -ne "") {
@@ -832,12 +842,12 @@ function selectCombatLounge {
     }
 
     $gameConfig = @{}
-    $gameConfig | Add-Member -Name 'apiservice_host' -Type NoteProperty -Value "http://62.68.167.123:1234/api"
-    $gameConfig | Add-Member -Name 'configservice_host' -Type NoteProperty -Value "ws://62.68.167.123:1234/config"
-    $gameConfig | Add-Member -Name 'loginservice_host' -Type NoteProperty -Value "ws://62.68.167.123:1234/login?auth=$($global:config.password)&displayname=$($global:config.'62.68.167.123')"
-    $gameConfig | Add-Member -Name 'matchingservice_host' -Type NoteProperty -Value "ws://62.68.167.123:1234/matching"
-    $gameConfig | Add-Member -Name 'serverdb_host' -Type NoteProperty -Value "ws://62.68.167.123:1234/serverdb"
-    $gameConfig | Add-Member -Name 'transactionservice_host' -Type NoteProperty -Value "ws://62.68.167.123:1234/transaction"
+    $gameConfig | Add-Member -Name 'apiservice_host' -Type NoteProperty -Value "http://global.echovrce.com:80/api"
+    $gameConfig | Add-Member -Name 'configservice_host' -Type NoteProperty -Value "ws://global.echovrce.com:80/config"
+    $gameConfig | Add-Member -Name 'loginservice_host' -Type NoteProperty -Value "ws://global.echovrce.com:80/login?auth=$($global:config.password)&displayname=$($global:config.'62.68.167.123')"
+    $gameConfig | Add-Member -Name 'matchingservice_host' -Type NoteProperty -Value "ws://global.echovrce.com:80/matching"
+    $gameConfig | Add-Member -Name 'serverdb_host' -Type NoteProperty -Value "ws://global.echovrce.com:80/serverdb"
+    $gameConfig | Add-Member -Name 'transactionservice_host' -Type NoteProperty -Value "ws://global.echovrce.com:80/transaction"
     $gameConfig | Add-Member -Name 'publisher_lock' -Type NoteProperty -Value 'rad15_live'
     $gameConfig | convertto-json | set-content "$($global:config.gamePath)\_local\config.json"
 }
@@ -850,7 +860,7 @@ function combatLoungeNotSelected {
     $global:notSelectedLabel = New-Object System.Windows.Forms.Label
     $notSelectedLabel.Size = New-Object System.Drawing.Size(1300, 720)
     $notSelectedLabel.Location = New-Object System.Drawing.Point(-30, -60)
-    $notSelectedLabel.Text = "Echo Combat Lounge not selected"
+    $notSelectedLabel.Text = "Echo VR Lounge not selected"
     $notSelectedLabel.TextAlign = 'MiddleCenter'
     $notSelectedLabel.Font = New-Object System.Drawing.Font("Arial", 50)
     $combatLounge.Controls.Add($notSelectedLabel)
@@ -860,7 +870,7 @@ function combatLoungeNotSelected {
     $selectCombatLounge.Size = New-Object System.Drawing.Size(600, 70)
     $selectCombatLounge.Location = New-Object System.Drawing.Point(320, 350)
     $selectCombatLounge.Font = New-Object System.Drawing.Font("Arial", 20)
-    $selectCombatLounge.Text = "Select Echo Combat Lounge"
+    $selectCombatLounge.Text = "Select Echo VR Lounge"
     $selectCombatLounge.add_click({
 
         selectCombatLounge
@@ -876,7 +886,7 @@ function combatLoungeNotSelected {
     $global:menuDetails = New-Object System.Windows.Forms.Label
     $menuDetails.Size = New-Object System.Drawing.Size(520, 100)
     $menuDetails.Location = New-Object System.Drawing.Point(730, 590)
-    $menuDetails.Text = "This menu gives you access to join specific matches hosted on the Echo Combat Lounge server. You need to have Echo Combat Lounge selected for this menu to be useful"
+    $menuDetails.Text = "This menu gives you access to join specific matches hosted on the Echo VR Lounge server. You need to have Echo VR Lounge selected for this menu to be useful"
     $menuDetails.Font = New-Object System.Drawing.Font("Arial", 12)
     $combatLounge.Controls.Add($menuDetails)
     $menuDetails.BringToFront()
@@ -1039,8 +1049,8 @@ if ($launchArgs -like "navigator://*") {
             [System.Windows.Forms.MessageBox]::Show("This feature is not available on Quest", "Echo Navigator", "OK", "Information")
         } else {
             $currentServer = Get-Content "$($global:config.gamePath)\_Local\config.json" | ConvertFrom-Json
-            if ($currentServer.apiservice_host -ne "http://62.68.167.123:1234/api") {
-                $choice = [System.Windows.Forms.MessageBox]::Show("Echo Combat Lounge is not set as your current server, would you like to join it? You need to if you want to join this game.", "Echo Navigator", "YesNo", "Warning")
+            if ($currentServer.apiservice_host -ne "http://global.echovrce.com:80/api") {
+                $choice = [System.Windows.Forms.MessageBox]::Show("Echo VR Lounge is not set as your current server, would you like to join it? You need to if you want to join this game.", "Echo Navigator", "YesNo", "Warning")
                 if ($choice -eq "Yes") {
                     selectCombatLounge
                 } else {
@@ -1329,7 +1339,7 @@ $tabs.add_SelectedIndexChanged({
     if ($tabs.SelectedTab -eq $combatLounge) {
         if ($config.quest -eq $null) {
             $currentServer = Get-Content "$($global:config.gamePath)\_Local\config.json" | ConvertFrom-Json
-            if ($currentServer.apiservice_host -ne "http://62.68.167.123:1234/api") {combatLoungeNotSelected} else {
+            if ($currentServer.apiservice_host -ne "http://global.echovrce.com:80/api") {combatLoungeNotSelected} else {
                 $selectCombatLounge.Dispose()
                 $notSelectedLabel.Dispose()
                 $menuDetails.Dispose()
@@ -1350,7 +1360,7 @@ $tabs.add_SelectedIndexChanged({
 })
 $menu.Controls.Add($tabs)
 $combatLounge = New-Object System.Windows.Forms.TabPage
-$combatLounge.Text = "Combat Lounge"
+$combatLounge.Text = "Active Games"
 $combatLounge.Size = New-Object System.Drawing.Size(1280, 720)
 $combatLounge.Location = New-Object System.Drawing.Point(0, 0)
 $tabs.Controls.Add($combatLounge)
@@ -1471,14 +1481,14 @@ if ($config.quest -ne $null) {
     $menuDetails = New-Object System.Windows.Forms.Label
     $menuDetails.Size = New-Object System.Drawing.Size(520, 120)
     $menuDetails.Location = New-Object System.Drawing.Point(730, 545)
-    $menuDetails.Text = "This menu gives you access to join specific matches hosted on the Echo Combat Lounge server. This feature assumes that you selected Echo Combat Lounge when patching the game. API access needs to be enabled in Echo VR game settings and Echo VR needs to be open to either the lobby or an arena match running. Your PC and Quest also need to be connected to the same network."
+    $menuDetails.Text = "This menu gives you access to join specific matches hosted on the Echo VR Lounge server. This feature assumes that you selected Echo Vr Lounge when patching the game. API access needs to be enabled in Echo VR game settings and Echo VR needs to be open to either the lobby or an arena match running. Your PC and Quest also need to be connected to the same network."
     $menuDetails.Font = New-Object System.Drawing.Font("Arial", 12)
     $combatLounge.Controls.Add($menuDetails)
     $menuDetails.BringToFront()
 } else {
     $headsetIP = "127.0.0.1"
     $currentServer = Get-Content "$($global:config.gamePath)\_Local\config.json" | ConvertFrom-Json
-    if ($currentServer.apiservice_host -ne "http://62.68.167.123:1234/api") {combatLoungeNotSelected}
+    if ($currentServer.apiservice_host -ne "http://global.echovrce.com:80/api") {combatLoungeNotSelected}
 }
 
 
@@ -1520,13 +1530,21 @@ $combatLoungeList.Columns[1].Width = 200
 $combatLoungeList.Columns[2].Name = "Ping"
 $combatLoungeList.Columns[2].Width = 50
 
+$combatLoungeList.Add_SelectionChanged({
+    param($sender, $e)
+    if (!$combatGames.gameServers[$sender.SelectedRows.index].isPublic) {
+        $join.Enabled = $false
+    } else {
+        $join.Enabled = $true
+    }
+})
+
 $combatLoungeList.Add_CellClick({
     param($sender, $e)
     $combatLoungeList.ClearSelection()
     $combatLoungeList.Rows[$e.RowIndex].Selected = $true
     $combatSideBar.Visible = $true
     $global:rowIndex = $e.RowIndex
-    $global:clientselected = $true
     $currentGameMode.Text = $combatLoungeList.Rows[$e.RowIndex].Cells[1].value
 })
 
@@ -1540,7 +1558,6 @@ $combatLoungeList.Add_KeyDown({
         $combatLoungeList.ClearSelection()
         $combatLoungeList.Rows[$e.RowIndex].Selected = $true
         $global:rowIndex = $e.RowIndex
-        $global:clientselected = $true
         $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to join $($combatLoungeList.Rows[$e.RowIndex].Cells[1].value)?", "Echo Navigator", "YesNo", "Question")
         if ($choice -eq "Yes") {
             joinGame
@@ -1553,7 +1570,6 @@ $combatLoungeList.Add_CellDoubleClick({
     $combatLoungeList.ClearSelection()
     $combatLoungeList.Rows[$e.RowIndex].Selected = $true
     $global:rowIndex = $e.RowIndex
-    $global:clientselected = $true
     $choice = [System.Windows.Forms.MessageBox]::Show("Would you like to join $($combatLoungeList.Rows[$e.RowIndex].Cells[1].value)?", "Echo Navigator", "YesNo", "Question")
     if ($choice -eq "Yes") {
         joinGame
@@ -1568,7 +1584,6 @@ $combatLoungeList.Add_CellMouseDown({
         $combatLoungeList.Rows[$e.RowIndex].Selected = $true
         $combatSideBar.Visible = $true
         $global:rowIndex = $e.RowIndex
-        $global:clientselected = $true
         $currentGameMode.Text = $combatLoungeList.Rows[$e.RowIndex].Cells[1].value
     }
 })
