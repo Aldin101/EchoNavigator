@@ -7,12 +7,20 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using CefSharp;
+using CefSharp.WinForms;
+using System.Security.Policy;
+using System.Runtime.ConstrainedExecution;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
+using CefSharp.DevTools.Network;
+using System.Net;
+using Newtonsoft.Json;
 
 namespace Installer
 {
+
     internal static class Downgrader
     {
-
         public static class DowngradeControls
         {
             public static Label downgradeLabel;
@@ -116,66 +124,53 @@ namespace Installer
             DowngradeControls.downgradeButton.Text = "Waiting for login...";
             DowngradeControls.downgradeButton.Refresh();
 
-            var registryPath = @"HKEY_CURRENT_USER\SOFTWARE\Classes\oculus";
-            var backupPath = Path.Combine(Path.GetTempPath(), "oculus.reg");
-
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = "reg",
-                Arguments = $"export \"{registryPath}\" \"{backupPath}\" /y",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                CreateNoWindow = true
-            };
-
-            using (var process = new Process { StartInfo = startInfo })
-            {
-                process.Start();
-                process.WaitForExit();
-            }
-
-            try
-            {
-                Registry.CurrentUser.DeleteSubKeyTree("SOFTWARE\\Classes\\oculus");
-            }
-            catch{}
-
-
-            string keyPath = @"Software\Classes\Oculus";
-            string fullPath = Process.GetCurrentProcess().MainModule.FileName;
-            RegistryKey key = Registry.CurrentUser.CreateSubKey(keyPath);
-            if (key != null)
-            {
-                key.SetValue("URL Protocol", "");
-                key.SetValue("", "URL:Oculus Protocol");
-
-                key.CreateSubKey(@"shell\open\command").SetValue("", $"{fullPath} $1");
-            } else
-            {
-                MessageBox.Show("Failed to create registry key");
-                return;
-            }
-
             login();
+ 
         }
 
-        private static void login()
+
+        private static async void login()
         {
-            var startInfo = new ProcessStartInfo
+            // Make a new form to show the browser
+            Form downgradeMenuLogin = new Form
             {
-                FileName = "explorer",
-                Arguments = getLoginUrl().Result,
+                Text = "Login",
+                Size = new Size(1280, 720),
+                StartPosition = FormStartPosition.CenterScreen,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                ShowInTaskbar = false,
+                MaximizeBox = false,
             };
 
-            using (var process = new Process { StartInfo = startInfo })
-            {
-                process.Start();
-            }
+            // Get both sso token and etoken for the login process, parse and store then in a JObject
+            JObject login_tokens = JObject.Parse(getLoginToken().Result);
+
+            // Set the browser to the Meta login url with the sso etoken we got from the GetLoginToken function
+            var browser = new ChromiumWebBrowser($"https://auth.meta.com/native_sso/confirm?native_app_id=512466987071624&native_sso_etoken={login_tokens.GetValue("native_sso_etoken").ToString()}&utm_source=skyline_splash");
+
+            // Add the RequestHandler to allow the browser to handle oculus:// link, pass the UrlCallback function that will be called when an oculus link is detected
+            browser.RequestHandler = new OculusProtocolHandler(UrlCallback, login_tokens.GetValue("native_sso_token").ToString());
+
+            // Add the browser form to the downgradeMenuLogin form
+            downgradeMenuLogin.Controls.Add(browser);
+
+            // Show the downgradeMenuLogin dialog to open the browser to the Meta login page
+            downgradeMenuLogin.ShowDialog();
+
+        }
+
+        private static void UrlCallback(string response, string sso_token)
+        {
+            var parameters = response.Replace("oculus://", "").Split('?')[1].Split('&');
+            var blob = parameters[1].Split('=')[1];
+            var token = GetToken(blob, sso_token).GetAwaiter().GetResult();
+
+            Console.WriteLine(token);
+            // Working on adding the function to download the build
         }
 
 
-
-        private static async Task<string> getLoginUrl()
+        private static async Task<string> getLoginToken()
         {
             var payload = new JObject
             {
@@ -185,13 +180,13 @@ namespace Installer
             using (var client = new HttpClient())
             {
                 var content = new StringContent(payload.ToString(), Encoding.UTF8, "application/json");
-                var response = await client.PostAsync("https://meta.graph.meta.com/webview_tokens_query", content);
-                var loginResponse = await response.Content.ReadAsStringAsync();
+                var response =  client.PostAsync("https://meta.graph.meta.com/webview_tokens_query", content);
+                var loginResponse = response.Result.Content.ReadAsStringAsync().Result;
                 return loginResponse;
             }
         }
 
-        public static async Task<string> GetToken(string blob, string token)
+        private static async Task<string> GetToken(string blob, string token)
         {
             var payload = new JObject
             {
@@ -227,15 +222,6 @@ namespace Installer
 
                 return jsonResponse["data"]["xfr_create_profile_token"]["profile_tokens"][0]["access_token"].ToString();
             }
-        }
-
-        public static string UriCallback(string response)
-        {
-            var parameters = response.Replace("oculus://", "").Split('?')[1].Split('&');
-            var blob = parameters[1].Split('=')[1];
-            var token = GetToken(blob, "token").GetAwaiter().GetResult();
-
-            return token;
         }
     }
 }

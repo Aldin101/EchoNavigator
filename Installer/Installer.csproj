@@ -6,9 +6,12 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <Platforms>AnyCPU;x64</Platforms>
+    <UseWPF>False</UseWPF>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CefSharp.WinForms.NETCore" Version="120.2.70" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
